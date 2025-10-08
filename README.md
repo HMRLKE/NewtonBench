@@ -1,12 +1,59 @@
-# NewtonBench: A Benchmark for Generalizable Scientific Law Discovery in LLM Agents
+# NewtonBench: Benchmarking Generalizable Scientific Law Discovery in LLM Agents
 
-[![GitHub Repo stars](https://img.shields.io/github/stars/your-username/NewtonBench?style=social)](https://github.com/your-username/NewtonBench)
+[![GitHub Repo stars](https://img.shields.io/github/stars/HKUST-KnowComp/NewtonBench?style=social)](https://github.com/HKUST-KnowComp/NewtonBench)
 [![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
+
+<div align="center">
+
+### 🔭 **Can LLMs Rediscover Newton's Laws?** 
+
+**324 Scientific Law Discovery Tasks • 12 Physics Domains • Interactive Model Systems**
+
+*✨Moving beyond memorization toward true scientific discovery in complex, interactive environments✨*
+
+</div>
+
+---
+
+## 🚀 **TL;DR**
+
+**NewtonBench** is the first benchmark designed to rigorously evaluate LLMs' ability to discover scientific laws through **interactive experimentation** rather than static function fitting. Our benchmark resolves the fundamental trilemma between scientific relevance, scalability, and memorization resistance through **metaphysical shifts**—systematic alterations of canonical physical laws.
+
+### 🎯 **Key Features**
+- **324 tasks** across 12 physics domains (Gravitation, Coulomb's Law, Fourier's Law, etc.)
+- **Interactive model systems** requiring active experimentation and hypothesis testing
+- **Two difficulty dimensions**: law complexity (easy/medium/hard) × system complexity (vanilla/simple/complex)
+- **Code-assisted evaluation** to isolate reasoning from computational constraints
+- **Memorization-resistant** through metaphysical shifts of canonical laws
+
+### 🔬 **What We Discovered**
+- **Frontier models** (GPT-5, Gemini-2.5-pro) show **clear but fragile** discovery capabilities
+- **Performance degrades precipitously** with increasing system complexity and noise
+- **Paradoxical tool effect**: Code assistance helps weaker models but hinders stronger ones
+- **Extreme noise sensitivity**: Even 0.0001 noise level causes 13-15% accuracy drop
+
+### 🏆 **Why It Matters**
+NewtonBench reveals that while LLMs are beginning to develop scientific reasoning skills, **robust, generalizable discovery in complex environments remains the core challenge** for automated science.
+
+---
+<div align="center">
+  <figure>
+    <img src="./images/main_dark.png" alt="Framework" style="max-width: 100%; height: auto;">
+    <br>
+    <figcaption><em>Quick Overview of NewtonBench.</em></figcaption>
+  </figure>
+</div>
+
+
+
+
+
+## 🔥 News
+* **10 Oct, 2025**: The paper is released on arXiv!
 
 ## 📋 Table of Contents
 
-- [📖 Introduction](#-introduction)
-- [🔄 Updates](#-updates)
+- [🔥 News](#-news)
 - [🚀 Get Started](#-get-started)
   - [1. Clone the Repository](#1-clone-the-repository)
   - [2. Create and Activate a Conda Environment](#2-create-and-activate-a-conda-environment)
@@ -19,20 +66,11 @@
   - [Method 1: Using `models.txt`](#method-1-using-modelstxt)
   - [Method 2: Specifying a Single Model](#method-2-specifying-a-single-model)
   - [Controlling Parallelism](#controlling-parallelism)
-- [Analyzing Results](#analyzing-results)
-- [📚 Citation](#-citation)
+- [📈 Analyzing Results](#analyzing-results)
+- [🌟 Citation](#-citation)
 
-## 📖 Introduction
-We introduce NewtonBench, a benchmark comprising 324 scientific law discovery tasks across 12 physics domains. NewtonBench is designed to rigorously evaluate the scientific reasoning capabilities of Large Language Models (LLMs) by moving beyond memorization toward true discovery. 
 
-It combines two core innovations: a metaphysical shift, which systematically modifies canonical physical laws to create conceptually grounded yet novel problems, and an interactive, system-oriented environment, where agents must design experiments and interpret feedback within confounded systems. The benchmark provides two independent dimensions of difficulty: the complexity of the target law, and the complexity of the model systems.
 
-By optionally integrating a code execution interface, NewtonBench isolates reasoning from computational constraints, revealing the genuine frontiers of LLMs’ ability to discover scientific laws in complex, interactive settings.
-
-![Project Illustration](images/design_illustration.jpg)
-
-## 🔄 Updates
-* **8 Oct, 2025**: The paper is released on arXiv.
 
 ## 🚀 Get Started
 
@@ -188,7 +226,7 @@ The `--parallel` argument controls the number of concurrent processes. A higher 
 python run_master.py --parallel 8
 ```
 
-### Analyzing Results
+### 📈 Analyzing Results
 
 After running experiments, you can use the `result_analysis/summarize_results.py` script to process and aggregate the results into a summary CSV file.
 
@@ -208,7 +246,7 @@ You can also generate the summary for a single model by specifying its name. For
 python result_analysis/summarize_results.py --model_name gpt41mini
 ```
 
-## 📚 Citation
+## 🌟 Citation
 
 If you use NewtonBench in your research, please cite our paper:
 
