@@ -1,6 +1,28 @@
 # NewtonBench: A Benchmark for Generalizable Scientific Law Discovery in LLM Agents
 
-## Introduction
+[![GitHub Repo stars](https://img.shields.io/github/stars/your-username/NewtonBench?style=social)](https://github.com/your-username/NewtonBench)
+[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
+
+## 📋 Table of Contents
+
+- [📖 Introduction](#-introduction)
+- [🔄 Updates](#-updates)
+- [🚀 Get Started](#-get-started)
+  - [1. Clone the Repository](#1-clone-the-repository)
+  - [2. Create and Activate a Conda Environment](#2-create-and-activate-a-conda-environment)
+  - [3. Install Dependencies](#3-install-dependencies)
+  - [4. Set Up API Keys](#4-set-up-api-keys)
+  - [5. Run the Quick Start](#5-run-the-quick-start)
+- [🏗️ Project Structure](#️-project-structure)
+- [🔬 Key Components](#-key-components)
+- [🧪 Running Full Experiments](#-running-full-experiments)
+  - [Method 1: Using `models.txt`](#method-1-using-modelstxt)
+  - [Method 2: Specifying a Single Model](#method-2-specifying-a-single-model)
+  - [Controlling Parallelism](#controlling-parallelism)
+- [Analyzing Results](#analyzing-results)
+- [📚 Citation](#-citation)
+
+## 📖 Introduction
 We introduce NewtonBench, a benchmark comprising 324 scientific law discovery tasks across 12 physics domains. NewtonBench is designed to rigorously evaluate the scientific reasoning capabilities of Large Language Models (LLMs) by moving beyond memorization toward true discovery. 
 
 It combines two core innovations: a metaphysical shift, which systematically modifies canonical physical laws to create conceptually grounded yet novel problems, and an interactive, system-oriented environment, where agents must design experiments and interpret feedback within confounded systems. The benchmark provides two independent dimensions of difficulty: the complexity of the target law, and the complexity of the model systems.
@@ -9,10 +31,10 @@ By optionally integrating a code execution interface, NewtonBench isolates reaso
 
 ![Project Illustration](images/design_illustration.jpg)
 
-## Updates
+## 🔄 Updates
 * **8 Oct, 2025**: The paper is released on arXiv.
 
-## Get Started
+## 🚀 Get Started
 
 ### 1. Clone the Repository
 
@@ -52,7 +74,7 @@ python quick_start.py
 
 The `quick_start.py` script will run two simple experiments using the `gpt41mini` model under "vanilla agent" and "code-assisted agent" modes for "Gravitation" domain, equation difficulty as "easy" and model system as "vanilla equation"
 
-## Project Structure
+## 🏗️ Project Structure
 
 ```
 llm_phys_discovery/
@@ -115,7 +137,7 @@ llm_phys_discovery/
 └── README.md                   
 ```
 
-### Key Components
+### 🔬 Key Components
 
 - **Physics Modules**: Each of the 12 physics domains is implemented as a separate module with its own physics simulation, law definitions, and prompts.
 - **Agent Types**: Two agent modes are supported:
@@ -125,7 +147,7 @@ llm_phys_discovery/
   - Difficulty of the target law: easy/medium/hard
   - Complexity of the model systems: vanilla equation/simple system/complex system
 
-## Running Full Experiments
+## 🧪 Running Full Experiments
 
 To replicate more comprehensive evaluations as described in the paper, the `run_master.py` script allows you to run the full benchmark across all physics modules and a variety of LLM models.
 
@@ -186,7 +208,7 @@ You can also generate the summary for a single model by specifying its name. For
 python result_analysis/summarize_results.py --model_name gpt41mini
 ```
 
-## Citation
+## 📚 Citation
 
 If you use NewtonBench in your research, please cite our paper:
 
