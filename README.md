@@ -1,8 +1,9 @@
 # NewtonBench: Benchmarking Generalizable Scientific Law Discovery in LLM Agents
-
-[![GitHub Repo stars](https://img.shields.io/github/stars/HKUST-KnowComp/NewtonBench?style=social)](https://github.com/HKUST-KnowComp/NewtonBench)
-[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
-
+[![GitHub stars](https://img.shields.io/github/stars/HKUST-KnowComp/NewtonBench?style=for-the-badge&logo=github&logoColor=white&color=a29bfe&label=stars)](https://github.com/HKUST-KnowComp/NewtonBench)
+[![arXiv](https://img.shields.io/badge/arXiv-2510.07172-74b9ff?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2510.07172)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-0984e3?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2FHKUST-KnowComp%2FNewtonBench&label=visitors&countColor=%23263759&style=for-the-badge&labelStyle=upper)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2FHKUST-KnowComp%2FNewtonBench)
+[![Downloads](https://img.shields.io/github/downloads/HKUST-KnowComp/NewtonBench/total?style=for-the-badge&logo=github&logoColor=white&color=00cec9&label=total%20downloads)](https://github.com/HKUST-KnowComp/NewtonBench/releases)
 <div align="center">
 
 ### 🔭 **Can LLMs Rediscover Newton's Laws?** 
@@ -49,7 +50,7 @@ NewtonBench reveals that while LLMs are beginning to develop scientific reasonin
 
 
 ## 🔥 News
-* **10 Oct, 2025**: The paper is released on arXiv!
+* **09 Oct, 2025**: The paper is released on [arXiv](https://arxiv.org/abs/2510.07172)!
 
 ## 📋 Table of Contents
 
@@ -77,8 +78,8 @@ NewtonBench reveals that while LLMs are beginning to develop scientific reasonin
 ### 1. Clone the Repository
 
 ```
-git clone https://github.com/your-username/llm_phys_discovery.git
-cd llm_phys_discovery
+git clone https://github.com/HKUST-KnowComp/NewtonBench.git
+cd NewtonBench
 ```
 
 ### 2. Create and Activate a Conda Environment
@@ -115,7 +116,7 @@ The `quick_start.py` script will run two simple experiments using the `gpt41mini
 ## 🏗️ Project Structure
 
 ```
-llm_phys_discovery/
+NewtonBench/
 ├── .env                          # environment variables (API keys)
 ├── configs/                      # Configuration files
 │   └── models.txt                # List of LLM models to evaluate
@@ -251,4 +252,20 @@ python result_analysis/summarize_results.py --model_name gpt41mini
 If you use NewtonBench in your research, please cite our paper:
 
 ```
+@misc{zheng2025newtonbenchbenchmarkinggeneralizablescientific,
+      title={NewtonBench: Benchmarking Generalizable Scientific Law Discovery in LLM Agents}, 
+      author={Tianshi Zheng and Kelvin Kiu-Wai Tam and Newt Hue-Nam K. Nguyen and Baixuan Xu and Zhaowei Wang and Jiayang Cheng and Hong Ting Tsang and Weiqi Wang and Jiaxin Bai and Tianqing Fang and Yangqiu Song and Ginny Y. Wong and Simon See},
+      year={2025},
+      eprint={2510.07172},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2510.07172}, 
+}
 ```
+
+---
+## Contacts
+
+Tianshi Zheng (tzhengad@connect.ust.hk)
+
+Kelvin Kiu-Wai Tam ()
