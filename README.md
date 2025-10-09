@@ -3,7 +3,6 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2510.07172-74b9ff?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2510.07172)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-0984e3?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2FHKUST-KnowComp%2FNewtonBench&label=visitors&countColor=%23263759&style=for-the-badge&labelStyle=upper)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2FHKUST-KnowComp%2FNewtonBench)
-[![Downloads](https://img.shields.io/github/downloads/HKUST-KnowComp/NewtonBench/total?style=for-the-badge&logo=github&logoColor=white&color=00cec9&label=total%20downloads)](https://github.com/HKUST-KnowComp/NewtonBench/releases)
 <div align="center">
 
 ### 🔭 **Can LLMs Rediscover Newton's Laws?** 
