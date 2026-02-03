@@ -1,0 +1,7 @@
+{
+  "equation": "0.04780117*current1*current2/distance**3.0001261",
+  "sympy_expr": "0.04780117*current1*current2/distance**3.0001261",
+  "loss": 9.6166915e-11,
+  "score": 17.317673895717032,
+  "complexity": 9
+}

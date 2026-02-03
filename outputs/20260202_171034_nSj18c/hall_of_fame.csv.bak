@@ -1,0 +1,6 @@
+Complexity,Loss,Equation
+1,3.69978e15,"2.3565718e7"
+3,2.794193e14,"6.0669263e21 / omega"
+5,9.339128e13,"temperature * (1.5618487e19 / omega)"
+7,1.1302945e13,"(temperature - 219.76866) * (3.465698e19 / omega)"
+8,11.909571,"(square(temperature) * temperature) / (omega / 9.512032e13)"

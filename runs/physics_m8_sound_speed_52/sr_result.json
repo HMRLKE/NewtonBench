@@ -1,0 +1,7 @@
+{
+  "equation": "temperature*351.6*adiabatic_index/molar_mass",
+  "sympy_expr": "temperature*351.6*adiabatic_index/molar_mass",
+  "loss": 0.48532408,
+  "score": 13.925068459337911,
+  "complexity": 7
+}

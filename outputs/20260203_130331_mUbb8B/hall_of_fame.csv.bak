@@ -1,0 +1,11 @@
+Complexity,Loss,Equation
+1,167.66846,"14.895038"
+2,156.50793,"square(k)"
+3,104.5221,"delta_T * k"
+4,86.670944,"square(delta_T) / d"
+5,67.3873,"(delta_T * 6.927987) / d"
+6,64.07859,"delta_T * (k + sin(d))"
+7,19.394506,"delta_T * ((2.2868223 / d) * k)"
+8,2.1214853e-12,"(k * (delta_T / d)) * sqrt(A)"
+9,1.6942714e-12,"sqrt(A * square(delta_T / d)) * k"
+11,1.5032775e-12,"sqrt(delta_T * (A * (delta_T / square(d)))) * k"

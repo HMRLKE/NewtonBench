@@ -1,0 +1,13 @@
+{
+  "task": "m8_sound_speed",
+  "n_samples": 300,
+  "seed": 52,
+  "noise": 0.0,
+  "mode": "physics",
+  "output_dir": "runs",
+  "difficulty": "easy",
+  "law_version": "v1",
+  "n_iterations": 2000,
+  "parsimony": 0.1,
+  "gt_eqn_str": "351.6 * gamma * T / M"
+}

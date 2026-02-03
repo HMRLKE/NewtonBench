@@ -1,0 +1,110 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {
+    "equation": "delta_T*m*sqrt(c**2*delta_T**3)"
+  },
+  "nodes": [
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 0
+    },
+    {
+      "label": "delta_T",
+      "type": "variable",
+      "id": 1
+    },
+    {
+      "label": "m",
+      "type": "variable",
+      "id": 2
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 3
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 4
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 5
+    },
+    {
+      "label": "c",
+      "type": "variable",
+      "id": 6
+    },
+    {
+      "label": "2",
+      "type": "number",
+      "id": 7
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 8
+    },
+    {
+      "label": "3",
+      "type": "number",
+      "id": 9
+    },
+    {
+      "label": "0.5",
+      "type": "number",
+      "id": 10
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1
+    },
+    {
+      "source": 0,
+      "target": 2
+    },
+    {
+      "source": 0,
+      "target": 3
+    },
+    {
+      "source": 3,
+      "target": 4
+    },
+    {
+      "source": 3,
+      "target": 10
+    },
+    {
+      "source": 4,
+      "target": 5
+    },
+    {
+      "source": 4,
+      "target": 8
+    },
+    {
+      "source": 5,
+      "target": 6
+    },
+    {
+      "source": 5,
+      "target": 7
+    },
+    {
+      "source": 8,
+      "target": 1
+    },
+    {
+      "source": 8,
+      "target": 9
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+Complexity,Loss,Equation
+1,0.0099784145,"0.451992"
+3,0.006914273,"omega ^ -0.023412274"
+4,0.006914272,"sqrt(omega ^ -0.04682664)"
+5,0.0053798594,"(omega ^ -0.057154093) / 0.31948054"
+6,0.004922141,"log(omega ^ -0.027216738) + 1.3786271"
+7,0.004582823,"cos(-0.4145411 / sqrt(omega ^ -0.057154093))"
+8,0.0037252824,"square(sin(sin(cos(log(omega ^ 0.18906046)))))"
+9,0.002870981,"sin(square(sin(sin(cos(log(omega ^ -0.1889651))))))"
+10,0.0028709779,"sin(square(sin(sin(cos(log(sin(omega ^ -0.1889651)))))))"
+11,0.0024982025,"square(sin(sin(sin(cos(log(omega ^ 0.19137987)) + 0.14870536))))"
+12,0.0024304637,"sin(sin(square(sin(sin(cos(sqrt(0.4736337 / (omega ^ -0.09273334))))))))"
+13,0.0023034676,"square(square(sin(cos(sin(sin(log(cos(log(sin(omega ^ -0.19193685))))))))))"

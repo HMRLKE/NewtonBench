@@ -1,0 +1,128 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {
+    "equation": "N0/exp(lambda_constant)**(t**(3/2))"
+  },
+  "nodes": [
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 0
+    },
+    {
+      "label": "N0",
+      "type": "variable",
+      "id": 1
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 2
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 3
+    },
+    {
+      "label": "exp",
+      "type": "operator",
+      "id": 4
+    },
+    {
+      "label": "lambda_constant",
+      "type": "variable",
+      "id": 5
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 6
+    },
+    {
+      "label": "t",
+      "type": "variable",
+      "id": 7
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 8
+    },
+    {
+      "label": "3",
+      "type": "number",
+      "id": 9
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 10
+    },
+    {
+      "label": "2",
+      "type": "number",
+      "id": 11
+    },
+    {
+      "label": "-1",
+      "type": "number",
+      "id": 12
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1
+    },
+    {
+      "source": 0,
+      "target": 2
+    },
+    {
+      "source": 2,
+      "target": 3
+    },
+    {
+      "source": 2,
+      "target": 12
+    },
+    {
+      "source": 3,
+      "target": 4
+    },
+    {
+      "source": 3,
+      "target": 6
+    },
+    {
+      "source": 4,
+      "target": 5
+    },
+    {
+      "source": 6,
+      "target": 7
+    },
+    {
+      "source": 6,
+      "target": 8
+    },
+    {
+      "source": 8,
+      "target": 9
+    },
+    {
+      "source": 8,
+      "target": 10
+    },
+    {
+      "source": 10,
+      "target": 11
+    },
+    {
+      "source": 10,
+      "target": 12
+    }
+  ]
+}

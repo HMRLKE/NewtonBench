@@ -1,0 +1,7 @@
+{
+  "equation": "N0/exp(lambda_constant)**(t**(3/2))",
+  "sympy_expr": "N0/exp(lambda_constant)**(t**(3/2))",
+  "loss": 5.7505494e-09,
+  "score": 5.255501288548175,
+  "complexity": 9
+}

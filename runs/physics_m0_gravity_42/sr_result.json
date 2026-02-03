@@ -1,0 +1,7 @@
+{
+  "equation": "mass2*mass1*0.00025163597*0.2652388/distance**1.5001433",
+  "sympy_expr": "mass2*mass1*0.00025163597*0.2652388/distance**1.5001433",
+  "loss": 4.144089e-15,
+  "score": 15.282590040080315,
+  "complexity": 9
+}

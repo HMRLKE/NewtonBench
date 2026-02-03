@@ -1,0 +1,10 @@
+Complexity,Loss,Equation
+1,0.0006497082,"0.013424562"
+3,0.000519786,"0.04236897 / distance"
+4,0.00048206587,"0.16147916 / exp(distance)"
+5,0.0003595643,"(mass1 * 0.008763396) / distance"
+6,0.00020188089,"square((mass1 / 18.840708) ^ distance)"
+7,0.000116369105,"mass1 * ((mass2 * 0.0018834656) / distance)"
+8,1.0463785e-5,"(mass1 ^ sqrt(mass2 / distance)) * 0.0010421041"
+9,1.0459671e-5,"sin((mass1 ^ sqrt(mass2 / distance)) * 0.0010421041)"
+10,5.4235345e-16,"square((mass1 / 16.437761) * ((mass2 / 7.446709) / distance))"

@@ -1,0 +1,13 @@
+Complexity,Loss,Equation
+1,46.5392,"k_constant"
+3,28.70161,"18.03136 / mass"
+4,0.36750647,"square(k_constant / mass)"
+5,0.17291804,"(k_constant / mass) ^ 1.9673828"
+6,0.15139675,"square((k_constant + -0.21992473) / mass)"
+7,0.15018843,"((k_constant + -0.17941505) / mass) ^ 1.9929287"
+8,0.044833712,"square(((b_constant / 4.1932387) - k_constant) / mass)"
+9,0.02715572,"square((square(b_constant / 2.4158525) - k_constant) / mass)"
+10,0.014194654,"square((((b_constant / 2.9069855) ^ mass) - k_constant) / mass)"
+11,2.1207631e-9,"square(square((b_constant / mass) * 0.49998018) - (k_constant / mass))"
+12,2.1038598e-9,"square((((square(b_constant) / mass) * square(0.49998018)) - k_constant) / mass)"
+14,1.8699498e-10,"square(((b_constant * ((b_constant / 1.6971995) / (mass * 2.356879))) - k_constant) / mass)"

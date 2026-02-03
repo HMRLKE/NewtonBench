@@ -1,0 +1,1 @@
+temperature*temperature**2/((omega/95120320000000.0))

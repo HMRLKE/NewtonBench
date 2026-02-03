@@ -1,0 +1,7 @@
+{
+  "equation": "delta_T*m*sqrt(c**2*delta_T**3)",
+  "sympy_expr": "delta_T*m*sqrt(c**2*delta_T**3)",
+  "loss": 0.0005495455,
+  "score": 0.18976255453286853,
+  "complexity": 14
+}

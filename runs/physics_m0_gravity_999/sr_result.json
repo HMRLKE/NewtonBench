@@ -1,0 +1,6 @@
+{
+  "equation": "(-distance + mass1)*(0.0014261389*mass2*(-distance + mass2 + 713.4688) - 0.0014261389*log(mass2))/distance",
+  "sympy_expr": "(-distance + mass1)*(0.0014261389*mass2*(-distance + mass2 + 713.4688) - 0.0014261389*log(mass2))/distance",
+  "score": "0.5104428550938975",
+  "complexity": "18"
+}

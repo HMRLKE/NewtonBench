@@ -1,0 +1,8 @@
+Complexity,Loss,Equation
+1,29360.252,"118.17398"
+3,15084.988,"N0 / t"
+5,13967.914,"N0 / (lambda_constant + t)"
+6,11462.432,"N0 / (t ^ exp(lambda_constant))"
+7,1415.4878,"N0 / ((6.994084 ^ lambda_constant) ^ t)"
+8,0.15877911,"N0 / exp(lambda_constant * (t ^ 1.4978917))"
+9,1.6322298e-10,"N0 / exp((t * lambda_constant) * sqrt(t))"

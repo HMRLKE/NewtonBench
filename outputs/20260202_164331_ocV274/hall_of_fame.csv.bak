@@ -1,0 +1,13 @@
+Complexity,Loss,Equation
+1,0.26562697,"0.2572684"
+3,0.12360022,"distance ^ -1.933084"
+4,0.10237282,"1.4386209 / square(distance)"
+5,0.027267274,"(0.25074875 ^ distance) * current2"
+6,0.018098688,"current2 * (0.3498142 ^ square(distance))"
+7,0.004818413,"current1 * ((0.051357333 ^ distance) * current2)"
+8,0.004476965,"current2 * sin(current1 * (0.051896263 ^ distance))"
+9,0.00093414815,"(0.04501692 ^ (distance ^ 0.76752895)) * (current2 * current1)"
+10,4.179426e-15,"((current1 / distance) * (current2 * 0.0478)) / square(distance)"
+15,3.1528728e-15,"((((current1 / distance) * current2) * 0.029481772) / 0.6167735) / square(sqrt(distance * distance))"
+22,1.1158708e-15,"(((current1 / distance) * (current2 * 0.029481772)) / (sqrt(distance) * 0.6167735)) / square(sqrt(distance * sqrt(sqrt(distance * distance))))"
+28,1.106357e-15,"((((current1 / sqrt(distance * sqrt(distance * distance))) * current2) * 0.029481772) / (sqrt(distance) * 0.6167735)) / square(sqrt(distance * sqrt(sqrt(distance * distance))))"

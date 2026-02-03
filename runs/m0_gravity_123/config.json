@@ -1,0 +1,7 @@
+{
+  "task": "m0_gravity",
+  "n_samples": 50,
+  "seed": 123,
+  "noise": 0.0,
+  "output_dir": "runs"
+}

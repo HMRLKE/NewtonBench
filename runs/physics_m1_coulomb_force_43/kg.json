@@ -1,0 +1,70 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {
+    "equation": "-distance + distance + (q1 + q1)/(distance*((distance/(q2*(distance**(-1.0))))))"
+  },
+  "nodes": [
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 0
+    },
+    {
+      "label": "2",
+      "type": "number",
+      "id": 1
+    },
+    {
+      "label": "q1",
+      "type": "variable",
+      "id": 2
+    },
+    {
+      "label": "q2",
+      "type": "variable",
+      "id": 3
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 4
+    },
+    {
+      "label": "distance",
+      "type": "variable",
+      "id": 5
+    },
+    {
+      "label": "-3",
+      "type": "number",
+      "id": 6
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1
+    },
+    {
+      "source": 0,
+      "target": 2
+    },
+    {
+      "source": 0,
+      "target": 3
+    },
+    {
+      "source": 0,
+      "target": 4
+    },
+    {
+      "source": 4,
+      "target": 5
+    },
+    {
+      "source": 4,
+      "target": 6
+    }
+  ]
+}

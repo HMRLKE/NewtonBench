@@ -1,0 +1,6 @@
+Complexity,Loss,Equation
+1,2.752047e13,"7.944942e6"
+3,7.1615885e12,"temperature * 15809.455"
+5,5.8834597e11,"(temperature / molar_mass) * 533.7812"
+7,0.43852693,"(temperature * (351.6 / molar_mass)) * adiabatic_index"
+9,0.40714264,"(temperature * ((351.6 / molar_mass) * adiabatic_index)) + 0.039323136"

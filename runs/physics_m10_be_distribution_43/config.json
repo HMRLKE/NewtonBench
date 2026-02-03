@@ -1,0 +1,13 @@
+{
+  "task": "m10_be_distribution",
+  "n_samples": 300,
+  "seed": 43,
+  "noise": 0.0,
+  "mode": "physics",
+  "output_dir": "runs",
+  "difficulty": "easy",
+  "law_version": "v0",
+  "n_iterations": 2000,
+  "parsimony": 0.001,
+  "gt_eqn_str": "1 / (exp(1.0513e-14 * omega / T) + 1)"
+}

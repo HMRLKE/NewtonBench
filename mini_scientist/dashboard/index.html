@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Mini Scientist - Live Discovery</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a2e;
+            color: #fff;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+        }
+
+        #sidebar {
+            width: 900px;
+            background: #16213e;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .global-metrics {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #4a4a6a;
+            text-align: center;
+        }
+
+        .global-sim-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4cd137;
+        }
+
+
+        #main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        h1 {
+            color: #e94560;
+            margin-top: 0;
+        }
+
+        h2 {
+            border-bottom: 1px solid #4a4a6a;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .law-card {
+            background: #0f3460;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #e94560;
+        }
+
+        .law-task {
+            font-size: 0.9em;
+            color: #a4b0be;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .law-eqn-container {
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .graph-header {
+            padding: 5px 10px;
+            background: #0f3460;
+            color: #fff;
+            font-weight: bold;
+            border-radius: 5px 5px 0 0;
+        }
+
+        #network-container-disc,
+        #network-container-gt {
+            height: 100%;
+            background: #fff;
+            border-radius: 0 0 5px 5px;
+            position: relative;
+            border: 1px solid #333;
+        }
+
+        .network-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 300px;
+            height: 50%;
+        }
+
+        .vis-network {
+            outline: none;
+        }
+
+        /* MathJax Adjustments */
+        mjx-container {
+            font-size: 1.1em !important;
+            color: #e94560 !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="sidebar">
+        <h1>Mini Scientist</h1>
+        <div id="status">Status: Connecting...</div>
+
+        <div class="global-metrics">
+            <div>Overall KG Similarity</div>
+            <div id="global-sim" class="global-sim-value">--%</div>
+        </div>
+
+        <h2>Discovered Laws</h2>
+        <div id="law-list">
+            <!-- Laws will appear here -->
+        </div>
+    </div>
+    <div id="main">
+        <div class="network-wrapper" style="margin-bottom: 20px;">
+            <div class="graph-header">Discovered Knowledge Graph</div>
+            <div id="network-container-disc"></div>
+        </div>
+        <div class="network-wrapper">
+            <div class="graph-header" style="margin-top: 10px;">Ground Truth Knowledge Graph</div>
+            <div id="network-container-gt"></div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // --- VISUALIZATION SETUP ---
+        var options = {
+            nodes: { shape: 'dot', size: 20, font: { size: 14 } },
+            edges: { width: 2, arrows: 'to', smooth: { type: 'continuous' } },
+            groups: {
+                variable: { color: { background: '#97C2FC', border: '#2B7CE9' } },
+                operator: { color: { background: '#FF9999', border: '#FF5555' } },
+                constant: { color: { background: '#99FF99', border: '#55FF55' } },
+                default: { color: { background: '#eee', border: '#999' } }
+            },
+            physics: {
+                stabilization: false,
+                barnesHut: { gravitationalConstant: -2000, springConstant: 0.04, springLength: 95 }
+            }
+        };
+
+        // Discovered Graph
+        var nodesDisc = new vis.DataSet([]);
+        var edgesDisc = new vis.DataSet([]);
+        var netDisc = new vis.Network(document.getElementById('network-container-disc'), { nodes: nodesDisc, edges: edgesDisc }, options);
+
+        // Ground Truth Graph
+        var nodesGT = new vis.DataSet([]);
+        var edgesGT = new vis.DataSet([]);
+        var netGT = new vis.Network(document.getElementById('network-container-gt'), { nodes: nodesGT, edges: edgesGT }, options);
+
+        var lastLawCount = 0;
+
+        function fetchUpdate() {
+            fetch('/accumulation/global_kg.json')
+                .then(response => {
+                    if (!response.ok) throw new Error("File not found");
+                    return response.json();
+                })
+                .then(kg => {
+                    if (kg.status) {
+                        document.getElementById('status').textContent = "Status: " + kg.status;
+                    } else {
+                        document.getElementById('status').textContent = "Status: Online (Polling)";
+                    }
+
+                    // Update Laws List
+                    if (kg.laws && (kg.laws.length > lastLawCount || kg.laws.length === 0)) {
+                        const list = document.getElementById('law-list');
+                        list.innerHTML = "";
+                        kg.laws.forEach(law => {
+                            const div = document.createElement('div');
+                            div.className = 'law-card';
+
+                            // Fix superscript rendering (MathJax/LaTeX style)
+                            function formatLaTeX(s) {
+                                if (!s) return "";
+                                // Replace ** with ^
+                                let res = s.replace(/\*\*/g, '^');
+                                // Special case: PySR may output (expr)^pow. Sympy/MathJax handles this, but 
+                                // if we have base^var, MathJax standard requires base^{var} for multi-char.
+                                // Replace ^Var with ^{Var}
+                                res = res.replace(/\^([a-zA-Z0-9_\.]+)/g, '^{$1}');
+                                // Replace * with \cdot
+                                res = res.replace(/\*/g, ' \\cdot ');
+                                return res;
+                            }
+
+                            let dispEq = formatLaTeX(law.equation);
+                            let dispGt = formatLaTeX(law.gt_equation);
+
+                            let simColor = law.similarity > 0.8 ? '#4cd137' : (law.similarity > 0.5 ? '#fbc531' : '#e84118');
+
+                            function formatNum(n, precision = 3) {
+                                if (n == null) return "N/A";
+                                let val = typeof n === 'string' ? parseFloat(n) : n;
+                                if (isNaN(val)) return "N/A";
+                                return val < 0.01 && val !== 0 ? val.toExponential(2) : val.toFixed(precision);
+                            }
+
+                            let matchTag = law.symbolic_match ?
+                                `<div style="font-size: 0.7em; background: #2f3542; color: #2ecc71; padding: 2px 6px; border-radius: 10px; font-weight: bold; border: 1px solid #2ecc71;">MATCH</div>` : '';
+
+                            div.innerHTML = `
+                                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                                      <div class="law-task">${law.task}</div>
+                                      <div style="display: flex; gap: 8px;">
+                                          ${matchTag}
+                                          <div style="font-size: 0.8em; background: #4a4a6a; color: #fff; padding: 2px 6px; border-radius: 10px; font-weight: bold;">
+                                              LOSS: ${formatNum(law.loss)}
+                                          </div>
+                                          <div style="font-size: 0.8em; background: #4a4a6a; color: #fff; padding: 2px 6px; border-radius: 10px; font-weight: bold;">
+                                              RMSLE: ${formatNum(law.rmsle)}
+                                          </div>
+                                          <div style="font-size: 0.8em; background: ${simColor}; color: #000; padding: 2px 6px; border-radius: 10px; font-weight: bold;">
+                                              KG SIM: ${(parseFloat(law.similarity || 0) * 100).toFixed(1)}%
+                                          </div>
+                                      </div>
+                                  </div>
+                                 <div class="law-eqn-container">
+                                     <small>Discovered:</small>
+                                     <div style="padding: 10px; color: #ff4d4d; font-size: 1.2em;">$$ ${dispEq} $$</div>
+                                 </div>
+                                 <div class="law-eqn-container" style="border-left: 2px solid green;">
+                                     <small>Ground Truth:</small>
+                                     <div style="padding: 10px; color: #4cd137;">$$ ${dispGt} $$</div>
+                                 </div>
+                             `;
+                            list.appendChild(div);
+                        });
+
+                        // Update Global Sim
+                        if (kg.global_similarity !== undefined) {
+                            const gSim = document.getElementById('global-sim');
+                            gSim.textContent = (kg.global_similarity * 100).toFixed(1) + "%";
+                            gSim.style.color = kg.global_similarity > 0.7 ? '#4cd137' : (kg.global_similarity > 0.4 ? '#fbc531' : '#ff4d4d');
+                        }
+
+                        lastLawCount = kg.laws.length;
+
+                        // Trigger MathJax
+                        if (window.MathJax) {
+                            MathJax.typesetPromise();
+                        }
+                    }
+
+                    // Update Graphs
+                    function updateGraph(nodesDS, edgesDS, graphData) {
+                        if (!graphData || !graphData.nodes) return;
+
+                        const taskColors = {
+                            'shared': '#f1f2f6',
+                            'm0_gravity': '#ff7979',
+                            'm1_coulomb_force': '#7ed6df',
+                            'm2_magnetic_force': '#badc58',
+                            'm3_fourier_law': '#f0932b',
+                            'm4_snell_law': '#eb4d4b',
+                            'm11_heat_transfer': '#686de0'
+                        };
+                        const palette = ['#ffbe76', '#ff7979', '#badc58', '#dff9fb', '#f9ca24', '#f0932b', '#eb4d4b', '#6ab04c', '#7ed6df', '#e056fd', '#686de0', '#4834d4', '#be2edd', '#95afc0'];
+
+                        const newNodes = graphData.nodes.map(n => {
+                            let task = n.task || 'shared';
+                            if (!taskColors[task]) {
+                                let idx = Object.keys(taskColors).length;
+                                taskColors[task] = palette[idx % palette.length];
+                            }
+
+                            // Visual distinction by type
+                            let shape = 'ellipse';
+                            if (n.type === 'operator') shape = 'circle';
+                            if (n.type === 'variable') shape = 'box';
+
+                            return {
+                                id: n.id,
+                                label: String(n.label || n.id),
+                                shape: shape,
+                                color: {
+                                    background: taskColors[task],
+                                    border: '#2c3e50', // Dark border for contrast
+                                    highlight: { background: '#fff', border: '#e94560' }
+                                },
+                                font: {
+                                    color: '#000',
+                                    size: 14,
+                                    face: 'monospace'
+                                },
+                                title: `Task: ${task}\nType: ${n.type}`
+                            };
+                        });
+
+                        const newEdges = graphData.edges.map(e => ({
+                            from: e.source,
+                            to: e.target,
+                            color: { color: '#2c3e50', opacity: 0.3 },
+                            arrows: 'to',
+                            width: 1
+                        }));
+
+                        nodesDS.update(newNodes);
+                        edgesDS.update(newEdges);
+                    }
+
+                    updateGraph(nodesDisc, edgesDisc, kg.graph);
+                    updateGraph(nodesGT, edgesGT, kg.gt_graph || { nodes: [], edges: [] });
+                })
+                .catch(err => {
+                    // console.error(err);
+                    document.getElementById('status').textContent = "Status: Waiting for data...";
+                });
+        }
+
+        setInterval(fetchUpdate, 2000);
+        fetchUpdate(); 
+    </script>
+</body>
+
+</html>

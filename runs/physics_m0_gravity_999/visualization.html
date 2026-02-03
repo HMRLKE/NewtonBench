@@ -1,0 +1,80 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Knowledge Graph Visualization</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style type="text/css">
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        .container { display: flex; width: 95%; justify-content: space-around; }
+        .graph-container { width: 45%; border: 1px solid lightgray; border-radius: 8px; padding: 10px; }
+        #gt-network, #disc-network { width: 100%; height: 500px; border: 1px solid #ddd; }
+        h2 { text-align: center; }
+        .legend { text-align: center; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Equation Knowledge Graph Comparison</h1>
+    <div class="legend">
+        <span style="color: blue">Variables</span> | 
+        <span style="color: red">Operators</span> | 
+        <span style="color: green">Numbers</span>
+    </div>
+    
+    <div class="container">
+        <div class="graph-container">
+            <h2>Ground Truth (Hidden Law)</h2>
+            <div id="gt-network"></div>
+            <p>Equation: (6.674e-05 * (mass1**2 * mass2**2)) / (distance**2)</p>
+        </div>
+        
+        <div class="graph-container">
+            <h2>Discovered Law (Explored)</h2>
+            <div id="disc-network"></div>
+            <p>Equation: (-distance + mass1)*(0.0014261389*mass2*(-distance + mass2 + 713.4688) - 0.0014261389*log(mass2))/distance</p>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // Common Options
+        var options = {
+            nodes: {
+                shape: 'dot',
+                size: 20,
+                font: { size: 16 }
+            },
+            edges: {
+                width: 2,
+                smooth: { type: 'cubicBezier' }
+            },
+            groups: {
+                variable: { color: { background: '#97C2FC', border: '#2B7CE9' } },
+                operator: { color: { background: '#FF9999', border: '#FF5555' } },
+                number: { color: { background: '#99FF99', border: '#55FF55' } }
+            },
+            layout: {
+                hierarchical: {
+                    direction: 'UD',
+                    sortMethod: 'directed',
+                    levelSeparation: 100
+                }
+            }
+        };
+
+        // Ground Truth Graph
+        var gtNodes = new vis.DataSet([{"id": 0, "label": "*", "group": "operator"}, {"id": 1, "label": "6.67400000000000e-5", "group": "number"}, {"id": 2, "label": "**", "group": "operator"}, {"id": 3, "label": "distance", "group": "variable"}, {"id": 4, "label": "-2", "group": "number"}, {"id": 5, "label": "**", "group": "operator"}, {"id": 6, "label": "mass1", "group": "variable"}, {"id": 7, "label": "2", "group": "number"}, {"id": 8, "label": "**", "group": "operator"}, {"id": 9, "label": "mass2", "group": "variable"}, {"id": 10, "label": "2", "group": "number"}]);
+        var gtEdges = new vis.DataSet([{"from": 0, "to": 1, "arrows": "to"}, {"from": 0, "to": 2, "arrows": "to"}, {"from": 0, "to": 5, "arrows": "to"}, {"from": 0, "to": 8, "arrows": "to"}, {"from": 2, "to": 3, "arrows": "to"}, {"from": 2, "to": 4, "arrows": "to"}, {"from": 5, "to": 6, "arrows": "to"}, {"from": 5, "to": 7, "arrows": "to"}, {"from": 8, "to": 9, "arrows": "to"}, {"from": 8, "to": 10, "arrows": "to"}]);
+        var gtContainer = document.getElementById('gt-network');
+        var gtData = { nodes: gtNodes, edges: gtEdges };
+        var gtNetwork = new vis.Network(gtContainer, gtData, options);
+
+        // Discovered Graph
+        var discNodes = new vis.DataSet([{"id": 0, "label": "*", "group": "operator"}, {"id": 1, "label": "**", "group": "operator"}, {"id": 2, "label": "distance", "group": "variable"}, {"id": 3, "label": "-1", "group": "number"}, {"id": 4, "label": "+", "group": "operator"}, {"id": 5, "label": "mass1", "group": "variable"}, {"id": 6, "label": "*", "group": "operator"}, {"id": 7, "label": "-1", "group": "number"}, {"id": 8, "label": "distance", "group": "variable"}, {"id": 9, "label": "+", "group": "operator"}, {"id": 10, "label": "*", "group": "operator"}, {"id": 11, "label": "-0.00142613890000000", "group": "number"}, {"id": 12, "label": "log", "group": "operator"}, {"id": 13, "label": "mass2", "group": "variable"}, {"id": 14, "label": "*", "group": "operator"}, {"id": 15, "label": "0.00142613890000000", "group": "number"}, {"id": 16, "label": "mass2", "group": "variable"}, {"id": 17, "label": "+", "group": "operator"}, {"id": 18, "label": "713.468800000000", "group": "number"}, {"id": 19, "label": "mass2", "group": "variable"}, {"id": 20, "label": "*", "group": "operator"}, {"id": 21, "label": "-1", "group": "number"}, {"id": 22, "label": "distance", "group": "variable"}]);
+        var discEdges = new vis.DataSet([{"from": 0, "to": 1, "arrows": "to"}, {"from": 0, "to": 4, "arrows": "to"}, {"from": 0, "to": 9, "arrows": "to"}, {"from": 1, "to": 2, "arrows": "to"}, {"from": 1, "to": 3, "arrows": "to"}, {"from": 4, "to": 5, "arrows": "to"}, {"from": 4, "to": 6, "arrows": "to"}, {"from": 6, "to": 7, "arrows": "to"}, {"from": 6, "to": 8, "arrows": "to"}, {"from": 9, "to": 10, "arrows": "to"}, {"from": 9, "to": 14, "arrows": "to"}, {"from": 10, "to": 11, "arrows": "to"}, {"from": 10, "to": 12, "arrows": "to"}, {"from": 12, "to": 13, "arrows": "to"}, {"from": 14, "to": 15, "arrows": "to"}, {"from": 14, "to": 16, "arrows": "to"}, {"from": 14, "to": 17, "arrows": "to"}, {"from": 17, "to": 18, "arrows": "to"}, {"from": 17, "to": 19, "arrows": "to"}, {"from": 17, "to": 20, "arrows": "to"}, {"from": 20, "to": 21, "arrows": "to"}, {"from": 20, "to": 22, "arrows": "to"}]);
+        var discContainer = document.getElementById('disc-network');
+        var discData = { nodes: discNodes, edges: discEdges };
+        var discNetwork = new vis.Network(discContainer, discData, options);
+    </script>
+</body>
+</html>
+    

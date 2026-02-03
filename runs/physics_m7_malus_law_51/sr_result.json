@@ -1,0 +1,7 @@
+{
+  "equation": "I_0*sin(theta + theta) + I_0",
+  "sympy_expr": "I_0*sin(theta + theta) + I_0",
+  "loss": 2.3981557e-09,
+  "score": 28.45626028010142,
+  "complexity": 8
+}

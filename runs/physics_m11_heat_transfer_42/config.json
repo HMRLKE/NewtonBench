@@ -1,0 +1,10 @@
+{
+  "task": "m11_heat_transfer",
+  "n_samples": 30,
+  "seed": 42,
+  "noise": 0.0,
+  "mode": "physics",
+  "output_dir": "runs",
+  "difficulty": "easy",
+  "law_version": "v2"
+}

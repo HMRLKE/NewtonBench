@@ -1,0 +1,106 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {
+    "equation": "0.0014036581*mass1/((21.0317354786026*distance**2/0.5182665**(9.3995548e-11*mass2)))"
+  },
+  "nodes": [
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 0
+    },
+    {
+      "label": "6.67400035260078e-5",
+      "type": "number",
+      "id": 1
+    },
+    {
+      "label": "mass1",
+      "type": "variable",
+      "id": 2
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 3
+    },
+    {
+      "label": "0.518266500000000",
+      "type": "number",
+      "id": 4
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 5
+    },
+    {
+      "label": "9.39955480000000e-11",
+      "type": "number",
+      "id": 6
+    },
+    {
+      "label": "mass2",
+      "type": "variable",
+      "id": 7
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 8
+    },
+    {
+      "label": "distance",
+      "type": "variable",
+      "id": 9
+    },
+    {
+      "label": "-2",
+      "type": "number",
+      "id": 10
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1
+    },
+    {
+      "source": 0,
+      "target": 2
+    },
+    {
+      "source": 0,
+      "target": 3
+    },
+    {
+      "source": 0,
+      "target": 8
+    },
+    {
+      "source": 3,
+      "target": 4
+    },
+    {
+      "source": 3,
+      "target": 5
+    },
+    {
+      "source": 5,
+      "target": 6
+    },
+    {
+      "source": 5,
+      "target": 7
+    },
+    {
+      "source": 8,
+      "target": 9
+    },
+    {
+      "source": 8,
+      "target": 10
+    }
+  ]
+}

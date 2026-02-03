@@ -1,0 +1,211 @@
+{
+  "laws": [
+    {
+      "task": "m0_gravity",
+      "equation": "mass2*mass1*0.00025163597*0.2652388/distance**1.5001433",
+      "gt_equation": "(6.674e-5 * mass1 * mass2) / (distance**1.5)",
+      "similarity": 0.835,
+      "loss": 4.144089e-15,
+      "rmsle": 5.855256273966731e-08,
+      "symbolic_match": false,
+      "timestamp": 1770142426.092712
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "label": "\u00d7",
+        "type": "operator",
+        "id": 0,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "mass2",
+        "type": "variable",
+        "id": 1,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "mass1",
+        "type": "variable",
+        "id": 2,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "0.000252",
+        "type": "number",
+        "id": 3,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "0.265",
+        "type": "number",
+        "id": 4,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "^",
+        "type": "operator",
+        "id": 5,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "^",
+        "type": "operator",
+        "id": 6,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "distance",
+        "type": "variable",
+        "id": 7,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "1.5",
+        "type": "number",
+        "id": 8,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "-1",
+        "type": "number",
+        "id": 9,
+        "task": "m0_gravity"
+      }
+    ],
+    "edges": [
+      {
+        "source": 0,
+        "target": 1
+      },
+      {
+        "source": 0,
+        "target": 2
+      },
+      {
+        "source": 0,
+        "target": 3
+      },
+      {
+        "source": 0,
+        "target": 4
+      },
+      {
+        "source": 0,
+        "target": 5
+      },
+      {
+        "source": 5,
+        "target": 6
+      },
+      {
+        "source": 5,
+        "target": 9
+      },
+      {
+        "source": 6,
+        "target": 7
+      },
+      {
+        "source": 6,
+        "target": 8
+      }
+    ]
+  },
+  "gt_graph": {
+    "nodes": [
+      {
+        "label": "\u00d7",
+        "type": "operator",
+        "id": 0,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "6.67e-05",
+        "type": "number",
+        "id": 1,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "mass1",
+        "type": "variable",
+        "id": 2,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "mass2",
+        "type": "variable",
+        "id": 3,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "^",
+        "type": "operator",
+        "id": 4,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "^",
+        "type": "operator",
+        "id": 5,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "distance",
+        "type": "variable",
+        "id": 6,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "1.5",
+        "type": "number",
+        "id": 7,
+        "task": "m0_gravity"
+      },
+      {
+        "label": "-1",
+        "type": "number",
+        "id": 8,
+        "task": "m0_gravity"
+      }
+    ],
+    "edges": [
+      {
+        "source": 0,
+        "target": 1
+      },
+      {
+        "source": 0,
+        "target": 2
+      },
+      {
+        "source": 0,
+        "target": 3
+      },
+      {
+        "source": 0,
+        "target": 4
+      },
+      {
+        "source": 4,
+        "target": 5
+      },
+      {
+        "source": 4,
+        "target": 8
+      },
+      {
+        "source": 5,
+        "target": 6
+      },
+      {
+        "source": 5,
+        "target": 7
+      }
+    ]
+  },
+  "current_task": "m10_be_distribution",
+  "status": "Discovering m10_be_distribution...",
+  "global_similarity": 0.835
+}

@@ -1,0 +1,88 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {
+    "equation": "0.04780117*current1*current2/distance**3.0001261"
+  },
+  "nodes": [
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 0
+    },
+    {
+      "label": "0.0478",
+      "type": "number",
+      "id": 1
+    },
+    {
+      "label": "current1",
+      "type": "variable",
+      "id": 2
+    },
+    {
+      "label": "current2",
+      "type": "variable",
+      "id": 3
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 4
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 5
+    },
+    {
+      "label": "distance",
+      "type": "variable",
+      "id": 6
+    },
+    {
+      "label": "3",
+      "type": "number",
+      "id": 7
+    },
+    {
+      "label": "-1",
+      "type": "number",
+      "id": 8
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1
+    },
+    {
+      "source": 0,
+      "target": 2
+    },
+    {
+      "source": 0,
+      "target": 3
+    },
+    {
+      "source": 0,
+      "target": 4
+    },
+    {
+      "source": 4,
+      "target": 5
+    },
+    {
+      "source": 4,
+      "target": 8
+    },
+    {
+      "source": 5,
+      "target": 6
+    },
+    {
+      "source": 5,
+      "target": 7
+    }
+  ]
+}

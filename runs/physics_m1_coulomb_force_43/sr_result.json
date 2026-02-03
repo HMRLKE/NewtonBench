@@ -1,0 +1,6 @@
+{
+  "equation": "-distance + distance + (q1 + q1)/(distance*((distance/(q2*(distance**(-1.0))))))",
+  "sympy_expr": "-distance + distance + (q1 + q1)/(distance*((distance/(q2*(distance**(-1.0))))))",
+  "score": "9.019060132339844",
+  "complexity": "17"
+}

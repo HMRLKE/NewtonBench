@@ -1,0 +1,70 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {
+    "equation": "c*(delta_T*m)**2.5"
+  },
+  "nodes": [
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 0
+    },
+    {
+      "label": "c",
+      "type": "variable",
+      "id": 1
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 2
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 3
+    },
+    {
+      "label": "delta_T",
+      "type": "variable",
+      "id": 4
+    },
+    {
+      "label": "m",
+      "type": "variable",
+      "id": 5
+    },
+    {
+      "label": "2.5",
+      "type": "number",
+      "id": 6
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1
+    },
+    {
+      "source": 0,
+      "target": 2
+    },
+    {
+      "source": 2,
+      "target": 3
+    },
+    {
+      "source": 2,
+      "target": 6
+    },
+    {
+      "source": 3,
+      "target": 4
+    },
+    {
+      "source": 3,
+      "target": 5
+    }
+  ]
+}

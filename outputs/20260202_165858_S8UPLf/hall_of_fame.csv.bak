@@ -1,0 +1,9 @@
+Complexity,Loss,Equation
+1,1.2421739e11,"279077.34"
+3,5.5923716e10,"delta_T * 71663.16"
+4,3.7823517e10,"square(delta_T * -101.205185)"
+5,3.415336e10,"(delta_T * c) ^ 1.5393404"
+6,2.4158767e10,"(m * 1849.1202) * square(delta_T)"
+8,2.7736276e9,"c * ((m / 0.3589542) * square(delta_T))"
+9,0.0014192791,"(square(delta_T) * (m * c)) * sqrt(delta_T)"
+14,0.0005495455,"(delta_T * sqrt(delta_T * (((c * delta_T) * delta_T) * c))) * m"

@@ -1,0 +1,7 @@
+{
+  "equation": "-1*0.6072488 + 6.1494923/(-1*(-0.06798192) + 6.873504/(incidence_angle*(refractive_index_1*1.3598636/refractive_index_2)**1.1980083))",
+  "sympy_expr": "-1*0.6072488 + 6.1494923/(-1*(-0.06798192) + 6.873504/(incidence_angle*(refractive_index_1*1.3598636/refractive_index_2)**1.1980083))",
+  "loss": 6.7278843,
+  "score": 1.3928641910297497,
+  "complexity": 3
+}

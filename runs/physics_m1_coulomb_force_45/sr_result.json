@@ -1,0 +1,7 @@
+{
+  "equation": "q2**2.9999962*(q1**2/distance**2)*(q1 + q1)",
+  "sympy_expr": "q2**2.9999962*(q1**2/distance**2)*(q1 + q1)",
+  "loss": 47.3613,
+  "score": 11.0888855279386,
+  "complexity": 10
+}

@@ -1,0 +1,13 @@
+Complexity,Loss,Equation
+1,342.49213,"q1"
+3,285.35626,"22.551558 / distance"
+4,47.28614,"q2 / log(distance)"
+5,25.522123,"q2 / (distance + -0.99050003)"
+7,22.457088,"q2 * (0.74348146 / (distance + -1.0080671))"
+8,0.8048822,"q2 * (q1 / (square(distance) + -0.5297039))"
+9,0.05475372,"(q1 * q2) / ((distance + -0.2505098) ^ 2.4635653)"
+10,6.6295734e-6,"((q1 * q2) / square(distance * 0.70715207)) / distance"
+12,1.9511517e-6,"(q1 * q2) / (distance * square(distance + (distance * -1.7071313)))"
+14,1.9437894e-6,"((distance * q1) * q2) / square(distance * (distance + (distance * -1.7071313)))"
+15,6.358891e-10,"(((q1 + 1.8942994e-5) + q1) / ((distance / q2) / (distance ^ -1.0000132))) / distance"
+17,3.7481307e-12,"distance + ((((q1 + q1) / ((distance / q2) / (distance ^ -1.0))) / distance) - distance)"

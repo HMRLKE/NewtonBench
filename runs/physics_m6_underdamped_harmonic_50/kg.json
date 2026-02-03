@@ -1,0 +1,175 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {
+    "equation": "(b_constant*0.5000013*0.50000006/(mass/b_constant) - k_constant)**2/mass**2"
+  },
+  "nodes": [
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 0
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 1
+    },
+    {
+      "label": "+",
+      "type": "operator",
+      "id": 2
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 3
+    },
+    {
+      "label": "b_constant",
+      "type": "variable",
+      "id": 4
+    },
+    {
+      "label": "0.5",
+      "type": "number",
+      "id": 5
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 6
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 7
+    },
+    {
+      "label": "mass",
+      "type": "variable",
+      "id": 8
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 9
+    },
+    {
+      "label": "-1",
+      "type": "number",
+      "id": 10
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 11
+    },
+    {
+      "label": "k_constant",
+      "type": "variable",
+      "id": 12
+    },
+    {
+      "label": "2",
+      "type": "number",
+      "id": 13
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 14
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 15
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1
+    },
+    {
+      "source": 0,
+      "target": 14
+    },
+    {
+      "source": 1,
+      "target": 2
+    },
+    {
+      "source": 1,
+      "target": 13
+    },
+    {
+      "source": 2,
+      "target": 3
+    },
+    {
+      "source": 2,
+      "target": 11
+    },
+    {
+      "source": 3,
+      "target": 4
+    },
+    {
+      "source": 3,
+      "target": 5
+    },
+    {
+      "source": 3,
+      "target": 6
+    },
+    {
+      "source": 6,
+      "target": 7
+    },
+    {
+      "source": 6,
+      "target": 10
+    },
+    {
+      "source": 7,
+      "target": 8
+    },
+    {
+      "source": 7,
+      "target": 9
+    },
+    {
+      "source": 9,
+      "target": 4
+    },
+    {
+      "source": 9,
+      "target": 10
+    },
+    {
+      "source": 11,
+      "target": 10
+    },
+    {
+      "source": 11,
+      "target": 12
+    },
+    {
+      "source": 14,
+      "target": 15
+    },
+    {
+      "source": 14,
+      "target": 10
+    },
+    {
+      "source": 15,
+      "target": 8
+    },
+    {
+      "source": 15,
+      "target": 13
+    }
+  ]
+}

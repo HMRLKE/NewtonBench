@@ -1,0 +1,10 @@
+{
+  "config.json": "dc02fbbbbf65a3f3c68c2282481dfb9251ec57100618c5b9f780ad7840a32104",
+  "dataset_train.csv": "a61695fee988e55455d9d33dba31e851f77ae54fe4a2acc7dd3611ab89e6d818",
+  "dataset_holdout.csv": "279f6dc7609cff01e24dfc9322ae1749782bc510b59db23336676f5d9b3f187e",
+  "sr_result.json": "f6648d1e76e46eb3efee2daef2bce015037c27869e09e8cae74219e4f39200de",
+  "equation.txt": "c595bd27c610a83ffd1f1b6d89fd12666c31ea17afca518b836264be675883db",
+  "experiment.json": "e720194c2bd9b16fad7f616e0e89340d00da9a30dfd3013e83dc36495dd4b3dd",
+  "kg.json": "82bc1c981494d178c9deb6f0f63e52397a6f809bae462d2ae8bf129fb48ed047",
+  "paper.md": "d45fff713357f5610259dfb4c8cb2bd109c2e3ad47a492905cec89f24ad080d0"
+}

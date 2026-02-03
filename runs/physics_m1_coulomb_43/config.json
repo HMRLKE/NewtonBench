@@ -1,0 +1,10 @@
+{
+  "task": "m1_coulomb",
+  "n_samples": 100,
+  "seed": 43,
+  "noise": 0.0,
+  "mode": "physics",
+  "output_dir": "runs",
+  "difficulty": "easy",
+  "law_version": "v0"
+}

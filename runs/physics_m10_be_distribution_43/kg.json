@@ -1,0 +1,141 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {
+    "equation": "-sin(0.16990422*log(omega)/temperature**0.028601112) - 0.46657768"
+  },
+  "nodes": [
+    {
+      "label": "+",
+      "type": "operator",
+      "id": 0
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 1
+    },
+    {
+      "label": "-1",
+      "type": "number",
+      "id": 2
+    },
+    {
+      "label": "sin",
+      "type": "operator",
+      "id": 3
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 4
+    },
+    {
+      "label": "0.17",
+      "type": "number",
+      "id": 5
+    },
+    {
+      "label": "log",
+      "type": "operator",
+      "id": 6
+    },
+    {
+      "label": "omega",
+      "type": "variable",
+      "id": 7
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 8
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 9
+    },
+    {
+      "label": "temperature",
+      "type": "variable",
+      "id": 10
+    },
+    {
+      "label": "0.0286",
+      "type": "number",
+      "id": 11
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 12
+    },
+    {
+      "label": "0.467",
+      "type": "number",
+      "id": 13
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1
+    },
+    {
+      "source": 0,
+      "target": 12
+    },
+    {
+      "source": 1,
+      "target": 2
+    },
+    {
+      "source": 1,
+      "target": 3
+    },
+    {
+      "source": 3,
+      "target": 4
+    },
+    {
+      "source": 4,
+      "target": 5
+    },
+    {
+      "source": 4,
+      "target": 6
+    },
+    {
+      "source": 4,
+      "target": 8
+    },
+    {
+      "source": 6,
+      "target": 7
+    },
+    {
+      "source": 8,
+      "target": 9
+    },
+    {
+      "source": 8,
+      "target": 2
+    },
+    {
+      "source": 9,
+      "target": 10
+    },
+    {
+      "source": 9,
+      "target": 11
+    },
+    {
+      "source": 12,
+      "target": 2
+    },
+    {
+      "source": 12,
+      "target": 13
+    }
+  ]
+}

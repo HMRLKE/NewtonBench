@@ -1,0 +1,13 @@
+{
+  "task": "m9_hooke_law",
+  "n_samples": 300,
+  "seed": 53,
+  "noise": 0.0,
+  "mode": "physics",
+  "output_dir": "runs",
+  "difficulty": "easy",
+  "law_version": "v2",
+  "n_iterations": 2000,
+  "parsimony": 0.1,
+  "gt_eqn_str": "2 * 231.14 * x**3.4"
+}

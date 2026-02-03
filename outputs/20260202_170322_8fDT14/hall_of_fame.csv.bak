@@ -1,0 +1,12 @@
+Complexity,Loss,Equation
+1,36534.027,"133.58105"
+3,20506.06,"13.227152 / lambda_constant"
+4,20485.074,"13.219816 / sin(lambda_constant)"
+5,8830.568,"79.62964 / (t * lambda_constant)"
+6,8793.26,"79.501274 / (t * sin(lambda_constant))"
+7,2446.127,"N0 ^ (0.9897294 / (t ^ lambda_constant))"
+8,1561.5471,"N0 * (exp(t * -1.9943563) ^ lambda_constant)"
+9,1307.8319,"N0 * exp(sin(lambda_constant * -2.0812228) * t)"
+10,300.76862,"N0 * ((exp(t * -2.6345747) * 7.6274676) ^ lambda_constant)"
+11,1.4252076e-6,"N0 * (exp(t * (sqrt(t) * -1.0000082)) ^ lambda_constant)"
+12,1.4251108e-6,"N0 * (exp(sqrt(t * square(t)) * -1.0000082) ^ lambda_constant)"

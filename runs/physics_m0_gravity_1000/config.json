@@ -1,0 +1,10 @@
+{
+  "mode": "physics",
+  "task": "m0_gravity",
+  "n_samples": 200,
+  "seed": 1000,
+  "noise": 0.0,
+  "output_dir": "runs",
+  "difficulty": "easy",
+  "law_version": "v1"
+}

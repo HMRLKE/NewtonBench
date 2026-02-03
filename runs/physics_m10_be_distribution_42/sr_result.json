@@ -1,0 +1,7 @@
+{
+  "equation": "temperature*temperature**2/((omega/95120320000000.0))",
+  "sympy_expr": "temperature*temperature**2/((omega/95120320000000.0))",
+  "loss": 11.909571,
+  "score": 27.578742064593182,
+  "complexity": 8
+}

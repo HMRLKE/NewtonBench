@@ -1,0 +1,7 @@
+{
+  "equation": "sqrt(A)*delta_T*k/d",
+  "sympy_expr": "sqrt(A)*delta_T*k/d",
+  "loss": 2.039909e-12,
+  "score": 29.961245003418448,
+  "complexity": 8
+}

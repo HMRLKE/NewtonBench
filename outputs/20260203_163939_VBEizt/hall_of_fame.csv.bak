@@ -1,0 +1,8 @@
+Complexity,Loss,Equation
+1,0.12896028,"0.17025559"
+3,0.06557024,"distance ^ -2.2829244"
+5,0.030878317,"current1 * (0.19447637 ^ distance)"
+6,0.023730526,"square((0.22552903 ^ distance) * current2)"
+7,0.00469972,"((0.05238486 ^ distance) * current2) * current1"
+8,0.0031915077,"(log(current2) * (0.14699492 ^ distance)) * current1"
+9,9.6166915e-11,"((distance ^ -3.0001261) * 0.04780117) * (current1 * current2)"

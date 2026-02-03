@@ -1,0 +1,13 @@
+{
+  "task": "m2_magnetic_force",
+  "n_samples": 300,
+  "seed": 46,
+  "noise": 0.0,
+  "mode": "physics",
+  "output_dir": "runs",
+  "difficulty": "easy",
+  "law_version": "v0",
+  "n_iterations": 2000,
+  "parsimony": 0.1,
+  "gt_eqn_str": "(2.0 * current1 * current2) / distance"
+}

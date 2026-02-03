@@ -1,0 +1,7 @@
+{
+  "equation": "(b_constant*0.5000013*0.50000006/(mass/b_constant) - k_constant)**2/mass**2",
+  "sympy_expr": "(b_constant*0.5000013*0.50000006/(mass/b_constant) - k_constant)**2/mass**2",
+  "loss": 1.9095305e-09,
+  "score": 14.634222778174841,
+  "complexity": 11
+}

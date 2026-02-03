@@ -1,0 +1,13 @@
+Complexity,Loss,Equation
+1,0.014377466,"0.4366832"
+3,0.010636602,"omega ^ -0.024153596"
+5,0.007502822,"cos(log(omega) * 0.03226702)"
+6,0.007472626,"cos(log(sqrt(omega ^ 0.064887345)))"
+7,0.006823346,"sin(cos((omega ^ 0.037507936) * 0.29934233))"
+8,0.00622872,"log(((omega / temperature) ^ -0.032592967) * 3.913302)"
+9,0.00600818,"sin(log(((omega / temperature) ^ -0.033880893) * 4.1370144))"
+10,0.0055510295,"sin(sin(log(((omega / temperature) ^ -0.043260816) * 5.52942)))"
+11,0.005100427,"sin(sin(sin(log(((omega / temperature) ^ -0.050394975) * 6.983088))))"
+12,0.0038501963,"square(sin(sin(sin(log(((omega / temperature) ^ -0.088570535) * 1.4261899)))))"
+14,0.003593981,"sin(sin(sin(square(sin(sin(log(((omega / temperature) ^ -0.088570535) * 1.4261899)))))))"
+15,0.0033568698,"sin(sin(sin(square(sin(sin(log(sin(((omega / temperature) ^ -0.09525873) * 1.7227516))))))))"

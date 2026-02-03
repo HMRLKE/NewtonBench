@@ -1,0 +1,6 @@
+{
+  "equation": "exp((-1*0.41942924 + 3.543341/distance)**2)",
+  "sympy_expr": "exp((-1*0.41942924 + 3.543341/distance)**2)",
+  "score": "1.3074648821366919",
+  "complexity": "25"
+}

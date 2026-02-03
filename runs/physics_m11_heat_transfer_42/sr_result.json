@@ -1,0 +1,7 @@
+{
+  "equation": "c*(delta_T*m)**2.5",
+  "sympy_expr": "c*(delta_T*m)**2.5",
+  "loss": "0.16632605",
+  "score": "15.175744962043261",
+  "complexity": "7"
+}

@@ -1,0 +1,10 @@
+Complexity,Loss,Equation
+1,4.2273423e9,"26646.596"
+3,3.7184737e9,"q1 * 5888.427"
+4,3.4997396e9,"exp(q2) * q1"
+5,2.3931067e9,"(q1 * q2) ^ 2.7503173"
+7,8.28115e8,"square(q1 * square(q2)) / distance"
+8,2.4016488e8,"square(((q2 / distance) * 11.226079) * q1)"
+9,1.9172733e8,"square((q1 * (-23.590078 - square(q2))) / distance)"
+10,2.819868e7,"square((15.197698 / distance) * ((q1 * q2) + -15.625527))"
+12,7.675144,"(q1 * square(q2 * (q1 / distance))) * (q2 / 0.5000197)"

@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Knowledge Graph Visualization</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style type="text/css">
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; background-color: #fcece8; }
+        h1 { color: #a4303f; }
+        .equation-box { 
+            background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;
+        }
+        .container { display: flex; width: 95%; justify-content: space-around; }
+        .graph-container { width: 45%; background: white; border-radius: 8px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #gt-network, #disc-network { width: 100%; height: 500px; border: 1px solid #ddd; background: #fafafa; }
+        h2 { text-align: center; color: #555; }
+        .legend { text-align: center; margin-bottom: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Equation Knowledge Graph Comparison</h1>
+    <div class="legend">
+        <span style="color: #2B7CE9">Variables</span> | 
+        <span style="color: #FF5555">Operators</span> | 
+        <span style="color: #55FF55">Numbers</span>
+    </div>
+    
+    <div class="container">
+        <div class="graph-container">
+            <h2>Ground Truth (Hidden Law)</h2>
+            <div class="equation-box">
+                $$ \frac{6.674 \cdot 10^{-5} mass_{1}}{distance^{2}} $$
+                <small style="color:gray">(6.674e-05 * mass1) / (distance**2)</small>
+            </div>
+            <div id="gt-network"></div>
+        </div>
+        
+        <div class="graph-container">
+            <h2>Discovered Law (Explored)</h2>
+             <div class="equation-box">
+                $$ \frac{6.67400035260078 \cdot 10^{-5} {0.5182665}^{9.3995548 \cdot 10^{-11} mass_{2}} mass_{1}}{distance^{2}} $$
+                <small style="color:gray">0.0014036581*mass1/((21.0317354786026*distance**2/0.5182665**(9.3995548e-11*mass2)))</small>
+            </div>
+            <div id="disc-network"></div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // Common Options
+        var options = {
+            nodes: {
+                shape: 'dot',
+                size: 20,
+                font: { size: 16 }
+            },
+            edges: {
+                width: 2,
+                font: { align: 'middle' },
+                smooth: { type: 'cubicBezier' }
+            },
+            groups: {
+                variable: { color: { background: '#97C2FC', border: '#2B7CE9' } },
+                operator: { color: { background: '#FF9999', border: '#FF5555' } },
+                number: { color: { background: '#99FF99', border: '#55FF55' } }
+            },
+            layout: {
+                hierarchical: {
+                    direction: 'UD',
+                    sortMethod: 'directed',
+                    levelSeparation: 100,
+                    nodeSpacing: 100
+                }
+            },
+            physics: {
+                hierarchicalRepulsion: {
+                    nodeDistance: 120
+                }
+            }
+        };
+
+        // Ground Truth Graph
+        var gtNodes = new vis.DataSet([{"id": 0, "label": "*", "group": "operator"}, {"id": 1, "label": "6.67400000000000e-5", "group": "number"}, {"id": 2, "label": "mass1", "group": "variable"}, {"id": 3, "label": "**", "group": "operator"}, {"id": 4, "label": "distance", "group": "variable"}, {"id": 5, "label": "-2", "group": "number"}]);
+        var gtEdges = new vis.DataSet([{"from": 0, "to": 1, "arrows": "to"}, {"from": 0, "to": 2, "arrows": "to"}, {"from": 0, "to": 3, "arrows": "to"}, {"from": 3, "to": 4, "arrows": "to"}, {"from": 3, "to": 5, "arrows": "to"}]);
+        var gtContainer = document.getElementById('gt-network');
+        var gtData = { nodes: gtNodes, edges: gtEdges };
+        var gtNetwork = new vis.Network(gtContainer, gtData, options);
+
+        // Discovered Graph
+        var discNodes = new vis.DataSet([{"id": 0, "label": "*", "group": "operator"}, {"id": 1, "label": "6.67400035260078e-5", "group": "number"}, {"id": 2, "label": "mass1", "group": "variable"}, {"id": 3, "label": "**", "group": "operator"}, {"id": 4, "label": "0.518266500000000", "group": "number"}, {"id": 5, "label": "*", "group": "operator"}, {"id": 6, "label": "9.39955480000000e-11", "group": "number"}, {"id": 7, "label": "mass2", "group": "variable"}, {"id": 8, "label": "**", "group": "operator"}, {"id": 9, "label": "distance", "group": "variable"}, {"id": 10, "label": "-2", "group": "number"}]);
+        var discEdges = new vis.DataSet([{"from": 0, "to": 1, "arrows": "to"}, {"from": 0, "to": 2, "arrows": "to"}, {"from": 0, "to": 3, "arrows": "to"}, {"from": 0, "to": 8, "arrows": "to"}, {"from": 3, "to": 4, "arrows": "to"}, {"from": 3, "to": 5, "arrows": "to"}, {"from": 5, "to": 6, "arrows": "to"}, {"from": 5, "to": 7, "arrows": "to"}, {"from": 8, "to": 9, "arrows": "to"}, {"from": 8, "to": 10, "arrows": "to"}]);
+        var discContainer = document.getElementById('disc-network');
+        var discData = { nodes: discNodes, edges: discEdges };
+        var discNetwork = new vis.Network(discContainer, discData, options);
+    </script>
+</body>
+</html>
+    

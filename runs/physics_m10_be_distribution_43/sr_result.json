@@ -1,0 +1,7 @@
+{
+  "equation": "-sin(0.16990422*log(omega)/temperature**0.028601112) - 0.46657768",
+  "sympy_expr": "-sin(0.16990422*log(omega)/temperature**0.028601112) - 0.46657768",
+  "loss": 0.001420156,
+  "score": 0.9646352655632017,
+  "complexity": 11
+}

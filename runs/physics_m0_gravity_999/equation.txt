@@ -1,0 +1,1 @@
+(-distance + mass1)*(0.0014261389*mass2*(-distance + mass2 + 713.4688) - 0.0014261389*log(mass2))/distance

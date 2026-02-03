@@ -1,0 +1,1 @@
+delta_T*m*sqrt(c**2*delta_T**3)

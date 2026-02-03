@@ -1,0 +1,1 @@
+0.04780117*current1*current2/distance**3.0001261

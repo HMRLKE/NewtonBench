@@ -1,0 +1,13 @@
+{
+  "task": "m1_coulomb_force",
+  "n_samples": 300,
+  "seed": 45,
+  "noise": 0.0,
+  "mode": "physics",
+  "output_dir": "runs",
+  "difficulty": "easy",
+  "law_version": "v1",
+  "n_iterations": 2000,
+  "parsimony": 0.1,
+  "gt_eqn_str": "(2.0 * (q1 * q2)**3) / (distance**2)"
+}

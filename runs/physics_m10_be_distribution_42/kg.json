@@ -1,0 +1,105 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {
+    "equation": "temperature*temperature**2/((omega/95120320000000.0))"
+  },
+  "nodes": [
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 0
+    },
+    {
+      "label": "temperature",
+      "type": "variable",
+      "id": 1
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 2
+    },
+    {
+      "label": "2",
+      "type": "number",
+      "id": 3
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 4
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 5
+    },
+    {
+      "label": "omega",
+      "type": "variable",
+      "id": 6
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 7
+    },
+    {
+      "label": "9.51e+13",
+      "type": "number",
+      "id": 8
+    },
+    {
+      "label": "-1",
+      "type": "number",
+      "id": 9
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1
+    },
+    {
+      "source": 0,
+      "target": 2
+    },
+    {
+      "source": 0,
+      "target": 4
+    },
+    {
+      "source": 2,
+      "target": 1
+    },
+    {
+      "source": 2,
+      "target": 3
+    },
+    {
+      "source": 4,
+      "target": 5
+    },
+    {
+      "source": 4,
+      "target": 9
+    },
+    {
+      "source": 5,
+      "target": 6
+    },
+    {
+      "source": 5,
+      "target": 7
+    },
+    {
+      "source": 7,
+      "target": 8
+    },
+    {
+      "source": 7,
+      "target": 9
+    }
+  ]
+}

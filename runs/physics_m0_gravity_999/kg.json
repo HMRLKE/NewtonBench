@@ -1,0 +1,214 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {
+    "equation": "(-distance + mass1)*(0.0014261389*mass2*(-distance + mass2 + 713.4688) - 0.0014261389*log(mass2))/distance"
+  },
+  "nodes": [
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 0
+    },
+    {
+      "label": "**",
+      "type": "operator",
+      "id": 1
+    },
+    {
+      "label": "distance",
+      "type": "variable",
+      "id": 2
+    },
+    {
+      "label": "-1",
+      "type": "number",
+      "id": 3
+    },
+    {
+      "label": "+",
+      "type": "operator",
+      "id": 4
+    },
+    {
+      "label": "mass1",
+      "type": "variable",
+      "id": 5
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 6
+    },
+    {
+      "label": "-1",
+      "type": "number",
+      "id": 7
+    },
+    {
+      "label": "distance",
+      "type": "variable",
+      "id": 8
+    },
+    {
+      "label": "+",
+      "type": "operator",
+      "id": 9
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 10
+    },
+    {
+      "label": "-0.00142613890000000",
+      "type": "number",
+      "id": 11
+    },
+    {
+      "label": "log",
+      "type": "operator",
+      "id": 12
+    },
+    {
+      "label": "mass2",
+      "type": "variable",
+      "id": 13
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 14
+    },
+    {
+      "label": "0.00142613890000000",
+      "type": "number",
+      "id": 15
+    },
+    {
+      "label": "mass2",
+      "type": "variable",
+      "id": 16
+    },
+    {
+      "label": "+",
+      "type": "operator",
+      "id": 17
+    },
+    {
+      "label": "713.468800000000",
+      "type": "number",
+      "id": 18
+    },
+    {
+      "label": "mass2",
+      "type": "variable",
+      "id": 19
+    },
+    {
+      "label": "*",
+      "type": "operator",
+      "id": 20
+    },
+    {
+      "label": "-1",
+      "type": "number",
+      "id": 21
+    },
+    {
+      "label": "distance",
+      "type": "variable",
+      "id": 22
+    }
+  ],
+  "edges": [
+    {
+      "source": 0,
+      "target": 1
+    },
+    {
+      "source": 0,
+      "target": 4
+    },
+    {
+      "source": 0,
+      "target": 9
+    },
+    {
+      "source": 1,
+      "target": 2
+    },
+    {
+      "source": 1,
+      "target": 3
+    },
+    {
+      "source": 4,
+      "target": 5
+    },
+    {
+      "source": 4,
+      "target": 6
+    },
+    {
+      "source": 6,
+      "target": 7
+    },
+    {
+      "source": 6,
+      "target": 8
+    },
+    {
+      "source": 9,
+      "target": 10
+    },
+    {
+      "source": 9,
+      "target": 14
+    },
+    {
+      "source": 10,
+      "target": 11
+    },
+    {
+      "source": 10,
+      "target": 12
+    },
+    {
+      "source": 12,
+      "target": 13
+    },
+    {
+      "source": 14,
+      "target": 15
+    },
+    {
+      "source": 14,
+      "target": 16
+    },
+    {
+      "source": 14,
+      "target": 17
+    },
+    {
+      "source": 17,
+      "target": 18
+    },
+    {
+      "source": 17,
+      "target": 19
+    },
+    {
+      "source": 17,
+      "target": 20
+    },
+    {
+      "source": 20,
+      "target": 21
+    },
+    {
+      "source": 20,
+      "target": 22
+    }
+  ]
+}
