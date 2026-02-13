@@ -5,6 +5,8 @@ import importlib
 import json
 import glob
 import time
+import signal
+from datetime import datetime
 from typing import Tuple, List, Dict, Optional
 from collections import defaultdict
 
@@ -178,6 +180,8 @@ def main():
                       help="Model system selected to test the agent: vanilla_equation, simple_system, complex_system")
     parser.add_argument("-b", "--agent_backend", type=str, default="vanilla_agent", choices=["vanilla_agent", "code_assisted_agent"],
                       help="Agent backend to use for exploration. Default is vanilla_agent. When code_assisted_agent is selected, LLM is equipped with <python> tool use.")
+    parser.add_argument("--dashboard", action="store_true", help="Enable real-time dashboard updates.")
+    parser.add_argument("--reset_dashboard", action="store_true", help="Clear existing dashboard data before running.")
     
     # Resume and control options
     parser.add_argument("--force_rerun", action="store_true", 
@@ -328,92 +332,103 @@ def main():
     if not execution_plan:
         print("\n🎉 All configurations are complete! Nothing to execute.")
         return
-    
-    # Prompt for confirmation
-    if not args.no_prompt:
-        print(f"\n📋 EXECUTION PLAN:")
-        print(f"Will execute {len(execution_plan)} configurations")
-        total_trials_needed = sum(config['trials_needed'] for config in execution_plan)
-        print(f"Total trials to execute: {total_trials_needed}")
-        
-        response = input("\nProceed with execution? [y/N]: ").strip().lower()
-        if response not in ['y', 'yes']:
-            print("Execution cancelled.")
-            return
-    
     # Execute experiments
     print("\n" + "="*80)
     print("STARTING EXPERIMENT EXECUTION")
     print("="*80)
     
+    # Start Dashboard Server if enabled
+    dashboard_server = None
+    if args.dashboard:
+        print("\n--- Starting Human Eval Dashboard Server ---")
+        dashboard_server = subprocess.Popen(
+            ["python", "mini_scientist/server.py", "--port", "8000"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        print("Dashboard serving at http://localhost:8000/mini_scientist/dashboard/index.html")
+        time.sleep(2) # Give server a moment to start
+
     executed_count = 0
     failed_executions = []
     start_time = time.time()
     
-    for i, config in enumerate(execution_plan):
-        print(f"\n[{i+1}/{len(execution_plan)}] Executing: {config['config_name']}")
-        print(f"Status: {config['status'].upper()}, Trials needed: {config['trials_needed']}")
+    try:
+        for i, config in enumerate(execution_plan):
+            print(f"\n[{i+1}/{len(execution_plan)}] Executing: {config['config_name']}")
+            print(f"Status: {config['status'].upper()}, Trials needed: {config['trials_needed']}")
+            
+            command = [
+                "python", "run_experiments.py",
+                "--module", config['module'],
+                "--equation_difficulty", config['equation_difficulty'],
+                "--model_system", config['model_system'],
+                "--law_version", str(config['law_version']) if config['law_version'] is not None else "None",
+                "--trials", str(config['trials_needed']),
+                "--model_name", args.model_name,
+                "--agent_backend", args.agent_backend,
+                "--noise", str(config['noise_level'])
+            ]
+            
+            if args.dashboard:
+                command.append("--dashboard")
+    
+            print(f"Command: {' '.join(command)}")
+            
+            try:
+                subprocess.run(command, check=True)
+                executed_count += 1
+                print(f"✓ SUCCESS: {config['config_name']}")
+            except subprocess.CalledProcessError as e:
+                failed_executions.append({
+                    'config': config,
+                    'error': str(e),
+                    'return_code': e.returncode,
+                    'stdout': e.stdout,
+                    'stderr': e.stderr
+                })
+                print(f"✗ FAILED: {config['config_name']}")
+                print(f"  Return code: {e.returncode}")
+                print(f"  Error: {e.stderr[:200]}{'...' if len(e.stderr) > 200 else ''}")
+                print("  Continuing with next configuration...")
+            except KeyboardInterrupt:
+                print(f"\n\n⚠ INTERRUPTED: Execution stopped by user")
+                print(f"Progress: {executed_count}/{len(execution_plan)} configurations completed")
+                break
+            
+            # Progress update
+            elapsed = time.time() - start_time
+            if i > 0:
+                avg_time = elapsed / (i + 1)
+                remaining_time = avg_time * (len(execution_plan) - i - 1)
+                print(f"Progress: {i+1}/{len(execution_plan)} ({(i+1)/len(execution_plan)*100:.1f}%), "
+                      f"ETA: {remaining_time/60:.1f} min")
         
-        command = [
-            "python", "run_experiments.py",
-            "--module", config['module'],
-            "--equation_difficulty", config['equation_difficulty'],
-            "--model_system", config['model_system'],
-            "--law_version", config['law_version'] if config['law_version'] is not None else "None",
-            "--trials", str(config['trials_needed']),
-            "--model_name", args.model_name,
-            "--agent_backend", args.agent_backend,
-            "--noise", str(config['noise_level'])
-        ]
-
-        print(f"Command: {' '.join(command)}")
+        # Final summary
+        end_time = time.time()
+        total_time = end_time - start_time
         
-        try:
-            subprocess.run(command, check=True)
-            executed_count += 1
-            print(f"✓ SUCCESS: {config['config_name']}")
-        except subprocess.CalledProcessError as e:
-            failed_executions.append({
-                'config': config,
-                'error': str(e),
-                'return_code': e.returncode,
-                'stdout': e.stdout,
-                'stderr': e.stderr
-            })
-            print(f"✗ FAILED: {config['config_name']}")
-            print(f"  Return code: {e.returncode}")
-            print(f"  Error: {e.stderr[:200]}{'...' if len(e.stderr) > 200 else ''}")
-            print("  Continuing with next configuration...")
-        except KeyboardInterrupt:
-            print(f"\n\n⚠ INTERRUPTED: Execution stopped by user")
-            print(f"Progress: {executed_count}/{len(execution_plan)} configurations completed")
-            break
+        print("\n" + "="*80)
+        print("EXECUTION SUMMARY")
+        print("="*80)
+        print(f"✓ Successful: {executed_count}/{len(execution_plan)} configurations")
+        print(f"✗ Failed: {len(failed_executions)} configurations")
+        print(f"⏱ Total time: {total_time/60:.1f} minutes")
         
-        # Progress update
-        elapsed = time.time() - start_time
-        if i > 0:
-            avg_time = elapsed / (i + 1)
-            remaining_time = avg_time * (len(execution_plan) - i - 1)
-            print(f"Progress: {i+1}/{len(execution_plan)} ({(i+1)/len(execution_plan)*100:.1f}%), "
-                  f"ETA: {remaining_time/60:.1f} min")
-    
-    # Final summary
-    end_time = time.time()
-    total_time = end_time - start_time
-    
-    print("\n" + "="*80)
-    print("EXECUTION SUMMARY")
-    print("="*80)
-    print(f"✓ Successful: {executed_count}/{len(execution_plan)} configurations")
-    print(f"✗ Failed: {len(failed_executions)} configurations")
-    print(f"⏱ Total time: {total_time/60:.1f} minutes")
-    
-    if failed_executions:
-        print(f"\n❌ FAILED CONFIGURATIONS:")
-        for failure in failed_executions:
-            print(f"  - {failure['config']['config_name']}: {failure['error']}")
-    
-    print("\n🏁 Evaluation run finished.")
+        if failed_executions:
+            print(f"\n❌ FAILED CONFIGURATIONS:")
+            for failure in failed_executions:
+                print(f"  - {failure['config']['config_name']}: {failure['error']}")
+        
+        print("\n🏁 Evaluation run finished.")
+    finally:
+        # Cleanup Dashboard Server
+        if dashboard_server:
+            print("\nShutting down Dashboard Server...")
+            if os.name == 'nt':
+                subprocess.run(['taskkill', '/F', '/T', '/PID', str(dashboard_server.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                dashboard_server.terminate()
 
 if __name__ == "__main__":
     try:

@@ -262,6 +262,17 @@ If you use NewtonBench in your research, please cite our paper:
 }
 ```
 
+
+---
+## 🛠️ Recent Modifications (February 2026)
+We have introduced significant enhancements to the NewtonBench framework to support automated scientific discovery:
+
+- **Mini AI Scientist Loop**: Implemented a complete end-to-end discovery loop (`mini_scientist`) that automates data collection, symbolic regression using PySR, and automated paper generation.
+- **Enhanced Metrics**: Integrated advanced evaluation metrics including **Symbolic Accuracy** (via SymPy), **RMSE**, and **RMSLE** to better quantify law discovery performance.
+- **Knowledge Graph (KG) Optimizations**: Refined the KG construction logic to handle complex operators and improve the success rate of discovering physical laws.
+- **Improved Dashboard**: Enhanced the dashboard for better visualization of experimental results and discovery metrics.
+- **Performance Improvements**: Optimized PySR parameters and KG generation for more reliable identification of canonical physical laws.
+
 ---
 ## Contacts
 

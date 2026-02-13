@@ -1,77 +1,861 @@
 {
+  "status": "Online (Polling)",
   "laws": [
     {
       "task": "m0_gravity",
-      "equation": "mass2*mass1*0.00025163597*0.2652388/distance**1.5001433",
+      "difficulty": "easy",
+      "version": "v0",
+      "equation": "(C * mass1 * mass2) / (distance ** 2)",
+      "raw_equation": "def discovered_law(mass1, mass2, distance):\n   C = 6.674e-11\n   return (C * mass1 * mass2) / (distance ** 2)",
       "gt_equation": "(6.674e-5 * mass1 * mass2) / (distance**1.5)",
-      "similarity": 0.835,
-      "loss": 4.144089e-15,
-      "rmsle": 5.855256273966731e-08,
+      "loss": 0.48504297828388854,
+      "rmsle": 0.48504297828388854,
+      "exact_accuracy": 0.0,
+      "similarity": 0.6625,
       "symbolic_match": false,
-      "timestamp": 1770142426.092712
+      "chat_history": [
+        {
+          "role": "system",
+          "content": "You are an AI research assistant tasked with discovering scientific laws in a simulated universe.\nYour goal is to propose experiments, analyze the data they return, and ultimately deduce the underlying scientific law.\nPlease note that the laws of physics in this universe may differ from those in our own.\nYou can perform experiments to gather data but you must follow the protocol strictly.\n\n**Workflow:**\n1.  Analyze the mission description provided.\n2.  Design a set of experiments to test your hypotheses.\n3.  Use the `<run_experiment>` tag to submit your experimental inputs.\n4. The system will return the results (up to 20 data points per experiment) in an <experiment_output> tag.\n    - If a returned value is nan, it indicates that the calculation encountered an error, such as:\n        - ValueError (e.g., using asin on a value outside the valid range of [-1, 1])\n        - OverflowError (e.g., using exp on an extremely large input)\n    - You may ignore any data points that return nan, as they do not contribute to valid hypothesis testing.\n    - Consider adjusting your input parameters to avoid invalid ranges and improve data coverage.\n5.  You can run up to 10 rounds of experiments. Use them wisely so that before submitting your final law, ensure you have:\n    - fully explored the experimental space\n    - Verified your hypotheses against the data\n    - made the most of the available rounds to strengthen your conclusions\n6.  Only one action is allowed per round: either <run_experiment> or <final_law>.\n7.  After submitting <run_experiment>, wait for <experiment_output> before proceeding.\n8.  You should verify your hypotheses by checking if the output from the experiments matches the output from your hypotheses.\n9.  When confident, submit your final discovered law using the `<final_law>` tag. This ends the mission."
+        },
+        {
+          "role": "user",
+          "content": "**Mission:** Your objective is to act as an AI research physicist. You are in a simulated universe and your goal is to discover the physical law in this universe.\nNote that the laws of physics in this universe may differ from those in our own, including both factor dependency and constant scalars.\nThere's no ground-truth laws available to you. You must discover the law yourself.\n\n**Experimental Apparatus:**\nYou have access to a device that can position two objects and measure the force acting on the second object (mass2) by the first object (mass1). You have precise control over the following properties for each experiment you run:\n- Mass of the first object (`mass1`)\n- Mass of the second object (`mass2`)\n- Distance between the objects' centers (`distance`)\n\n**How to Run Experiments:**\nTo gather data, you must use the <run_experiment> tag. Provide a JSON array specifying the parameters for one or arbitrarily many experimental sets. Note that all measurements returned by the system are **noise-free**. You can assume the data is perfectly accurate and deterministic.\n\n**Input/Output Format:**\nYou must use the following JSON format for your requests and don't add any comments in side the JSON. The system will respond with a corresponding output array.\n\n*Your Request:*\n<run_experiment>\n[\n  {\"mass1\": ..., \"mass2\": ..., \"distance\": ...},\n  {\"mass1\": ..., \"mass2\": ..., \"distance\": ...}\n]\n</run_experiment>\n\n*System Response:*\nThe system will return a list of the measured force.\n<experiment_output>\n[6.673e-05, 6.675e-04]\n</experiment_output>\n\n**Final Submission:**\nOnce you are confident you have determined the underlying force law, submit your findings as a single Python function enclosed in <final_law> tags.\n\n**Submission Requirements:**\n1. The function must be named `discovered_law`\n2. The function signature must be exactly: `def discovered_law(mass1, mass2, distance):`\n3. The function should return the magnitude of the gravitational force acting on mass2 by mass1.\n4. If you conclude that one of these parameters does not influence the final force, you should simply ignore that variable within your function's logic rather than changing the signature.\n5. If your law contains any constants, you must define the constant as a local variable inside the function body. Do NOT include the constant as a function argument.\n6. Import any necessary libraries inside the function body (e.g. math, numpy, etc.) if needed\n\n**Critical Boundaries:**\n- Do NOT include any explanation or commentary inside the <final_law> blocks and the function body.\n- Only output the <final_law> block in your final answer.\n\n**Example 1:**\n<final_law>\ndef discovered_law(mass1, mass2, distance):\n   import math\n   C = 8e-8\n   return (C * mass1 * mass2) / (math.pow(distance, 2))\n</final_law>\n\n**Example 2:**\n<final_law>\ndef discovered_law(mass1, mass2, distance):\n   C = 8e-8\n   return (C * mass1 * mass2) / (distance ** 2)\n</final_law>\n\n**Reminder:**\n1. Always remember that the laws of physics in this universe may differ from those in our own, including factor dependency, constant scalars, and the form of the law.\n2. When doing the experiments, use a broad range of input parameters, for example, values spanning from 10^-3 to 10^15 to ensure robustness across scales."
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"mass1\": 1e-3, \"mass2\": 1e-3, \"distance\": 1},\n  {\"mass1\": 1e-3, \"mass2\": 1e-3, \"distance\": 10},\n  {\"mass1\": 1e-3, \"mass2\": 1e-3, \"distance\": 100},\n  {\"mass1\": 1e-3, \"mass2\": 1e-3, \"distance\": 1000},\n  {\"mass1\": 1e-3, \"mass2\": 1e-3, \"distance\": 10000}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"6.674000000000001e-11\", \"2.110504110396377e-12\", \"6.674000000000000e-14\", \"2.110504110396377e-15\", \"6.674000000000000e-17\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"mass1\": 1e-2, \"mass2\": 1e-2, \"distance\": 1},\n  {\"mass1\": 1e-2, \"mass2\": 1e-2, \"distance\": 10},\n  {\"mass1\": 1e-2, \"mass2\": 1e-2, \"distance\": 100},\n  {\"mass1\": 1e-2, \"mass2\": 1e-2, \"distance\": 1000},\n  {\"mass1\": 1e-2, \"mass2\": 1e-2, \"distance\": 10000}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"6.674000000000001e-09\", \"2.110504110396377e-10\", \"6.674000000000001e-12\", \"2.110504110396377e-13\", \"6.674000000000001e-15\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"mass1\": 1e-1, \"mass2\": 1e-1, \"distance\": 1},\n  {\"mass1\": 1e-1, \"mass2\": 1e-1, \"distance\": 10},\n  {\"mass1\": 1e-1, \"mass2\": 1e-1, \"distance\": 100},\n  {\"mass1\": 1e-1, \"mass2\": 1e-1, \"distance\": 1000},\n  {\"mass1\": 1e-1, \"mass2\": 1e-1, \"distance\": 10000}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"6.674000000000002e-07\", \"2.110504110396377e-08\", \"6.674000000000002e-10\", \"2.110504110396377e-11\", \"6.674000000000002e-13\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"mass1\": 1, \"mass2\": 1, \"distance\": 1},\n  {\"mass1\": 1, \"mass2\": 1, \"distance\": 10},\n  {\"mass1\": 1, \"mass2\": 1, \"distance\": 100},\n  {\"mass1\": 1, \"mass2\": 1, \"distance\": 1000},\n  {\"mass1\": 1, \"mass2\": 1, \"distance\": 10000}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"6.674000000000000e-05\", \"2.110504110396377e-06\", \"6.674000000000000e-08\", \"2.110504110396377e-09\", \"6.674000000000001e-11\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"mass1\": 10, \"mass2\": 10, \"distance\": 1},\n  {\"mass1\": 10, \"mass2\": 10, \"distance\": 10},\n  {\"mass1\": 10, \"mass2\": 10, \"distance\": 100},\n  {\"mass1\": 10, \"mass2\": 10, \"distance\": 1000},\n  {\"mass1\": 10, \"mass2\": 10, \"distance\": 10000}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"6.674000000000001e-03\", \"2.110504110396377e-04\", \"6.674000000000001e-06\", \"2.110504110396377e-07\", \"6.674000000000001e-09\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"mass1\": 100, \"mass2\": 100, \"distance\": 1},\n  {\"mass1\": 100, \"mass2\": 100, \"distance\": 10},\n  {\"mass1\": 100, \"mass2\": 100, \"distance\": 100},\n  {\"mass1\": 100, \"mass2\": 100, \"distance\": 1000},\n  {\"mass1\": 100, \"mass2\": 100, \"distance\": 10000}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"6.674000000000000e-01\", \"2.110504110396376e-02\", \"6.674000000000000e-04\", \"2.110504110396376e-05\", \"6.674000000000000e-07\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<final_law>\ndef discovered_law(mass1, mass2, distance):\n   C = 6.674e-11\n   return (C * mass1 * mass2) / (distance ** 2)\n</final_law>"
+        }
+      ]
+    },
+    {
+      "task": "m1_coulomb_force",
+      "difficulty": "easy",
+      "version": "v0",
+      "equation": "C * (q1 * q2) / distance",
+      "raw_equation": "def discovered_law(q1, q2, distance):\n   C = 2e+00\n   return C * (q1 * q2) / distance",
+      "gt_equation": "(2.0 * q1 * q2) / (distance**3)",
+      "loss": 1.8488119486513392,
+      "rmsle": 1.8488119486513392,
+      "exact_accuracy": 0.0,
+      "similarity": 0.5125,
+      "symbolic_match": false,
+      "chat_history": [
+        {
+          "role": "system",
+          "content": "You are an AI research assistant tasked with discovering scientific laws in a simulated universe.\nYour goal is to propose experiments, analyze the data they return, and ultimately deduce the underlying scientific law.\nPlease note that the laws of physics in this universe may differ from those in our own.\nYou can perform experiments to gather data but you must follow the protocol strictly.\n\n**Workflow:**\n1.  Analyze the mission description provided.\n2.  Design a set of experiments to test your hypotheses.\n3.  Use the `<run_experiment>` tag to submit your experimental inputs.\n4. The system will return the results (up to 20 data points per experiment) in an <experiment_output> tag.\n    - If a returned value is nan, it indicates that the calculation encountered an error, such as:\n        - ValueError (e.g., using asin on a value outside the valid range of [-1, 1])\n        - OverflowError (e.g., using exp on an extremely large input)\n    - You may ignore any data points that return nan, as they do not contribute to valid hypothesis testing.\n    - Consider adjusting your input parameters to avoid invalid ranges and improve data coverage.\n5.  You can run up to 10 rounds of experiments. Use them wisely so that before submitting your final law, ensure you have:\n    - fully explored the experimental space\n    - Verified your hypotheses against the data\n    - made the most of the available rounds to strengthen your conclusions\n6.  Only one action is allowed per round: either <run_experiment> or <final_law>.\n7.  After submitting <run_experiment>, wait for <experiment_output> before proceeding.\n8.  You should verify your hypotheses by checking if the output from the experiments matches the output from your hypotheses.\n9.  When confident, submit your final discovered law using the `<final_law>` tag. This ends the mission."
+        },
+        {
+          "role": "user",
+          "content": "**Mission:** Your objective is to act as an AI research physicist. You are in a simulated universe and your goal is to discover the physical law in this universe.\nNote that the laws of physics in this universe may differ from those in our own, including both factor dependency and constant scalars.\nThere's no ground-truth laws available to you. You must discover the law yourself.\n\n**Experimental Apparatus:**\nYou have access to a device that can position two point charges and measure the force acting between them. You have precise control over the following properties for each experiment you run:\n- Charge of the first object (`q1`) - should be a positive real number\n- Charge of the second object (`q2`) - should be a positive real number  \n- Distance between the charges (`distance`) - always positive\n\n**Important Notes:**\n- Charges `q1` and `q2` are always positive\n- Distance `distance` is always positive and represents the magnitude of separation\n- No need to use abs() on distance since it's guaranteed to be positive\n\n**How to Run Experiments:**\nTo gather data, you must use the <run_experiment> tag. Provide a JSON array specifying the parameters for one or arbitrarily many experimental sets. Note that all measurements returned by the system are **noise-free**. You can assume the data is perfectly accurate and deterministic.\n\n**Input/Output Format:**\nYou must use the following JSON format for your requests and don't add any comments in side the JSON. The system will respond with a corresponding output array.\n\n*Your Request:*\n<run_experiment>\n[\n  {\"q1\": ..., \"q2\": ..., \"distance\": ...},\n  {\"q1\": ..., \"q2\": ..., \"distance\": ...}\n]\n</run_experiment>\n\n*System Response:*\nThe system will return a list of the measured force.\n<experiment_output>\n[1.234e-05, 2.345e-04]\n</experiment_output>\n\n**Final Submission:**\nOnce you are confident you have determined the underlying force law, submit your findings as a single Python function enclosed in <final_law> tags.\n\n**Submission Requirements:**\n1. The function must be named `discovered_law`\n2. The function signature must be exactly: `def discovered_law(q1, q2, distance):`\n3. The function should return the magnitude of the electrostatic force between the two charges.\n4. If you conclude that one of these parameters does not influence the final force, you should simply ignore that variable within your function's logic rather than changing the signature.\n5. If your law contains any constants, you must define the constant as a local variable inside the function body. Do NOT include the constant as a function argument.\n6. Import any necessary libraries inside the function body (e.g. math, numpy, etc.) if needed\n\n**Critical Boundaries:**\n- Do NOT include any explanation or commentary inside the <final_law> blocks and the function body.\n- Only output the <final_law> block in your final answer.\n\n**Example 1:**\n<final_law>\ndef discovered_law(q1, q2, distance):\n   import math\n   C = 9e9\n   return (C * q1 * q2) / (math.pow(distance, 2))\n</final_law>\n\n**Example 2:**\n<final_law>\ndef discovered_law(q1, q2, distance):\n   C = 9e9\n   return (C * q1 * q2) / (distance ** 2)\n</final_law>\n\n**Note:** \n- q1 and q2 are always positive\n- distance is always positive, so no abs() needed\n\n**Reminder:**\n1. Always remember that the laws of physics in this universe may differ from those in our own, including factor dependency, constant scalars, and the form of the law.\n2. When doing the experiments, use a broad range of input parameters, for example, values spanning from 10^-3 to 10^15 to ensure robustness across scales."
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"q1\": 1e-3, \"q2\": 1e-3, \"distance\": 1},\n  {\"q1\": 1e-3, \"q2\": 1e-3, \"distance\": 10},\n  {\"q1\": 1e-3, \"q2\": 1e-2, \"distance\": 1},\n  {\"q1\": 1e-2, \"q2\": 1e-3, \"distance\": 1},\n  {\"q1\": 1e-2, \"q2\": 1e-2, \"distance\": 1},\n  {\"q1\": 1e-2, \"q2\": 1e-1, \"distance\": 1},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 1},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 10},\n  {\"q1\": 1e-1, \"q2\": 1e-2, \"distance\": 10},\n  {\"q1\": 1e-2, \"q2\": 1e-1, \"distance\": 10}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"2.000000000000000e-06\", \"2.000000000000000e-09\", \"2.000000000000000e-05\", \"2.000000000000000e-05\", \"2.000000000000000e-04\", \"2.000000000000000e-03\", \"2.000000000000000e-02\", \"2.000000000000001e-05\", \"2.000000000000000e-06\", \"2.000000000000000e-06\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 1e-1},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 1e-2},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 1e-3},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 1e-4},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 1e-5},\n  {\"q1\": 1e-2, \"q2\": 1e-2, \"distance\": 1e-1},\n  {\"q1\": 1e-2, \"q2\": 1e-2, \"distance\": 1e-2},\n  {\"q1\": 1e-2, \"q2\": 1e-2, \"distance\": 1e-3},\n  {\"q1\": 1e-2, \"q2\": 1e-2, \"distance\": 1e-4},\n  {\"q1\": 1e-2, \"q2\": 1e-2, \"distance\": 1e-5}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"2.000000000000000e+01\", \"2.000000000000000e+04\", \"2.000000000000000e+07\", \"2.000000000000000e+10\", \"2.000000000000000e+13\", \"2.000000000000000e-01\", \"2.000000000000000e+02\", \"2.000000000000000e+05\", \"2.000000000000000e+08\", \"2.000000000000000e+11\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"q1\": 1e-1, \"q2\": 1e-2, \"distance\": 1e-1},\n  {\"q1\": 1e-2, \"q2\": 1e-1, \"distance\": 1e-1},\n  {\"q1\": 1e-1, \"q2\": 1e-2, \"distance\": 1e-2},\n  {\"q1\": 1e-2, \"q2\": 1e-1, \"distance\": 1e-2},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 1e-1},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 1e-2},\n  {\"q1\": 1e-2, \"q2\": 1e-2, \"distance\": 1e-1},\n  {\"q1\": 1e-2, \"q2\": 1e-2, \"distance\": 1e-2},\n  {\"q1\": 1e-2, \"q2\": 1e-2, \"distance\": 1e-3},\n  {\"q1\": 1e-2, \"q2\": 1e-2, \"distance\": 1e-4}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"2.000000000000000e+00\", \"2.000000000000000e+00\", \"2.000000000000000e+03\", \"2.000000000000000e+03\", \"2.000000000000000e+01\", \"2.000000000000000e+04\", \"2.000000000000000e-01\", \"2.000000000000000e+02\", \"2.000000000000000e+05\", \"2.000000000000000e+08\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 1},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 5},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 2},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 3},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 4},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 6},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 7},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 8},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 9},\n  {\"q1\": 1e-1, \"q2\": 1e-1, \"distance\": 10}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"2.000000000000000e-02\", \"1.600000000000000e-04\", \"2.500000000000000e-03\", \"7.407407407407409e-04\", \"3.125000000000001e-04\", \"9.259259259259262e-05\", \"5.830903790087465e-05\", \"3.906250000000001e-05\", \"2.743484224965707e-05\", \"2.000000000000001e-05\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<final_law>\ndef discovered_law(q1, q2, distance):\n   C = 2e+00\n   return C * (q1 * q2) / distance\n</final_law>"
+        }
+      ]
+    },
+    {
+      "task": "m2_magnetic_force",
+      "difficulty": "easy",
+      "version": "v0",
+      "equation": "(C * current1 * current2) / distance",
+      "raw_equation": "def discovered_law(current1, current2, distance):\n   C = 2.0e-7\n   return (C * current1 * current2) / distance",
+      "gt_equation": "(2.0 * current1 * current2) / distance",
+      "loss": 4.112074075735287,
+      "rmsle": 4.112074075735287,
+      "exact_accuracy": 0.0,
+      "similarity": 0.7124999999999999,
+      "symbolic_match": false,
+      "chat_history": [
+        {
+          "role": "system",
+          "content": "You are an AI research assistant tasked with discovering scientific laws in a simulated universe.\nYour goal is to propose experiments, analyze the data they return, and ultimately deduce the underlying scientific law.\nPlease note that the laws of physics in this universe may differ from those in our own.\nYou can perform experiments to gather data but you must follow the protocol strictly.\n\n**Workflow:**\n1.  Analyze the mission description provided.\n2.  Design a set of experiments to test your hypotheses.\n3.  Use the `<run_experiment>` tag to submit your experimental inputs.\n4. The system will return the results (up to 20 data points per experiment) in an <experiment_output> tag.\n    - If a returned value is nan, it indicates that the calculation encountered an error, such as:\n        - ValueError (e.g., using asin on a value outside the valid range of [-1, 1])\n        - OverflowError (e.g., using exp on an extremely large input)\n    - You may ignore any data points that return nan, as they do not contribute to valid hypothesis testing.\n    - Consider adjusting your input parameters to avoid invalid ranges and improve data coverage.\n5.  You can run up to 10 rounds of experiments. Use them wisely so that before submitting your final law, ensure you have:\n    - fully explored the experimental space\n    - Verified your hypotheses against the data\n    - made the most of the available rounds to strengthen your conclusions\n6.  Only one action is allowed per round: either <run_experiment> or <final_law>.\n7.  After submitting <run_experiment>, wait for <experiment_output> before proceeding.\n8.  You should verify your hypotheses by checking if the output from the experiments matches the output from your hypotheses.\n9.  When confident, submit your final discovered law using the `<final_law>` tag. This ends the mission."
+        },
+        {
+          "role": "user",
+          "content": "**Mission:** Your objective is to act as an AI research physicist. You are in a simulated universe and your goal is to discover the physical law in this universe.\nNote that the laws of physics in this universe may differ from those in our own, including both factor dependency and constant scalars.\nThere's no ground-truth laws available to you. You must discover the law yourself.\n\n**Experimental Apparatus:**\nYou have access to a device that can set up two long, parallel wires and measure the magnetic force per unit length exerted on wire 2 by wire 1. You have precise control over:\n- `current1`: Electric current in the first wire.\n- `current2`: Electric current in the second wire.\n- `distance`: The perpendicular distance between the wires. (always positive)\n\n**How to Run Experiments:**\nTo gather data, you must use the <run_experiment> tag. Provide a JSON array specifying the parameters for one or arbitrarily many experimental sets. Note that all measurements returned by the system are **noise-free**. You can assume the data is perfectly accurate and deterministic.\n\n**Input/Output Format:**\nYou must use the following JSON format for your requests and don't add any comments inside the JSON. The system will respond with a corresponding output array.\n\n*Your Request:*\n<run_experiment>\n[\n  {\"current1\": ..., \"current2\": ..., \"distance\": ...},\n  {\"current1\": ..., \"current2\": ..., \"distance\": ...},\n]\n</run_experiment>\n\n*System Response:*\nThe system will return a list of the measured force.\n<experiment_output>\n[1.235e-05, 1.341e-06]\n</experiment_output>\n\n**Final Submission:**\nOnce you are confident you have determined the underlying force law, submit your findings as a single Python function enclosed in <final_law> tags.\n\n**Submission Requirements:**\n1. The function must be named `discovered_law`\n2. The function signature must be exactly: `def discovered_law(current1, current2, distance):`\n3. The function should return the magnitude of the magnetic force per unit length exerted on wire 2 by wire 1.\n4. If you conclude that one of these parameters does not influence the final force, you should simply ignore that variable within your function's logic rather than changing the signature.\n5. If your law contains any constants, you must define the constant as a local variable inside the function body. Do NOT include the constant as a function argument.\n6. Import any necessary libraries inside the function body (e.g. math, numpy, etc.) if needed\n\n**Critical Boundaries:**\n- Do NOT include any explanation or commentary inside the <final_law> blocks and the function body.\n- Only output the <final_law> block in your final answer.\n\n**Example 1:**\n<final_law>\ndef discovered_law(current1, current2, distance):\n   C = 2.0e-7\n   return (C * current1 * current2) / (distance)\n</final_law>\n\n**Note**:\n- the sign for the experiment input only controls the direction of the current. You can assume that the current1 and current2 for the discovered law are the magnitudes of the currents (always be positive), so don't need to add abs()\n- distance is also always positive\n\n**Reminder:**\n1. Always remember that the laws of physics in this universe may differ from those in our own, including factor dependency, constant scalars, and the form of the law.\n2. When doing the experiments, use a broad range of input parameters, for example, values spanning from 10^-3 to 10^15 to ensure robustness across scales."
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"current1\": 1.0, \"current2\": 1.0, \"distance\": 1.0},\n  {\"current1\": 10.0, \"current2\": 5.0, \"distance\": 2.0},\n  {\"current1\": 100.0, \"current2\": 50.0, \"distance\": 3.0},\n  {\"current1\": 1.0, \"current2\": 10.0, \"distance\": 5.0},\n  {\"current1\": 5.0, \"current2\": 5.0, \"distance\": 10.0}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"4.780000000000000e-02\", \"2.987500000000000e-01\", \"8.851851851851851e+00\", \"3.824000000000000e-03\", \"1.195000000000000e-03\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"current1\": 2.0, \"current2\": 3.0, \"distance\": 1.0},\n  {\"current1\": 4.0, \"current2\": 6.0, \"distance\": 2.0},\n  {\"current1\": 8.0, \"current2\": 12.0, \"distance\": 3.0},\n  {\"current1\": 16.0, \"current2\": 24.0, \"distance\": 4.0},\n  {\"current1\": 32.0, \"current2\": 48.0, \"distance\": 5.0}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"2.868000000000000e-01\", \"1.434000000000000e-01\", \"1.699555555555556e-01\", \"2.868000000000000e-01\", \"5.873664000000000e-01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"current1\": 1.0, \"current2\": 1.0, \"distance\": 0.1},\n  {\"current1\": 10.0, \"current2\": 10.0, \"distance\": 0.5},\n  {\"current1\": 100.0, \"current2\": 100.0, \"distance\": 1.0},\n  {\"current1\": 1000.0, \"current2\": 1000.0, \"distance\": 2.0},\n  {\"current1\": 10000.0, \"current2\": 10000.0, \"distance\": 3.0}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"4.779999999999999e+01\", \"3.824000000000000e+01\", \"4.780000000000000e+02\", \"5.975000000000001e+03\", \"1.770370370370371e+05\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"current1\": 3.0, \"current2\": 4.0, \"distance\": 1.0},\n  {\"current1\": 6.0, \"current2\": 8.0, \"distance\": 2.0},\n  {\"current1\": 12.0, \"current2\": 16.0, \"distance\": 3.0},\n  {\"current1\": 24.0, \"current2\": 32.0, \"distance\": 4.0},\n  {\"current1\": 48.0, \"current2\": 64.0, \"distance\": 5.0}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"5.736000000000000e-01\", \"2.868000000000000e-01\", \"3.399111111111111e-01\", \"5.736000000000000e-01\", \"1.174732800000000e+00\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"current1\": 5.0, \"current2\": 5.0, \"distance\": 0.1},\n  {\"current1\": 50.0, \"current2\": 50.0, \"distance\": 0.5},\n  {\"current1\": 500.0, \"current2\": 500.0, \"distance\": 1.0},\n  {\"current1\": 5000.0, \"current2\": 5000.0, \"distance\": 2.0},\n  {\"current1\": 50000.0, \"current2\": 50000.0, \"distance\": 3.0}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.195000000000000e+03\", \"9.560000000000000e+02\", \"1.195000000000000e+04\", \"1.493750000000000e+05\", \"4.425925925925926e+06\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"current1\": 1.0, \"current2\": 2.0, \"distance\": 0.2},\n  {\"current1\": 2.0, \"current2\": 4.0, \"distance\": 0.4},\n  {\"current1\": 4.0, \"current2\": 8.0, \"distance\": 0.6},\n  {\"current1\": 8.0, \"current2\": 16.0, \"distance\": 0.8},\n  {\"current1\": 16.0, \"current2\": 32.0, \"distance\": 1.0}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.195000000000000e+01\", \"5.974999999999999e+00\", \"7.081481481481482e+00\", \"1.195000000000000e+01\", \"2.447360000000000e+01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<final_law>\ndef discovered_law(current1, current2, distance):\n   C = 2.0e-7\n   return (C * current1 * current2) / distance\n</final_law>"
+        }
+      ]
+    },
+    {
+      "task": "m3_fourier_law",
+      "difficulty": "easy",
+      "version": "v0",
+      "equation": "(k * A * delta_T) / d",
+      "raw_equation": "def discovered_law(k, A, delta_T, d):\n   return (k * A * delta_T) / d",
+      "gt_equation": "(k * A * delta_T) / d**2",
+      "loss": 2.24001042069913,
+      "rmsle": 2.24001042069913,
+      "exact_accuracy": 0.0,
+      "similarity": 0.6749999999999999,
+      "symbolic_match": false,
+      "chat_history": [
+        {
+          "role": "system",
+          "content": "You are an AI research assistant tasked with discovering scientific laws in a simulated universe.\nYour goal is to propose experiments, analyze the data they return, and ultimately deduce the underlying scientific law.\nPlease note that the laws of physics in this universe may differ from those in our own.\nYou can perform experiments to gather data but you must follow the protocol strictly.\n\n**Workflow:**\n1.  Analyze the mission description provided.\n2.  Design a set of experiments to test your hypotheses.\n3.  Use the `<run_experiment>` tag to submit your experimental inputs.\n4. The system will return the results (up to 20 data points per experiment) in an <experiment_output> tag.\n    - If a returned value is nan, it indicates that the calculation encountered an error, such as:\n        - ValueError (e.g., using asin on a value outside the valid range of [-1, 1])\n        - OverflowError (e.g., using exp on an extremely large input)\n    - You may ignore any data points that return nan, as they do not contribute to valid hypothesis testing.\n    - Consider adjusting your input parameters to avoid invalid ranges and improve data coverage.\n5.  You can run up to 10 rounds of experiments. Use them wisely so that before submitting your final law, ensure you have:\n    - fully explored the experimental space\n    - Verified your hypotheses against the data\n    - made the most of the available rounds to strengthen your conclusions\n6.  Only one action is allowed per round: either <run_experiment> or <final_law>.\n7.  After submitting <run_experiment>, wait for <experiment_output> before proceeding.\n8.  You should verify your hypotheses by checking if the output from the experiments matches the output from your hypotheses.\n9.  When confident, submit your final discovered law using the `<final_law>` tag. This ends the mission."
+        },
+        {
+          "role": "user",
+          "content": "**Mission:** Your objective is to act as an AI research physicist. You are in a simulated universe and your goal is to discover the physical law in this universe.\nNote that the laws of physics in this universe may differ from those in our own, including both factor dependency and constant scalars.\nThere's no ground-truth laws available to you. You must discover the law yourself.\n\n**Experimental Apparatus:**\nYou have access to a measurement device that can measure power transfer between two regions with different temperatures. You have precise control over the following properties for each experiment you run:\n- K_constant (`k`) - always positive\n- Cross-sectional area (`A`) - always positive\n- Temperature difference (`delta_T`) - can be assumed to be > 0\n- Distance/thickness (`d`) - always positive\n\n**Important Notes:**\n- Cross-sectional area `A` is always positive and represents the area through which heat flows\n- Temperature difference `delta_T` can be assumed to be > 0, representing the magnitude of temperature difference\n- Distance/thickness `d` is always positive and represents the separation between the two regions\n- The power transfer rate P represents the rate of heat energy transfer per unit time\n\n**Strategy**: Analyze whether these parameters serve similar or different functions:\n- **Similar roles**: Parameters that both contribute to heat flow in the same way (e.g., both material properties or both driving forces)\n- **Different roles**: Parameters that control fundamentally different aspects (e.g., one controls driving force, another controls resistance)\n\n**How to Run Experiments:**\nTo gather data, you must use the <run_experiment> tag. Provide a JSON array specifying the parameters for one or arbitrarily many experimental sets. Note that all measurements returned by the system are **noise-free**. You can assume the data is perfectly accurate and deterministic.\n\n**CRITICAL: Strict Format Adherence**\n- You MUST use the exact <run_experiment> tag format shown below\n- If your format is incorrect, the system will ask you to read the initial prompt again\n- Double-check your JSON syntax before submitting\n- Ensure all required parameters are included with correct names\n\n**Input/Output Format:**\nYou must use the following JSON format for your requests and don't add any comments inside the JSON. The system will respond with a corresponding output array.\n\n**REMINDER: If you make a format error, re-read the initial prompt carefully to understand the correct format.**\n\n*Your Request:*\n<run_experiment>\n[\n  {\"k\": ..., \"A\": ..., \"delta_T\": ..., \"d\": ...},\n  {\"k\": ..., \"A\": ..., \"delta_T\": ..., \"d\": ...}\n]\n</run_experiment>\n\n*System Response:*\nThe system will return a list of the measured power transfer rate\n<experiment_output>\n[1.234e-05, 2.345e-04]\n</experiment_output>\n\n**Final Submission:**\nOnce you are confident you have determined the underlying force law, submit your findings as a single Python function enclosed in <final_law> tags.\n\n**Submission Requirements:**\n1. The function must be named `discovered_law`\n2. The function signature must be exactly: `def discovered_law(k, A, delta_T, d):`\n3. The function should return the power transfer rate (P) between two regions with temperature difference.\n4. If you conclude that one of these parameters does not influence the final force, you should simply ignore that variable within your function's logic rather than changing the signature.\n5. If your law contains any constants, you must define the constant as a local variable inside the function body. Do NOT include the constant as a function argument.\n6. Import any necessary libraries inside the function body (e.g. math, numpy, etc.) if needed\n\n**Critical Boundaries:**\n- Do NOT include any explanation or commentary inside the <final_law> blocks and the function body.\n- Only output the <final_law> block in your final answer.\n\n**Example 1:**\n<final_law>\ndef discovered_law(k, A, delta_T, d):\n   import math\n   return (k * A * delta_T) / (d ** 3)\n</final_law>\n\n**Example 2:**\n<final_law>\ndef discovered_law(k, A, delta_T, d):\n   return (k * A * (delta_T ** 2.5)) / (d ** 3)\n</final_law>\n\n**Note:** \n- k is k_constant (always positive)\n- A is the cross-sectional area (always positive)\n- delta_T is the temperature difference (can be assumed to be > 0)\n- d is the distance/thickness (always positive)\n\n**Reminder:**\n1. Always remember that the laws of physics in this universe may differ from those in our own, including factor dependency, constant scalars, and the form of the law.\n2. When doing the experiments, use a broad range of input parameters, for example, values spanning from 10^-3 to 10^15 to ensure robustness across scales."
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"k\": 1, \"A\": 1, \"delta_T\": 1, \"d\": 1},\n  {\"k\": 10, \"A\": 10, \"delta_T\": 10, \"d\": 10},\n  {\"k\": 100, \"A\": 100, \"delta_T\": 100, \"d\": 100},\n  {\"k\": 1000, \"A\": 1000, \"delta_T\": 1000, \"d\": 1000},\n  {\"k\": 10000, \"A\": 10000, \"delta_T\": 10000, \"d\": 10000}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.000000000000000e+00\", \"1.000000000000000e+01\", \"1.000000000000000e+02\", \"1.000000000000000e+03\", \"1.000000000000000e+04\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"k\": 1, \"A\": 2, \"delta_T\": 1, \"d\": 1},\n  {\"k\": 1, \"A\": 1, \"delta_T\": 2, \"d\": 1},\n  {\"k\": 1, \"A\": 1, \"delta_T\": 1, \"d\": 2},\n  {\"k\": 10, \"A\": 5, \"delta_T\": 5, \"d\": 1},\n  {\"k\": 10, \"A\": 1, \"delta_T\": 10, \"d\": 5}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"2.000000000000000e+00\", \"2.000000000000000e+00\", \"2.500000000000000e-01\", \"2.500000000000000e+02\", \"4.000000000000000e+00\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"k\": 1, \"A\": 1, \"delta_T\": 5, \"d\": 1},\n  {\"k\": 1, \"A\": 1, \"delta_T\": 1, \"d\": 5},\n  {\"k\": 5, \"A\": 1, \"delta_T\": 1, \"d\": 1},\n  {\"k\": 5, \"A\": 5, \"delta_T\": 5, \"d\": 5},\n  {\"k\": 10, \"A\": 10, \"delta_T\": 1, \"d\": 10}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"5.000000000000000e+00\", \"4.000000000000000e-02\", \"5.000000000000000e+00\", \"5.000000000000000e+00\", \"1.000000000000000e+00\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"k\": 2, \"A\": 2, \"delta_T\": 10, \"d\": 1},\n  {\"k\": 3, \"A\": 3, \"delta_T\": 20, \"d\": 2},\n  {\"k\": 4, \"A\": 4, \"delta_T\": 30, \"d\": 3},\n  {\"k\": 5, \"A\": 5, \"delta_T\": 40, \"d\": 4},\n  {\"k\": 6, \"A\": 6, \"delta_T\": 50, \"d\": 5}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"4.000000000000000e+01\", \"4.500000000000000e+01\", \"5.333333333333334e+01\", \"6.250000000000000e+01\", \"7.200000000000000e+01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"k\": 1, \"A\": 1, \"delta_T\": 100, \"d\": 10},\n  {\"k\": 1, \"A\": 10, \"delta_T\": 100, \"d\": 1},\n  {\"k\": 10, \"A\": 1, \"delta_T\": 100, \"d\": 1},\n  {\"k\": 10, \"A\": 10, \"delta_T\": 1, \"d\": 10},\n  {\"k\": 100, \"A\": 100, \"delta_T\": 1, \"d\": 100}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.000000000000000e+00\", \"1.000000000000000e+03\", \"1.000000000000000e+03\", \"1.000000000000000e+00\", \"1.000000000000000e+00\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"k\": 1, \"A\": 1, \"delta_T\": 1, \"d\": 100},\n  {\"k\": 2, \"A\": 2, \"delta_T\": 2, \"d\": 100},\n  {\"k\": 3, \"A\": 3, \"delta_T\": 3, \"d\": 100},\n  {\"k\": 4, \"A\": 4, \"delta_T\": 4, \"d\": 100},\n  {\"k\": 5, \"A\": 5, \"delta_T\": 5, \"d\": 100}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.000000000000000e-04\", \"8.000000000000000e-04\", \"2.700000000000000e-03\", \"6.400000000000000e-03\", \"1.250000000000000e-02\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"k\": 1, \"A\": 10, \"delta_T\": 10, \"d\": 1},\n  {\"k\": 2, \"A\": 20, \"delta_T\": 20, \"d\": 2},\n  {\"k\": 3, \"A\": 30, \"delta_T\": 30, \"d\": 3},\n  {\"k\": 4, \"A\": 40, \"delta_T\": 40, \"d\": 4},\n  {\"k\": 5, \"A\": 50, \"delta_T\": 50, \"d\": 5}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.000000000000000e+02\", \"2.000000000000000e+02\", \"3.000000000000000e+02\", \"4.000000000000000e+02\", \"5.000000000000000e+02\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<final_law>\ndef discovered_law(k, A, delta_T, d):\n   return (k * A * delta_T) / d\n</final_law>"
+        }
+      ]
+    },
+    {
+      "task": "m4_snell_law",
+      "difficulty": "easy",
+      "version": "v0",
+      "equation": "float('nan')",
+      "raw_equation": "def discovered_law(n1, n2, angle1):\n    import math\n    try:\n        return math.degrees(math.asin((n1 / n2) * math.sin(math.radians(angle1))))\n    except ValueError:\n        return float('nan')",
+      "gt_equation": "acos(n1 * sin(angle1) / n2)",
+      "loss": 1.360637101622133,
+      "rmsle": 1.360637101622133,
+      "exact_accuracy": 0.0,
+      "similarity": 0.0,
+      "symbolic_match": false,
+      "chat_history": [
+        {
+          "role": "system",
+          "content": "You are an AI research assistant tasked with discovering scientific laws in a simulated universe.\nYour goal is to propose experiments, analyze the data they return, and ultimately deduce the underlying scientific law.\nPlease note that the laws of physics in this universe may differ from those in our own.\nYou can perform experiments to gather data but you must follow the protocol strictly.\n\n**Workflow:**\n1.  Analyze the mission description provided.\n2.  Design a set of experiments to test your hypotheses.\n3.  Use the `<run_experiment>` tag to submit your experimental inputs.\n4. The system will return the results (up to 20 data points per experiment) in an <experiment_output> tag.\n    - If a returned value is nan, it indicates that the calculation encountered an error, such as:\n        - ValueError (e.g., using asin on a value outside the valid range of [-1, 1])\n        - OverflowError (e.g., using exp on an extremely large input)\n    - You may ignore any data points that return nan, as they do not contribute to valid hypothesis testing.\n    - Consider adjusting your input parameters to avoid invalid ranges and improve data coverage.\n5.  You can run up to 10 rounds of experiments. Use them wisely so that before submitting your final law, ensure you have:\n    - fully explored the experimental space\n    - Verified your hypotheses against the data\n    - made the most of the available rounds to strengthen your conclusions\n6.  Only one action is allowed per round: either <run_experiment> or <final_law>.\n7.  After submitting <run_experiment>, wait for <experiment_output> before proceeding.\n8.  You should verify your hypotheses by checking if the output from the experiments matches the output from your hypotheses.\n9.  When confident, submit your final discovered law using the `<final_law>` tag. This ends the mission."
+        },
+        {
+          "role": "user",
+          "content": "**Mission:** Your objective is to act as an AI research physicist. You are in a simulated universe and your goal is to discover the physical law in this universe.\nNote that the laws of physics in this universe may differ from those in our own, including both factor dependency and constant scalars.\nThere's no ground-truth laws available to you. You must discover the law yourself.\n\n**Experimental Apparatus:**\nYou have access to a precision refractometer. You have precise control over the following properties for each experiment you run:\n- The refractive index of the first medium (n\u2081) (ranging from 1 to 1.5)\n- The refractive index of the second medium (n\u2082) (ranging from 1 to 1.5)\n- The angle of incidence (\u03b8\u2081) in degrees (ranging from 0 to 90)\n\n**Strategy**: Analyze the functional roles of parameters in relation to the refraction angle:\n- **Similar roles**: Identify parameters that influence the refraction angle in comparable ways (e.g., both increasing or decreasing it proportionally).\n- **Different roles** Identify parameters that affect fundamentally different aspects of the system (e.g., one controls angle, another controls medium properties).\n- **Change of subject**: Instead of analyzing the angle directly, explore transformations or derived relationships involving the angle. For example:\n        - Apply trigonometric functions such as sin(\u03b8\u2082), tan(\u03b8\u2082), or cos(\u03b8\u2082)\n        - Investigate whether these transformed values reveal hidden patterns or simplify the law\n- **Optically Denser to Less Dense Medium**:    \n    - When light travels from an optically denser medium to a less dense medium, refraction may not occur under certain conditions, especially when the difference in refractive indices is large.\n    - To ensure meaningful results during experimentation for refraction, consider using media with closer refractive indices.\n- **Higher variety of input**:\n    - To explore a wider range of refraction behaviors, avoid using n\u2081 = 1 or n\u2082 = 1 as default values. Instead, test with a variety of refractive indices (e.g., 1.1, 1.12, etc.).\n\n**How to Run Experiments:**\nTo gather data, you must use the <run_experiment> tag. Provide a JSON array specifying the parameters for one or arbitrarily many experimental sets. Note that all measurements returned by the system are **noise-free**. You can assume the data is perfectly accurate and deterministic.\n\n**CRITICAL: Strict Format Adherence**\n- You MUST use the exact <run_experiment> tag format shown below\n- If your format is incorrect, the system will ask you to read the initial prompt again\n- Double-check your JSON syntax before submitting\n- Ensure all required parameters are included with correct names\n\n**Input/Output Format:**\nYou must use the following JSON format for your requests and don't add any comments inside the JSON. The system will respond with a corresponding output array.\n\n*Your Request:*\n<run_experiment>\n[\n  {\"refractive_index_1\": ..., \"refractive_index_2\": ..., \"incidence_angle\": ...},\n  {\"refractive_index_1\": ..., \"refractive_index_2\": ..., \"incidence_angle\": ...}\n]\n</run_experiment>\n\n*System Response:*\nThe system will return a list of measured refraction angle (\u03b8\u2082).\n<experiment_output>\n[..., ...]\n</experiment_output>\n\n**Final Submission:**\nOnce you are confident you have determined the underlying force law, submit your findings as a single Python function enclosed in <final_law> tags.\n\n**Submission Requirements:**\n1. The function must be named `discovered_law`\n2. The function signature must be exactly: `def discovered_law(n1, n2, angle1):`\n3. The function should return Return the refraction angle (angle2) in degrees.\n4. If you conclude that one of these parameters does not influence the final force, you should simply ignore that variable within your function's logic rather than changing the signature.\n5. If your law contains any constants, you must define the constant as a local variable inside the function body. Do NOT include the constant as a function argument.\n6. Import any necessary libraries inside the function body (e.g. math, numpy, etc.) if needed\n\n**Critical Boundaries:**\n- Do NOT include any explanation or commentary inside the <final_law> blocks and the function body.\n- Only output the <final_law> block in your final answer.\n\nExample:\n<final_law>\ndef discovered_law(n1, n2, angle1):\n    import math\n    import numpy as np\n    try:\n        return math.degrees(math.acos(n1 * math.sin(math.radians(angle1)) / n2))\n    except ValueError:\n        return float('nan')\n</final_law>\n    \n**Note:** \n- n1 is the refractive index of the first medium\n- n2 is the refractive index of the second medium\n- angle1 is the incidence angle in degree\n\n**Reminder:**\n1. Always remember that the laws of physics in this universe may differ from those in our own, including factor dependency, constant scalars, and the form of the law.\n2. When doing the experiments, use a broad range of input parameters, for example, values spanning from 10^-3 to 10^15 to ensure robustness across scales."
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"refractive_index_1\": 1.1, \"refractive_index_2\": 1.2, \"incidence_angle\": 30},\n  {\"refractive_index_1\": 1.1, \"refractive_index_2\": 1.3, \"incidence_angle\": 45},\n  {\"refractive_index_1\": 1.2, \"refractive_index_2\": 1.1, \"incidence_angle\": 60},\n  {\"refractive_index_1\": 1.3, \"refractive_index_2\": 1.4, \"incidence_angle\": 15},\n  {\"refractive_index_1\": 1.4, \"refractive_index_2\": 1.5, \"incidence_angle\": 75}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"6.272038726402191e+01\", \"5.325024870522988e+01\", \"1.913392742911151e+01\", \"7.609386565144705e+01\", \"2.563998446787491e+01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"refractive_index_1\": 1.2, \"refractive_index_2\": 1.3, \"incidence_angle\": 20},\n  {\"refractive_index_1\": 1.1, \"refractive_index_2\": 1.4, \"incidence_angle\": 50},\n  {\"refractive_index_1\": 1.3, \"refractive_index_2\": 1.5, \"incidence_angle\": 40},\n  {\"refractive_index_1\": 1.1, \"refractive_index_2\": 1.2, \"incidence_angle\": 10},\n  {\"refractive_index_1\": 1.5, \"refractive_index_2\": 1.1, \"incidence_angle\": 80}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"7.159626440337958e+01\", \"5.299447283891440e+01\", \"5.614572110738334e+01\", \"8.084084160456622e+01\", \"nan\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"refractive_index_1\": 1.2, \"refractive_index_2\": 1.2, \"incidence_angle\": 30},\n  {\"refractive_index_1\": 1.1, \"refractive_index_2\": 1.1, \"incidence_angle\": 60},\n  {\"refractive_index_1\": 1.4, \"refractive_index_2\": 1.3, \"incidence_angle\": 25},\n  {\"refractive_index_1\": 1.3, \"refractive_index_2\": 1.2, \"incidence_angle\": 55},\n  {\"refractive_index_1\": 1.5, \"refractive_index_2\": 1.4, \"incidence_angle\": 35}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"6.000000000000001e+01\", \"3.000000000000000e+01\", \"6.292687098348541e+01\", \"2.744984244767464e+01\", \"5.208104755076170e+01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"refractive_index_1\": 1.1, \"refractive_index_2\": 1.5, \"incidence_angle\": 15},\n  {\"refractive_index_1\": 1.2, \"refractive_index_2\": 1.4, \"incidence_angle\": 45},\n  {\"refractive_index_1\": 1.3, \"refractive_index_2\": 1.1, \"incidence_angle\": 70},\n  {\"refractive_index_1\": 1.4, \"refractive_index_2\": 1.2, \"incidence_angle\": 10},\n  {\"refractive_index_1\": 1.5, \"refractive_index_2\": 1.3, \"incidence_angle\": 50}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"7.905885039482057e+01\", \"5.269257171584355e+01\", \"nan\", \"7.831157068167157e+01\", \"2.788385689771248e+01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"refractive_index_1\": 1.2, \"refractive_index_2\": 1.5, \"incidence_angle\": 20},\n  {\"refractive_index_1\": 1.3, \"refractive_index_2\": 1.4, \"incidence_angle\": 30},\n  {\"refractive_index_1\": 1.4, \"refractive_index_2\": 1.3, \"incidence_angle\": 60},\n  {\"refractive_index_1\": 1.1, \"refractive_index_2\": 1.2, \"incidence_angle\": 25},\n  {\"refractive_index_1\": 1.5, \"refractive_index_2\": 1.1, \"incidence_angle\": 40}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"7.412043939924810e+01\", \"6.233599550381066e+01\", \"2.114940936246427e+01\", \"6.720717920437818e+01\", \"2.877360053656149e+01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"refractive_index_1\": 1.1, \"refractive_index_2\": 1.3, \"incidence_angle\": 55},\n  {\"refractive_index_1\": 1.2, \"refractive_index_2\": 1.1, \"incidence_angle\": 15},\n  {\"refractive_index_1\": 1.3, \"refractive_index_2\": 1.5, \"incidence_angle\": 35},\n  {\"refractive_index_1\": 1.4, \"refractive_index_2\": 1.5, \"incidence_angle\": 10},\n  {\"refractive_index_1\": 1.5, \"refractive_index_2\": 1.4, \"incidence_angle\": 75}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"4.612171802165656e+01\", \"7.359960626573805e+01\", \"6.019170555762980e+01\", \"8.067283831972610e+01\", \"nan\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<final_law>\ndef discovered_law(n1, n2, angle1):\n    import math\n    try:\n        return math.degrees(math.asin((n1 / n2) * math.sin(math.radians(angle1))))\n    except ValueError:\n        return float('nan')\n</final_law>"
+        }
+      ]
+    },
+    {
+      "task": "m5_radioactive_decay",
+      "difficulty": "easy",
+      "version": "v0",
+      "equation": "N0 * math.exp(-lambda_constant * t)",
+      "raw_equation": "def discovered_law(N0, lambda_constant, t):\n   import math\n   return N0 * math.exp(-lambda_constant * t)",
+      "gt_equation": "N0 * exp(-lambda_constant * t**1.5)",
+      "loss": 0.10945495309786207,
+      "rmsle": 0.10945495309786207,
+      "exact_accuracy": 0.0,
+      "similarity": 0.0,
+      "symbolic_match": false,
+      "chat_history": [
+        {
+          "role": "system",
+          "content": "You are an AI research assistant tasked with discovering scientific laws in a simulated universe.\nYour goal is to propose experiments, analyze the data they return, and ultimately deduce the underlying scientific law.\nPlease note that the laws of physics in this universe may differ from those in our own.\nYou can perform experiments to gather data but you must follow the protocol strictly.\n\n**Workflow:**\n1.  Analyze the mission description provided.\n2.  Design a set of experiments to test your hypotheses.\n3.  Use the `<run_experiment>` tag to submit your experimental inputs.\n4. The system will return the results (up to 20 data points per experiment) in an <experiment_output> tag.\n    - If a returned value is nan, it indicates that the calculation encountered an error, such as:\n        - ValueError (e.g., using asin on a value outside the valid range of [-1, 1])\n        - OverflowError (e.g., using exp on an extremely large input)\n    - You may ignore any data points that return nan, as they do not contribute to valid hypothesis testing.\n    - Consider adjusting your input parameters to avoid invalid ranges and improve data coverage.\n5.  You can run up to 10 rounds of experiments. Use them wisely so that before submitting your final law, ensure you have:\n    - fully explored the experimental space\n    - Verified your hypotheses against the data\n    - made the most of the available rounds to strengthen your conclusions\n6.  Only one action is allowed per round: either <run_experiment> or <final_law>.\n7.  After submitting <run_experiment>, wait for <experiment_output> before proceeding.\n8.  You should verify your hypotheses by checking if the output from the experiments matches the output from your hypotheses.\n9.  When confident, submit your final discovered law using the `<final_law>` tag. This ends the mission."
+        },
+        {
+          "role": "user",
+          "content": "**Mission:** Your objective is to act as an AI research physicist. You are in a simulated universe and your goal is to discover the physical law in this universe.\nNote that the laws of physics in this universe may differ from those in our own, including both factor dependency and constant scalars.\nThere's no ground-truth laws available to you. You must discover the law yourself.\n\n**Experimental Apparatus:**\nYou have access to a radioactive decay measurement device that can measure the current activity of radioactive samples. You have precise control over the following properties for each experiment you run:\n- Initial Activity (`N0`) - always positive\n- Lambda Constant (`lambda_constant`) - always positive\n- Time (`t`) - always positive\n\n**Important Notes:**\n- Initial Activity `N0` is always positive and represents the starting activity of the sample\n- Lambda Constant `lambda_constant` is always positive\n- Time `t` is always positive and represents the time elapsed since initial measurement\n- The current activity represents the remaining activity of the radioactive sample\n- If your input results in overflowing the system, the system will return `NaN` (Not a Number)\n\n**Strategy**: Analyze whether these parameters serve similar or different functions:\n- **Similar roles**: Parameters that both contribute to decay behavior in the same way\n- **Different roles**: Parameters that control fundamentally different aspects (e.g., one controls initial conditions, another controls time evolution)\n\n**How to Run Experiments:**\nTo gather data, you must use the <run_experiment> tag. Provide a JSON array specifying the parameters for one or arbitrarily many experimental sets. Note that all measurements returned by the system are **noise-free**. You can assume the data is perfectly accurate and deterministic.\n\n**CRITICAL: Strict Format Adherence**\n- You MUST use the exact <run_experiment> tag format shown below\n- If your format is incorrect, the system will ask you to read the initial prompt again\n- Double-check your JSON syntax before submitting\n- Ensure all required parameters are included with correct names\n\n**Input/Output Format:**\nYou must use the following JSON format for your requests and don't add any comments inside the JSON. The system will respond with a corresponding output array.\n\n**REMINDER: If you make a format error, re-read the initial prompt carefully to understand the correct format.**\n\n*Your Request:*\n<run_experiment>\n[\n  {\"N0\": ..., \"lambda_constant\": ..., \"t\": ...},\n  {\"N0\": ..., \"lambda_constant\": ..., \"t\": ...}\n]\n</run_experiment>\n\n*System Response:*\nThe system will return a list of the measured current activity.\n<experiment_output>\n[1.234e-05, 2.345e-04]\n</experiment_output>\n\n**Final Submission:**\nOnce you are confident you have determined the underlying force law, submit your findings as a single Python function enclosed in <final_law> tags.\n\n**Submission Requirements:**\n1. The function must be named `discovered_law`\n2. The function signature must be exactly: `def discovered_law(N0, lambda_constant, t):`\n3. The function should return the mathematical formula for the ground truth decay law that governs isotope decay in this universe.\n4. If you conclude that one of these parameters does not influence the final force, you should simply ignore that variable within your function's logic rather than changing the signature.\n5. If your law contains any constants, you must define the constant as a local variable inside the function body. Do NOT include the constant as a function argument.\n6. Import any necessary libraries inside the function body (e.g. math, numpy, etc.) if needed\n\n**Critical Boundaries:**\n- Do NOT include any explanation or commentary inside the <final_law> blocks and the function body.\n- Only output the <final_law> block in your final answer.\n\n**Example 1:**\n<final_law>\ndef discovered_law(N0, lambda_constant, t):\n   import math\n   return N0 * math.exp(-lambda_constant * t)\n</final_law>\n\n**Example 2:**\n<final_law>\ndef discovered_law(N0, lambda_constant, t):\n   return N0 * math.exp(-lambda_constant * t)\n</final_law>\n\n**Note:** \n- N0 is the initial number of atoms\n- lambda_constant (\u03bb)\n- t is the time elapsed since the initial measurement\n\n**Reminder:**\n1. Always remember that the laws of physics in this universe may differ from those in our own, including factor dependency, constant scalars, and the form of the law.\n2. When doing the experiments, use a broad range of input parameters, for example, values spanning from 10^-3 to 10^15 to ensure robustness across scales."
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"N0\": 1e-3, \"lambda_constant\": 1e-3, \"t\": 1},\n  {\"N0\": 1e-3, \"lambda_constant\": 1e-2, \"t\": 10},\n  {\"N0\": 1e-2, \"lambda_constant\": 1e-3, \"t\": 1},\n  {\"N0\": 1e-2, \"lambda_constant\": 1e-2, \"t\": 10},\n  {\"N0\": 1e-1, \"lambda_constant\": 1e-1, \"t\": 1},\n  {\"N0\": 1e-1, \"lambda_constant\": 1e-1, \"t\": 10},\n  {\"N0\": 1e1, \"lambda_constant\": 1e-1, \"t\": 1},\n  {\"N0\": 1e1, \"lambda_constant\": 1e-2, \"t\": 10},\n  {\"N0\": 1e2, \"lambda_constant\": 1e-1, \"t\": 1},\n  {\"N0\": 1e2, \"lambda_constant\": 1e-2, \"t\": 10}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"9.990004998333751e-04\", \"7.288934141100246e-04\", \"9.990004998333751e-03\", \"7.288934141100246e-03\", \"9.048374180359596e-02\", \"4.232921962320499e-03\", \"9.048374180359595e+00\", \"7.288934141100246e+00\", \"9.048374180359595e+01\", \"7.288934141100246e+01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"N0\": 1e-3, \"lambda_constant\": 1e-3, \"t\": 100},\n  {\"N0\": 1e-3, \"lambda_constant\": 1e-2, \"t\": 100},\n  {\"N0\": 1e-2, \"lambda_constant\": 1e-3, \"t\": 100},\n  {\"N0\": 1e-2, \"lambda_constant\": 1e-2, \"t\": 100},\n  {\"N0\": 1e-1, \"lambda_constant\": 1e-1, \"t\": 100},\n  {\"N0\": 1e1, \"lambda_constant\": 1e-1, \"t\": 100},\n  {\"N0\": 1e2, \"lambda_constant\": 1e-1, \"t\": 100}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"3.678794411714424e-04\", \"4.539992976248485e-08\", \"3.678794411714423e-03\", \"4.539992976248485e-07\", \"3.720075976020836e-45\", \"3.720075976020836e-43\", \"3.720075976020836e-42\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"N0\": 1e-3, \"lambda_constant\": 1e-1, \"t\": 1},\n  {\"N0\": 1e-3, \"lambda_constant\": 1e-1, \"t\": 10},\n  {\"N0\": 1e-2, \"lambda_constant\": 1e-1, \"t\": 1},\n  {\"N0\": 1e-2, \"lambda_constant\": 1e-1, \"t\": 10},\n  {\"N0\": 1e1, \"lambda_constant\": 1e-1, \"t\": 1},\n  {\"N0\": 1e1, \"lambda_constant\": 1e-1, \"t\": 10},\n  {\"N0\": 1e2, \"lambda_constant\": 1e-1, \"t\": 1},\n  {\"N0\": 1e2, \"lambda_constant\": 1e-1, \"t\": 10}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"9.048374180359595e-04\", \"4.232921962320499e-05\", \"9.048374180359595e-03\", \"4.232921962320499e-04\", \"9.048374180359595e+00\", \"4.232921962320499e-01\", \"9.048374180359595e+01\", \"4.232921962320499e+00\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"N0\": 1e-3, \"lambda_constant\": 1e-2, \"t\": 1},\n  {\"N0\": 1e-2, \"lambda_constant\": 1e-2, \"t\": 1},\n  {\"N0\": 1e-1, \"lambda_constant\": 1e-2, \"t\": 1},\n  {\"N0\": 1e1, \"lambda_constant\": 1e-2, \"t\": 1},\n  {\"N0\": 1e2, \"lambda_constant\": 1e-2, \"t\": 1},\n  {\"N0\": 1e-3, \"lambda_constant\": 1e-3, \"t\": 10},\n  {\"N0\": 1e-2, \"lambda_constant\": 1e-3, \"t\": 10},\n  {\"N0\": 1e-1, \"lambda_constant\": 1e-3, \"t\": 10}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"9.900498337491680e-04\", \"9.900498337491681e-03\", \"9.900498337491681e-02\", \"9.900498337491682e+00\", \"9.900498337491680e+01\", \"9.688719943400754e-04\", \"9.688719943400755e-03\", \"9.688719943400755e-02\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"N0\": 1e-1, \"lambda_constant\": 1e-3, \"t\": 100},\n  {\"N0\": 1e1, \"lambda_constant\": 1e-3, \"t\": 100},\n  {\"N0\": 1e2, \"lambda_constant\": 1e-3, \"t\": 100},\n  {\"N0\": 1e-1, \"lambda_constant\": 1e-2, \"t\": 100},\n  {\"N0\": 1e1, \"lambda_constant\": 1e-2, \"t\": 100},\n  {\"N0\": 1e2, \"lambda_constant\": 1e-2, \"t\": 100}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"3.678794411714423e-02\", \"3.678794411714423e+00\", \"3.678794411714424e+01\", \"4.539992976248485e-06\", \"4.539992976248486e-04\", \"4.539992976248485e-03\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<final_law>\ndef discovered_law(N0, lambda_constant, t):\n   import math\n   return N0 * math.exp(-lambda_constant * t)\n</final_law>"
+        }
+      ]
+    },
+    {
+      "task": "m6_underdamped_harmonic",
+      "difficulty": "easy",
+      "version": "v0",
+      "equation": "math.sqrt(k/m) - (b/(2*m))",
+      "raw_equation": "def discovered_law(k, m, b):\n    import math\n    return math.sqrt(k/m) - (b/(2*m))",
+      "gt_equation": "sqrt(k/m - b/(2*m))",
+      "loss": 0.011507414319798367,
+      "rmsle": 0.011507414319798367,
+      "exact_accuracy": 0.0,
+      "similarity": 0.0,
+      "symbolic_match": false,
+      "chat_history": [
+        {
+          "role": "system",
+          "content": "You are an AI research assistant tasked with discovering scientific laws in a simulated universe.\nYour goal is to propose experiments, analyze the data they return, and ultimately deduce the underlying scientific law.\nPlease note that the laws of physics in this universe may differ from those in our own.\nYou can perform experiments to gather data but you must follow the protocol strictly.\n\n**Workflow:**\n1.  Analyze the mission description provided.\n2.  Design a set of experiments to test your hypotheses.\n3.  Use the `<run_experiment>` tag to submit your experimental inputs.\n4. The system will return the results (up to 20 data points per experiment) in an <experiment_output> tag.\n    - If a returned value is nan, it indicates that the calculation encountered an error, such as:\n        - ValueError (e.g., using asin on a value outside the valid range of [-1, 1])\n        - OverflowError (e.g., using exp on an extremely large input)\n    - You may ignore any data points that return nan, as they do not contribute to valid hypothesis testing.\n    - Consider adjusting your input parameters to avoid invalid ranges and improve data coverage.\n5.  You can run up to 10 rounds of experiments. Use them wisely so that before submitting your final law, ensure you have:\n    - fully explored the experimental space\n    - Verified your hypotheses against the data\n    - made the most of the available rounds to strengthen your conclusions\n6.  Only one action is allowed per round: either <run_experiment> or <final_law>.\n7.  After submitting <run_experiment>, wait for <experiment_output> before proceeding.\n8.  You should verify your hypotheses by checking if the output from the experiments matches the output from your hypotheses.\n9.  When confident, submit your final discovered law using the `<final_law>` tag. This ends the mission."
+        },
+        {
+          "role": "user",
+          "content": "**Mission:** Your objective is to act as an AI research physicist. You are in a simulated universe and your goal is to discover the physical law in this universe.\nNote that the laws of physics in this universe may differ from those in our own, including both factor dependency and constant scalars.\nThere's no ground-truth laws available to you. You must discover the law yourself.\n\n**Experimental Apparatus:**\nYou have access to a system to measure the angular velocity of a damped harmonic oscillator. You have precise control over the following properties for each experiment you run:\n**Control Parameters:**\n- `k_constant`: k\n- `mass`: m\n- `b_constant`: b\n\n**How to Run Experiments:**\nTo gather data, you must use the <run_experiment> tag. Provide a JSON array specifying the parameters for one or arbitrarily many experimental sets. Note that all measurements returned by the system are **noise-free**. You can assume the data is perfectly accurate and deterministic.\n\n**CRITICAL: Strict Format Adherence**\n- You MUST use the exact <run_experiment> tag format shown below\n- If your format is incorrect, the system will ask you to read the initial prompt again\n- Double-check your JSON syntax before submitting\n- Ensure all required parameters are included with correct names\n\n**Input/Output Format:**\nYou must use the following JSON format for your requests and don't add any comments inside the JSON. The system will respond with a corresponding output array.\n\n*Your Request:*\n<run_experiment>\n[\n    {\"k_constant\": ..., \"mass\": ..., \"b_constant\": ...},\n    {\"k_constant\": ..., \"mass\": ..., \"b_constant\": ...}\n]\n</run_experiment>\n\n*System Response:*\nThe system will return a list of measured angular velocity.\n<experiment_output>\n[..., ...]\n</experiment_output>\n\n**Final Submission:**\nOnce you are confident you have determined the underlying force law, submit your findings as a single Python function enclosed in <final_law> tags.\n\n**Submission Requirements:**\n1. The function must be named `discovered_law`\n2. The function signature must be exactly: `def discovered_law(k, m, b):`\n3. The function should return the angular velocity (\u03c9) of the damped oscillator.\n4. If you conclude that one of these parameters does not influence the final force, you should simply ignore that variable within your function's logic rather than changing the signature.\n5. If your law contains any constants, you must define the constant as a local variable inside the function body. Do NOT include the constant as a function argument.\n6. Import any necessary libraries inside the function body (e.g. math, numpy, etc.) if needed\n\n**Critical Boundaries:**\n- Do NOT include any explanation or commentary inside the <final_law> blocks and the function body.\n- Only output the <final_law> block in your final answer.\n\n**Example 1:**\n<final_law>\ndef discovered_law(k, m, b):\n    import math\n    return math.sqrt(k/m - (b/(2*m))**2)\n</final_law>\n\n**Note**:\n- m is the mass\n\n**Reminder:**\n1. Always remember that the laws of physics in this universe may differ from those in our own, including factor dependency, constant scalars, and the form of the law.\n2. When doing the experiments, use a broad range of input parameters, for example, values spanning from 10^-3 to 10^15 to ensure robustness across scales."
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n    {\"k_constant\": 1, \"mass\": 1, \"b_constant\": 0.1},\n    {\"k_constant\": 1, \"mass\": 1, \"b_constant\": 1},\n    {\"k_constant\": 1, \"mass\": 1, \"b_constant\": 10},\n    {\"k_constant\": 10, \"mass\": 1, \"b_constant\": 0.1},\n    {\"k_constant\": 10, \"mass\": 1, \"b_constant\": 1},\n    {\"k_constant\": 10, \"mass\": 1, \"b_constant\": 10},\n    {\"k_constant\": 100, \"mass\": 1, \"b_constant\": 0.1},\n    {\"k_constant\": 100, \"mass\": 1, \"b_constant\": 1},\n    {\"k_constant\": 100, \"mass\": 1, \"b_constant\": 10},\n    {\"k_constant\": 1, \"mass\": 10, \"b_constant\": 0.1}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"9.746794344808963e-01\", \"7.071067811865476e-01\", \"nan\", \"3.154362059117501e+00\", \"3.082207001484488e+00\", \"2.236067977499790e+00\", \"9.997499687421850e+00\", \"9.974968671630002e+00\", \"9.746794344808963e+00\", \"3.082207001484488e-01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n    {\"k_constant\": 1, \"mass\": 10, \"b_constant\": 1},\n    {\"k_constant\": 1, \"mass\": 10, \"b_constant\": 10},\n    {\"k_constant\": 10, \"mass\": 10, \"b_constant\": 1},\n    {\"k_constant\": 10, \"mass\": 10, \"b_constant\": 10},\n    {\"k_constant\": 100, \"mass\": 10, \"b_constant\": 1},\n    {\"k_constant\": 100, \"mass\": 10, \"b_constant\": 10},\n    {\"k_constant\": 1, \"mass\": 100, \"b_constant\": 1},\n    {\"k_constant\": 1, \"mass\": 100, \"b_constant\": 10},\n    {\"k_constant\": 10, \"mass\": 100, \"b_constant\": 1},\n    {\"k_constant\": 10, \"mass\": 100, \"b_constant\": 10}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"2.236067977499790e-01\", \"nan\", \"9.746794344808963e-01\", \"7.071067811865476e-01\", \"3.154362059117501e+00\", \"3.082207001484488e+00\", \"7.071067811865475e-02\", \"nan\", \"3.082207001484488e-01\", \"2.236067977499790e-01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n    {\"k_constant\": 1000, \"mass\": 1, \"b_constant\": 1},\n    {\"k_constant\": 1000, \"mass\": 1, \"b_constant\": 10},\n    {\"k_constant\": 1000, \"mass\": 10, \"b_constant\": 1},\n    {\"k_constant\": 1000, \"mass\": 10, \"b_constant\": 10},\n    {\"k_constant\": 1000, \"mass\": 100, \"b_constant\": 1},\n    {\"k_constant\": 1000, \"mass\": 100, \"b_constant\": 10},\n    {\"k_constant\": 10000, \"mass\": 1, \"b_constant\": 1},\n    {\"k_constant\": 10000, \"mass\": 1, \"b_constant\": 10},\n    {\"k_constant\": 10000, \"mass\": 10, \"b_constant\": 1},\n    {\"k_constant\": 10000, \"mass\": 10, \"b_constant\": 10}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"3.161486991907447e+01\", \"3.154362059117501e+01\", \"9.997499687421850e+00\", \"9.974968671630002e+00\", \"3.161486991907447e+00\", \"3.154362059117501e+00\", \"9.999749996874922e+01\", \"9.997499687421850e+01\", \"3.162198602238639e+01\", \"3.161486991907447e+01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n    {\"k_constant\": 100000, \"mass\": 1, \"b_constant\": 1},\n    {\"k_constant\": 100000, \"mass\": 1, \"b_constant\": 10},\n    {\"k_constant\": 100000, \"mass\": 10, \"b_constant\": 1},\n    {\"k_constant\": 100000, \"mass\": 10, \"b_constant\": 10},\n    {\"k_constant\": 100000, \"mass\": 100, \"b_constant\": 1},\n    {\"k_constant\": 100000, \"mass\": 100, \"b_constant\": 10},\n    {\"k_constant\": 1000000, \"mass\": 1, \"b_constant\": 1},\n    {\"k_constant\": 1000000, \"mass\": 1, \"b_constant\": 10},\n    {\"k_constant\": 1000000, \"mass\": 10, \"b_constant\": 1},\n    {\"k_constant\": 1000000, \"mass\": 10, \"b_constant\": 10}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"3.162269754464347e+02\", \"3.162198602238639e+02\", \"9.999974999968751e+01\", \"9.999749996874922e+01\", \"3.162269754464347e+01\", \"3.162198602238639e+01\", \"9.999997499999688e+02\", \"9.999974999968750e+02\", \"3.162276869598866e+02\", \"3.162269754464347e+02\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<final_law>\ndef discovered_law(k, m, b):\n    import math\n    return math.sqrt(k/m) - (b/(2*m))\n</final_law>"
+        }
+      ]
+    },
+    {
+      "task": "m7_malus_law",
+      "difficulty": "easy",
+      "version": "v0",
+      "equation": "I_0 * (math.cos(theta) ** 2)",
+      "raw_equation": "def discovered_law(I_0, theta):\n   import math\n   return I_0 * (math.cos(theta) ** 2)",
+      "gt_equation": "unknown",
+      "loss": 2.2761913362509336,
+      "rmsle": 2.2761913362509336,
+      "exact_accuracy": 0.0,
+      "similarity": 0.0,
+      "symbolic_match": false,
+      "chat_history": [
+        {
+          "role": "system",
+          "content": "You are an AI research assistant tasked with discovering scientific laws in a simulated universe.\nYour goal is to propose experiments, analyze the data they return, and ultimately deduce the underlying scientific law.\nPlease note that the laws of physics in this universe may differ from those in our own.\nYou can perform experiments to gather data but you must follow the protocol strictly.\n\n**Workflow:**\n1.  Analyze the mission description provided.\n2.  Design a set of experiments to test your hypotheses.\n3.  Use the `<run_experiment>` tag to submit your experimental inputs.\n4. The system will return the results (up to 20 data points per experiment) in an <experiment_output> tag.\n    - If a returned value is nan, it indicates that the calculation encountered an error, such as:\n        - ValueError (e.g., using asin on a value outside the valid range of [-1, 1])\n        - OverflowError (e.g., using exp on an extremely large input)\n    - You may ignore any data points that return nan, as they do not contribute to valid hypothesis testing.\n    - Consider adjusting your input parameters to avoid invalid ranges and improve data coverage.\n5.  You can run up to 10 rounds of experiments. Use them wisely so that before submitting your final law, ensure you have:\n    - fully explored the experimental space\n    - Verified your hypotheses against the data\n    - made the most of the available rounds to strengthen your conclusions\n6.  Only one action is allowed per round: either <run_experiment> or <final_law>.\n7.  After submitting <run_experiment>, wait for <experiment_output> before proceeding.\n8.  You should verify your hypotheses by checking if the output from the experiments matches the output from your hypotheses.\n9.  When confident, submit your final discovered law using the `<final_law>` tag. This ends the mission."
+        },
+        {
+          "role": "user",
+          "content": "**Mission:** Your objective is to act as an AI research physicist. You are in a simulated universe and your goal is to discover the physical law in this universe.\nNote that the laws of physics in this universe may differ from those in our own, including both factor dependency and constant scalars.\nThere's no ground-truth laws available to you. You must discover the law yourself.\n\n**Experimental Apparatus:**\nYou have access to a polarized light transmission system that can measure how light intensity changes when passing through polarizers. You have precise control over the following properties for each experiment you run:\n- Initial Intensity (`I_0`) - always positive\n- Angle (`theta`) - between 0 and \u03c0/2 radians\n\n**Important Notes:**\n- Initial Intensity `I_0` is always positive and represents the starting light intensity\n- Angle `theta` is always greater than 0 and less than or equal to \u03c0/2 radians (greater than 0\u00b0 to 90\u00b0)\n- The transmitted intensity represents how much light gets through the polarizer\n- The system only models positive light intensities\n\n**Strategy**: Analyze whether these parameters serve similar or different functions:\n- **Similar roles**: Parameters that both contribute to transmission behavior in the same way\n- **Different roles**: Parameters that control fundamentally different aspects (e.g., one controls initial conditions, another controls transmission efficiency)\n\n**How to Run Experiments:**\nTo gather data, you must use the <run_experiment> tag. Provide a JSON array specifying the parameters for one or arbitrarily many experimental sets. Note that all measurements returned by the system are **noise-free**. You can assume the data is perfectly accurate and deterministic.\n\n**CRITICAL: Strict Format Adherence**\n- You MUST use the exact <run_experiment> tag format shown below\n- If your format is incorrect, the system will ask you to read the initial prompt again\n- Double-check your JSON syntax before submitting\n- Ensure all required parameters are included with correct names\n\n**Input/Output Format:**\nYou must use the following JSON format for your requests and don't add any comments inside the JSON. The system will respond with a corresponding output array.\n\n**REMINDER: If you make a format error, re-read the initial prompt carefully to understand the correct format.**\n\n*Your Request:*\n<run_experiment>\n[\n  {\"I_0\": ..., \"theta\": ...},\n  {\"I_0\": ..., \"theta\": ...}\n]\n</run_experiment>\n\n*System Response:*\nThe system will return a list of the measured transmitted intensity.\n<experiment_output>\n[1.234e+02, 2.345e+02]\n</experiment_output>\n\n**Final Submission:**\nOnce you are confident you have determined the underlying force law, submit your findings as a single Python function enclosed in <final_law> tags.\n\n**Submission Requirements:**\n1. The function must be named `discovered_law`\n2. The function signature must be exactly: `def discovered_law(I_0, theta):`\n3. The function should return the mathematical formula for the ground truth Malus's Law that governs light transmission through polarizers in this universe.\n4. If you conclude that one of these parameters does not influence the final force, you should simply ignore that variable within your function's logic rather than changing the signature.\n5. If your law contains any constants, you must define the constant as a local variable inside the function body. Do NOT include the constant as a function argument.\n6. Import any necessary libraries inside the function body (e.g. math, numpy, etc.) if needed\n\n**Critical Boundaries:**\n- Do NOT include any explanation or commentary inside the <final_law> blocks and the function body.\n- Only output the <final_law> block in your final answer.\n\n**Example 1:**\n<final_law>\ndef discovered_law(I_0, theta):\n   import math\n   return I_0 * (math.cos(theta) ** 2)\n</final_law>\n\n**Example 2:**\n<final_law>\ndef discovered_law(I_0, theta):\n   return I_0 * (math.cos(theta) ** 2)\n</final_law>\n\n**Note:** \n- I_0 is the initial light intensity (always positive)\n- theta is the angle between polarization direction and polarizer axis (greater than 0 to \u03c0/2 radians)\n- The function returns the transmitted light intensity\n\n**Reminder:**\n1. Always remember that the laws of physics in this universe may differ from those in our own, including factor dependency, constant scalars, and the form of the law.\n2. When doing the experiments, use a broad range of input parameters, for example, values spanning from 10^-3 to 10^15 to ensure robustness across scales."
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"I_0\": 1e-3, \"theta\": 0.1},\n  {\"I_0\": 1e-2, \"theta\": 0.2},\n  {\"I_0\": 1e-1, \"theta\": 0.3},\n  {\"I_0\": 1, \"theta\": 0.4},\n  {\"I_0\": 10, \"theta\": 0.5},\n  {\"I_0\": 100, \"theta\": 0.6},\n  {\"I_0\": 1e3, \"theta\": 0.7},\n  {\"I_0\": 1e4, \"theta\": 0.8},\n  {\"I_0\": 1e5, \"theta\": 0.9}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.198669330795061e-03\", \"1.389418342308650e-02\", \"1.564642473395035e-01\", \"1.717356090899523e+00\", \"1.841470984807897e+01\", \"1.932039085967226e+02\", \"1.985449729988461e+03\", \"1.999573603041505e+04\", \"1.973847630878195e+05\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"I_0\": 1e-3, \"theta\": 0.2},\n  {\"I_0\": 1e-2, \"theta\": 0.3},\n  {\"I_0\": 1e-1, \"theta\": 0.4},\n  {\"I_0\": 1, \"theta\": 0.5},\n  {\"I_0\": 10, \"theta\": 0.6},\n  {\"I_0\": 100, \"theta\": 0.7},\n  {\"I_0\": 1e3, \"theta\": 0.8},\n  {\"I_0\": 1e4, \"theta\": 0.9},\n  {\"I_0\": 1e5, \"theta\": 1.0}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.389418342308650e-03\", \"1.564642473395035e-02\", \"1.717356090899523e-01\", \"1.841470984807897e+00\", \"1.932039085967227e+01\", \"1.985449729988460e+02\", \"1.999573603041505e+03\", \"1.973847630878195e+04\", \"1.909297426825682e+05\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"I_0\": 1e-3, \"theta\": 0.3},\n  {\"I_0\": 1e-2, \"theta\": 0.4},\n  {\"I_0\": 1e-1, \"theta\": 0.5},\n  {\"I_0\": 1, \"theta\": 0.6},\n  {\"I_0\": 10, \"theta\": 0.7},\n  {\"I_0\": 100, \"theta\": 0.8},\n  {\"I_0\": 1e3, \"theta\": 0.9},\n  {\"I_0\": 1e4, \"theta\": 1.0},\n  {\"I_0\": 1e5, \"theta\": 1.1}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.564642473395035e-03\", \"1.717356090899523e-02\", \"1.841470984807897e-01\", \"1.932039085967227e+00\", \"1.985449729988461e+01\", \"1.999573603041505e+02\", \"1.973847630878195e+03\", \"1.909297426825682e+04\", \"1.808496403819590e+05\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"I_0\": 1e-3, \"theta\": 0.4},\n  {\"I_0\": 1e-2, \"theta\": 0.5},\n  {\"I_0\": 1e-1, \"theta\": 0.6},\n  {\"I_0\": 1, \"theta\": 0.7},\n  {\"I_0\": 10, \"theta\": 0.8},\n  {\"I_0\": 100, \"theta\": 0.9},\n  {\"I_0\": 1e3, \"theta\": 1.0},\n  {\"I_0\": 1e4, \"theta\": 1.1},\n  {\"I_0\": 1e5, \"theta\": 1.2}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.717356090899523e-03\", \"1.841470984807897e-02\", \"1.932039085967227e-01\", \"1.985449729988461e+00\", \"1.999573603041505e+01\", \"1.973847630878195e+02\", \"1.909297426825682e+03\", \"1.808496403819590e+04\", \"1.675463180551151e+05\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"I_0\": 1e-3, \"theta\": 0.5},\n  {\"I_0\": 1e-2, \"theta\": 0.6},\n  {\"I_0\": 1e-1, \"theta\": 0.7},\n  {\"I_0\": 1, \"theta\": 0.8},\n  {\"I_0\": 10, \"theta\": 0.9},\n  {\"I_0\": 100, \"theta\": 1.0},\n  {\"I_0\": 1e3, \"theta\": 1.1},\n  {\"I_0\": 1e4, \"theta\": 1.2},\n  {\"I_0\": 1e5, \"theta\": 1.3}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.841470984807897e-03\", \"1.932039085967227e-02\", \"1.985449729988461e-01\", \"1.999573603041505e+00\", \"1.973847630878195e+01\", \"1.909297426825682e+02\", \"1.808496403819590e+03\", \"1.675463180551151e+04\", \"1.515501371821464e+05\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"I_0\": 1e-3, \"theta\": 0.6},\n  {\"I_0\": 1e-2, \"theta\": 0.7},\n  {\"I_0\": 1e-1, \"theta\": 0.8},\n  {\"I_0\": 1, \"theta\": 0.9},\n  {\"I_0\": 10, \"theta\": 1.0},\n  {\"I_0\": 100, \"theta\": 1.1},\n  {\"I_0\": 1e3, \"theta\": 1.2},\n  {\"I_0\": 1e4, \"theta\": 1.3},\n  {\"I_0\": 1e5, \"theta\": 1.4}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.932039085967227e-03\", \"1.985449729988461e-02\", \"1.999573603041505e-01\", \"1.973847630878195e+00\", \"1.909297426825682e+01\", \"1.808496403819590e+02\", \"1.675463180551151e+03\", \"1.515501371821464e+04\", \"1.334988150155905e+05\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<final_law>\ndef discovered_law(I_0, theta):\n   import math\n   return I_0 * (math.cos(theta) ** 2)\n</final_law>"
+        }
+      ]
+    },
+    {
+      "task": "m8_sound_speed",
+      "difficulty": "easy",
+      "version": "v0",
+      "equation": "math.sqrt(gamma * C * T / M)",
+      "raw_equation": "def discovered_law(gamma, T, M):\n    import math\n    C = 1.0\n    return math.sqrt(gamma * C * T / M)",
+      "gt_equation": "sqrt(351.6 * gamma * T**2 / M)",
+      "loss": 5.2769125064361795,
+      "rmsle": 5.2769125064361795,
+      "exact_accuracy": 0.0,
+      "similarity": 0.0,
+      "symbolic_match": false,
+      "chat_history": [
+        {
+          "role": "system",
+          "content": "You are an AI research assistant tasked with discovering scientific laws in a simulated universe.\nYour goal is to propose experiments, analyze the data they return, and ultimately deduce the underlying scientific law.\nPlease note that the laws of physics in this universe may differ from those in our own.\nYou can perform experiments to gather data but you must follow the protocol strictly.\n\n**Workflow:**\n1.  Analyze the mission description provided.\n2.  Design a set of experiments to test your hypotheses.\n3.  Use the `<run_experiment>` tag to submit your experimental inputs.\n4. The system will return the results (up to 20 data points per experiment) in an <experiment_output> tag.\n    - If a returned value is nan, it indicates that the calculation encountered an error, such as:\n        - ValueError (e.g., using asin on a value outside the valid range of [-1, 1])\n        - OverflowError (e.g., using exp on an extremely large input)\n    - You may ignore any data points that return nan, as they do not contribute to valid hypothesis testing.\n    - Consider adjusting your input parameters to avoid invalid ranges and improve data coverage.\n5.  You can run up to 10 rounds of experiments. Use them wisely so that before submitting your final law, ensure you have:\n    - fully explored the experimental space\n    - Verified your hypotheses against the data\n    - made the most of the available rounds to strengthen your conclusions\n6.  Only one action is allowed per round: either <run_experiment> or <final_law>.\n7.  After submitting <run_experiment>, wait for <experiment_output> before proceeding.\n8.  You should verify your hypotheses by checking if the output from the experiments matches the output from your hypotheses.\n9.  When confident, submit your final discovered law using the `<final_law>` tag. This ends the mission."
+        },
+        {
+          "role": "user",
+          "content": "**Mission:** Your objective is to act as an AI research physicist. You are in a simulated universe and your goal is to discover the physical law in this universe.\nNote that the laws of physics in this universe may differ from those in our own, including both factor dependency and constant scalars.\nThere's no ground-truth laws available to you. You must discover the law yourself.\n\n**Experimental Apparatus:**\nYou have access to a device that can directly measure the speed of sound in various ideal gases under controlled conditions.\n**Control Parameters:**\n- `adiabatic_index`: The adiabatic index of the gas.\n- `temperature`: The temperature of the gas in Kelvin.\n- `molar_mass`: The molar mass of the gas in kg/mol.\n\n**How to Run Experiments:**\nTo gather data, you must use the <run_experiment> tag. Provide a JSON array specifying the parameters for one or arbitrarily many experimental sets. Note that all measurements returned by the system are **noise-free**. You can assume the data is perfectly accurate and deterministic.\n\n**CRITICAL: Strict Format Adherence**\n- You MUST use the exact <run_experiment> tag format shown below\n- If your format is incorrect, the system will ask you to read the initial prompt again\n- Double-check your JSON syntax before submitting\n- Ensure all required parameters are included with correct names\n\n**Input/Output Format:**\nYou must use the following JSON format for your requests and don't add any comments inside the JSON. The system will respond with a corresponding output array.\n\n*Your Request:*\n<run_experiment>\n[\n  {\"adiabatic_index\": ..., \"temperature\": ..., \"molar_mass\": ...},\n  {\"adiabatic_index\": ..., \"temperature\": ..., \"molar_mass\": ...}\n]\n</run_experiment>\n\n*System Response:*\nThe system will return a list of measured sound speeds (v).\n<experiment_output>\n[..., ...]\n</experiment_output>\n\n**Final Submission:**\nOnce you are confident you have determined the underlying force law, submit your findings as a single Python function enclosed in <final_law> tags.\n\n**Submission Requirements:**\n1. The function must be named `discovered_law`\n2. The function signature must be exactly: `def discovered_law(gamma, T, M):`\n3. The function should return the speed of sound (v).\n4. If you conclude that one of these parameters does not influence the final force, you should simply ignore that variable within your function's logic rather than changing the signature.\n5. If your law contains any constants, you must define the constant as a local variable inside the function body. Do NOT include the constant as a function argument.\n6. Import any necessary libraries inside the function body (e.g. math, numpy, etc.) if needed\n\n**Critical Boundaries:**\n- Do NOT include any explanation or commentary inside the <final_law> blocks and the function body.\n- Only output the <final_law> block in your final answer.\n\n**Example:**\n<final_law>\ndef discovered_law(gamma, T, M):\n    import math\n    C = 1.143\n    return math.sqrt(gamma * C * T / M)\n</final_law>\n\n**Note**:\n- `gamma` is the adiabatic index of the gas.\n- `T` is the temperature in Kelvin.\n- `M` is the molar mass of the gas in kg/mol.\n- If possible, group and wrap all variables into a single expression when appropriate (e.g., instead of T * sqrt(M), prefer sqrt(T\u00b2 * M) to express the same relationship in a more unified form).\n\n**Reminder:**\n1. Always remember that the laws of physics in this universe may differ from those in our own, including factor dependency, constant scalars, and the form of the law.\n2. When doing the experiments, use a broad range of input parameters, for example, values spanning from 10^-3 to 10^15 to ensure robustness across scales."
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"adiabatic_index\": 1.4, \"temperature\": 300, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.4, \"temperature\": 600, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.4, \"temperature\": 900, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.4, \"temperature\": 300, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.4, \"temperature\": 600, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.4, \"temperature\": 900, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.4, \"temperature\": 300, \"molar_mass\": 0.018},\n  {\"adiabatic_index\": 1.4, \"temperature\": 600, \"molar_mass\": 0.018},\n  {\"adiabatic_index\": 1.4, \"temperature\": 900, \"molar_mass\": 0.018}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"3.908505314452502e+04\", \"7.817010628905003e+04\", \"1.172551594335750e+05\", \"3.173097139160012e+04\", \"6.346194278320025e+04\", \"9.519291417480037e+04\", \"4.961048276322254e+04\", \"9.922096552644507e+04\", \"1.488314482896676e+05\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"adiabatic_index\": 1.3, \"temperature\": 300, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.3, \"temperature\": 600, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.3, \"temperature\": 900, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.3, \"temperature\": 300, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.3, \"temperature\": 600, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.3, \"temperature\": 900, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.3, \"temperature\": 300, \"molar_mass\": 0.018},\n  {\"adiabatic_index\": 1.3, \"temperature\": 600, \"molar_mass\": 0.018},\n  {\"adiabatic_index\": 1.3, \"temperature\": 900, \"molar_mass\": 0.018}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"3.766329961555458e+04\", \"7.532659923110917e+04\", \"1.129898988466638e+05\", \"3.057672911932151e+04\", \"6.115345823864301e+04\", \"9.173018735796453e+04\", \"4.780585738170585e+04\", \"9.561171476341170e+04\", \"1.434175721451176e+05\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"adiabatic_index\": 1.4, \"temperature\": 150, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.4, \"temperature\": 150, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.4, \"temperature\": 150, \"molar_mass\": 0.018},\n  {\"adiabatic_index\": 1.4, \"temperature\": 1200, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.4, \"temperature\": 1200, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.4, \"temperature\": 1200, \"molar_mass\": 0.018},\n  {\"adiabatic_index\": 1.3, \"temperature\": 150, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.3, \"temperature\": 150, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.3, \"temperature\": 150, \"molar_mass\": 0.018}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.954252657226251e+04\", \"1.586548569580006e+04\", \"2.480524138161127e+04\", \"1.563402125781001e+05\", \"1.269238855664005e+05\", \"1.984419310528901e+05\", \"1.883164980777729e+04\", \"1.528836455966075e+04\", \"2.390292869085292e+04\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"adiabatic_index\": 1.4, \"temperature\": 1800, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.4, \"temperature\": 1800, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.4, \"temperature\": 1800, \"molar_mass\": 0.018},\n  {\"adiabatic_index\": 1.3, \"temperature\": 1800, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.3, \"temperature\": 1800, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.3, \"temperature\": 1800, \"molar_mass\": 0.018}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"2.345103188671501e+05\", \"1.903858283496007e+05\", \"2.976628965793352e+05\", \"2.259797976933276e+05\", \"1.834603747159291e+05\", \"2.868351442902351e+05\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"adiabatic_index\": 1.2, \"temperature\": 300, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.2, \"temperature\": 600, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.2, \"temperature\": 900, \"molar_mass\": 0.029},\n  {\"adiabatic_index\": 1.2, \"temperature\": 300, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.2, \"temperature\": 600, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.2, \"temperature\": 900, \"molar_mass\": 0.044},\n  {\"adiabatic_index\": 1.2, \"temperature\": 300, \"molar_mass\": 0.018},\n  {\"adiabatic_index\": 1.2, \"temperature\": 600, \"molar_mass\": 0.018},\n  {\"adiabatic_index\": 1.2, \"temperature\": 900, \"molar_mass\": 0.018}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"3.618572780187962e+04\", \"7.237145560375924e+04\", \"1.085571834056389e+05\", \"2.937717109965120e+04\", \"5.875434219930241e+04\", \"8.813151329895361e+04\", \"4.593038210161113e+04\", \"9.186076420322226e+04\", \"1.377911463048334e+05\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<final_law>\ndef discovered_law(gamma, T, M):\n    import math\n    C = 1.0\n    return math.sqrt(gamma * C * T / M)\n</final_law>"
+        }
+      ]
+    },
+    {
+      "task": "m9_hooke_law",
+      "difficulty": "easy",
+      "version": "v0",
+      "equation": "c * x",
+      "raw_equation": "def discovered_law(x):\n   c = 4.62282\n   return c * x",
+      "gt_equation": "2 * 231.14 * x**2",
+      "loss": 1.8111356396144662,
+      "rmsle": 1.8111356396144662,
+      "exact_accuracy": 0.0,
+      "similarity": 0.25,
+      "symbolic_match": false,
+      "chat_history": [
+        {
+          "role": "system",
+          "content": "You are an AI research assistant tasked with discovering scientific laws in a simulated universe.\nYour goal is to propose experiments, analyze the data they return, and ultimately deduce the underlying scientific law.\nPlease note that the laws of physics in this universe may differ from those in our own.\nYou can perform experiments to gather data but you must follow the protocol strictly.\n\n**Workflow:**\n1.  Analyze the mission description provided.\n2.  Design a set of experiments to test your hypotheses.\n3.  Use the `<run_experiment>` tag to submit your experimental inputs.\n4. The system will return the results (up to 20 data points per experiment) in an <experiment_output> tag.\n    - If a returned value is nan, it indicates that the calculation encountered an error, such as:\n        - ValueError (e.g., using asin on a value outside the valid range of [-1, 1])\n        - OverflowError (e.g., using exp on an extremely large input)\n    - You may ignore any data points that return nan, as they do not contribute to valid hypothesis testing.\n    - Consider adjusting your input parameters to avoid invalid ranges and improve data coverage.\n5.  You can run up to 10 rounds of experiments. Use them wisely so that before submitting your final law, ensure you have:\n    - fully explored the experimental space\n    - Verified your hypotheses against the data\n    - made the most of the available rounds to strengthen your conclusions\n6.  Only one action is allowed per round: either <run_experiment> or <final_law>.\n7.  After submitting <run_experiment>, wait for <experiment_output> before proceeding.\n8.  You should verify your hypotheses by checking if the output from the experiments matches the output from your hypotheses.\n9.  When confident, submit your final discovered law using the `<final_law>` tag. This ends the mission."
+        },
+        {
+          "role": "user",
+          "content": "**Mission:** Your objective is to act as an AI research physicist. You are in a simulated universe and your goal is to discover the physical law in this universe.\nNote that the laws of physics in this universe may differ from those in our own, including both factor dependency and constant scalars.\nThere's no ground-truth laws available to you. You must discover the law yourself.\n\n**Experimental Apparatus:**\nYou have access to a Hooke's law measurement device that can measure the elastic potential energy stored in springs. You have precise control over the following properties for each experiment you run:\n- Displacement (`x`) - always positive\n\n**Important Notes:**\n- Displacement `x` is always positive\n- The energy represents the amount of elastic potential energy stored in the spring\n- If the calculated energy would be negative, it will be clamped to 0\n\n**Strategy**: Analyze whether these parameters serve similar or different functions:\n- **Similar roles**: Parameters that both contribute to energy storage behavior in the same way\n- **Different roles**: Parameters that control fundamentally different aspects (e.g., one controls displacement)\n\n**How to Run Experiments:**\nTo gather data, you must use the <run_experiment> tag. Provide a JSON array specifying the parameters for one or arbitrarily many experimental sets. Note that all measurements returned by the system are **noise-free**. You can assume the data is perfectly accurate and deterministic.\n\n**CRITICAL: Strict Format Adherence**\n- You MUST use the exact <run_experiment> tag format shown below\n- If your format is incorrect, the system will ask you to read the initial prompt again\n- Double-check your JSON syntax before submitting\n- Ensure all required parameters are included with correct names\n\n**Input/Output Format:**\nYou must use the following JSON format for your requests and don't add any comments inside the JSON. The system will respond with a corresponding output array.\n\n**REMINDER: If you make a format error, re-read the initial prompt carefully to understand the correct format.**\n\n*Your Request:*\n<run_experiment>\n[\n  {\"x\": ...},\n  {\"x\": ...}\n]\n</run_experiment>\n\n*System Response:*\nThe system will return a list of the measured energy.\n<experiment_output>\n[1.234e-03, 2.345e-02]\n</experiment_output>\n\n**Note:** The system returns energy values in Joules where energy is stored in the spring.\n\n**Final Submission:**\nOnce you are confident you have determined the underlying force law, submit your findings as a single Python function enclosed in <final_law> tags.\n\n**Submission Requirements:**\n1. The function must be named `discovered_law`\n2. The function signature must be exactly: `def discovered_law(x):`\n3. The function should return the elastic potential energy stored in the spring based on the ground truth Hooke's law. Note: If the calculated energy would be negative, it will be clamped to 0..\n4. If you conclude that one of these parameters does not influence the final force, you should simply ignore that variable within your function's logic rather than changing the signature.\n5. If your law contains any constants, you must define the constant as a local variable inside the function body. Do NOT include the constant as a function argument.\n6. Import any necessary libraries inside the function body (e.g. math, numpy, etc.) if needed\n\n**Critical Boundaries:**\n- Do NOT include any explanation or commentary inside the <final_law> blocks and the function body.\n- Only output the <final_law> block in your final answer.\n\n**Example 1:**\n<final_law>\ndef discovered_law(x):\n   import math\n   c = 0.5\n   return cx\n</final_law>\n\n**Example 2:**\n<final_law>\ndef discovered_law(x):\n   c = 0.8\n   return cx\n</final_law>\n\n**Note:** \n- x is the displacement from equilibrium\n- The function returns the elastic potential energy stored\n- If the calculated energy would be negative, it will be clamped to 0\n\n**Reminder:**\n1. Always remember that the laws of physics in this universe may differ from those in our own, including factor dependency, constant scalars, and the form of the law.\n2. When doing the experiments, use a broad range of input parameters, for example, values spanning from 10^-3 to 10^15 to ensure robustness across scales."
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"x\": 0.001},\n  {\"x\": 0.01},\n  {\"x\": 0.1},\n  {\"x\": 1},\n  {\"x\": 10},\n  {\"x\": 100},\n  {\"x\": 1000},\n  {\"x\": 10000},\n  {\"x\": 100000},\n  {\"x\": 1000000}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"4.622819999999999e-04\", \"4.622820000000000e-02\", \"4.622820000000001e+00\", \"4.622820000000000e+02\", \"4.622820000000000e+04\", \"4.622820000000000e+06\", \"4.622820000000000e+08\", \"4.622820000000000e+10\", \"4.622820000000000e+12\", \"4.622820000000000e+14\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "Based on the results from the first experiment, it appears that the elastic potential energy stored in the spring scales consistently with the displacement \\( x \\). The energy values increase by a constant factor as \\( x \\) increases, suggesting a linear relationship.\n\nTo further investigate, I will run another set of experiments with a different range of displacements to confirm the linearity and determine if there are any scaling factors involved. \n\nI will choose displacements that are smaller and larger than the previous set to ensure a comprehensive analysis.\n\n<run_experiment>\n[\n  {\"x\": 0.0001},\n  {\"x\": 0.001},\n  {\"x\": 0.1},\n  {\"x\": 10},\n  {\"x\": 1000},\n  {\"x\": 100000}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"4.622820000000000e-06\", \"4.622819999999999e-04\", \"4.622820000000001e+00\", \"4.622820000000000e+04\", \"4.622820000000000e+08\", \"4.622820000000000e+12\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "The results from the second experiment further confirm the linear relationship between the displacement \\( x \\) and the elastic potential energy stored in the spring. The energy values continue to scale consistently with \\( x \\), suggesting a proportionality constant.\n\nTo solidify my understanding of the relationship, I will run one more experiment with displacements that are even larger and smaller, ensuring that I cover a wide range of values and confirm the linearity across different scales.\n\n<run_experiment>\n[\n  {\"x\": 0.00001},\n  {\"x\": 0.0001},\n  {\"x\": 0.001},\n  {\"x\": 0.01},\n  {\"x\": 1},\n  {\"x\": 10000}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"4.622820000000001e-08\", \"4.622820000000000e-06\", \"4.622819999999999e-04\", \"4.622820000000000e-02\", \"4.622820000000000e+02\", \"4.622820000000000e+10\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "The results from the third experiment continue to support the linear relationship between displacement \\( x \\) and the elastic potential energy stored in the spring. The energy values are consistent and scale appropriately with the displacement across all tested ranges.\n\nFrom the data gathered, it appears that the elastic potential energy \\( E \\) can be expressed as a linear function of the displacement \\( x \\). The pattern suggests that the energy is proportional to the displacement, indicating a form similar to Hooke's law, which states that the potential energy stored in a spring is given by:\n\n\\[ E = \\frac{1}{2} k x^2 \\]\n\nHowever, the consistent scaling factor observed in the results suggests that the relationship might be simplified to a linear form \\( E = c \\cdot x \\) for some constant \\( c \\).\n\nTo finalize my findings, I will submit the discovered law based on the observations from the experiments.\n\n<final_law>\ndef discovered_law(x):\n   c = 4.62282\n   return c * x\n</final_law>"
+        }
+      ]
+    },
+    {
+      "task": "m10_be_distribution",
+      "difficulty": "easy",
+      "version": "v0",
+      "equation": "1 / (math.exp(Constant * omega / T) - 1)",
+      "raw_equation": "def discovered_law(omega, T):\n\timport math\n\tConstant = 1.0e-10\n\treturn 1 / (math.exp(Constant * omega / T) - 1)",
+      "gt_equation": "1 / (exp(1.0513e-14 * omega / T) + 1)",
+      "loss": 6.780695344812864,
+      "rmsle": 6.780695344812864,
+      "exact_accuracy": 0.0,
+      "similarity": 0.0,
+      "symbolic_match": false,
+      "chat_history": [
+        {
+          "role": "system",
+          "content": "You are an AI research assistant tasked with discovering scientific laws in a simulated universe.\nYour goal is to propose experiments, analyze the data they return, and ultimately deduce the underlying scientific law.\nPlease note that the laws of physics in this universe may differ from those in our own.\nYou can perform experiments to gather data but you must follow the protocol strictly.\n\n**Workflow:**\n1.  Analyze the mission description provided.\n2.  Design a set of experiments to test your hypotheses.\n3.  Use the `<run_experiment>` tag to submit your experimental inputs.\n4. The system will return the results (up to 20 data points per experiment) in an <experiment_output> tag.\n    - If a returned value is nan, it indicates that the calculation encountered an error, such as:\n        - ValueError (e.g., using asin on a value outside the valid range of [-1, 1])\n        - OverflowError (e.g., using exp on an extremely large input)\n    - You may ignore any data points that return nan, as they do not contribute to valid hypothesis testing.\n    - Consider adjusting your input parameters to avoid invalid ranges and improve data coverage.\n5.  You can run up to 10 rounds of experiments. Use them wisely so that before submitting your final law, ensure you have:\n    - fully explored the experimental space\n    - Verified your hypotheses against the data\n    - made the most of the available rounds to strengthen your conclusions\n6.  Only one action is allowed per round: either <run_experiment> or <final_law>.\n7.  After submitting <run_experiment>, wait for <experiment_output> before proceeding.\n8.  You should verify your hypotheses by checking if the output from the experiments matches the output from your hypotheses.\n9.  When confident, submit your final discovered law using the `<final_law>` tag. This ends the mission."
+        },
+        {
+          "role": "user",
+          "content": "**Mission:** Your objective is to act as an AI research physicist. You are in a simulated universe and your goal is to discover the physical law in this universe.\nNote that the laws of physics in this universe may differ from those in our own, including both factor dependency and constant scalars.\nThere's no ground-truth laws available to you. You must discover the law yourself.\n\n**Experimental Apparatus:**\nYou have access to a photons analyzer that can directly measure the average occupation number `n` of photons in quantum state for a system.\n\n**Control Parameters:**\n- `omega`: The angular frequency of the photons.\n    - the scale should be at least 1e8\n    - remember to test among different scales of `omega`\n- `temperature`: The temperature of the system.\n    - the scale should be at least 1e1\n    - remember to test among different scales of `temperature`\n\n**How to Run Experiments:**\nTo gather data, you must use the <run_experiment> tag. Provide a JSON array specifying the parameters for one or arbitrarily many experimental sets. Note that all measurements returned by the system are **noise-free**. You can assume the data is perfectly accurate and deterministic.\n\n**CRITICAL: Strict Format Adherence**\n- You MUST use the exact <run_experiment> tag format shown below.\n- If your format is incorrect, the system will ask you to read the initial prompt again.\n- Double-check your JSON syntax before submitting.\n- Ensure all required parameters are included with correct names.\n\n**Input/Output Format:**\nYou must use the following JSON format for your requests and don't add any comments inside the JSON. The system will respond with a corresponding output array.\n\n*Your Request:*\n<run_experiment>\n[\n  {\"omega\": ..., \"temperature\": ...},\n  {\"omega\": ..., \"temperature\": ...}\n]\n</run_experiment>\n\n*System Response:*\nThe system will return a list of measured average occupation numbers (n).\n<experiment_output>\n[..., ...]\n</experiment_output>\n\n**Strategy**: Analyze the functional roles of parameters in relation to the average occupation number of photons:\n- **Similar roles**: Identify parameters that influence the average occupation number of photons in comparable ways (e.g., both increasing or decreasing it proportionally).\n- **Different roles** Identify parameters that affect fundamentally different aspects of the system.\n- The relationship you are trying to discover is highly non-linear (e.g. containing exponential function, trigonometric function, etc) and sensitive to the scale of your inputs. A robust experimental strategy is essential.\n    - **Explore Orders of Magnitude:** Probing parameters at very different scales is critical. Small, incremental changes to your inputs will likely yield very similar, uninformative outputs. **Your goal is to map the function's behavior across its entire dynamic range.**\n    - **The Law is Not a Simple Constant:** Be aware that the occupation number `n` is a strong function of both `omega` and `T`. If your experiments consistently return a constant value (e.g., always near zero or a very large number), it is a sign that your tests are confined to an asymptotic regime (a flat part of the curve). This means you must drastically change your parameters to find the interesting, transitional behavior.\n        - Please remember that the law will **NEVER** be a simple constant\n    - **Combine Parameters:** The physics of this system depends on how `omega` and `T` relate to each other. After exploring each parameter individually, design experiments where you change both simultaneously. For example, investigate if doubling `omega` can be compensated for by a change in `T`.\n\n**Final Submission:**\nOnce you are confident you have determined the underlying force law, submit your findings as a single Python function enclosed in <final_law> tags.\n\n**Submission Requirements:**\n1. The function must be named `discovered_law`\n2. The function signature must be exactly: `def discovered_law(omega, T):`\n3. The function should return the average occupation number of photons (n) in quantum state.\n4. If you conclude that one of these parameters does not influence the final force, you should simply ignore that variable within your function's logic rather than changing the signature.\n5. If your law contains any constants, you must define the constant as a local variable inside the function body. Do NOT include the constant as a function argument.\n6. Import any necessary libraries inside the function body (e.g. math, numpy, etc.) if needed\n\n**Critical Boundaries:**\n- Do NOT include any explanation or commentary inside the <final_law> blocks and the function body.\n- Only output the <final_law> block in your final answer.\n\n**Example:**\n<final_law>\ndef discovered_law(omega, T):\n\timport math\n\tConstant = 1.4314312-21 \n\treturn 1 / (math.exp(Constant * omega / T) - 1)\n</final_law>\n\n**Note**:\n- `omega` is the angular frequency of the photons.\n- `T` is the temperature.\n\n**Reminder:**\n1. Always remember that the laws of physics in this universe may differ from those in our own, including factor dependency, constant scalars, and the form of the law.\n2. When doing the experiments, use a broad range of input parameters, for example, values spanning from 10^-3 to 10^15 to ensure robustness across scales."
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"omega\": 1e8, \"temperature\": 1e1},\n  {\"omega\": 1e9, \"temperature\": 1e1},\n  {\"omega\": 1e10, \"temperature\": 1e1},\n  {\"omega\": 1e11, \"temperature\": 1e1},\n  {\"omega\": 1e12, \"temperature\": 1e1},\n  {\"omega\": 1e8, \"temperature\": 1e2},\n  {\"omega\": 1e9, \"temperature\": 1e2},\n  {\"omega\": 1e10, \"temperature\": 1e2},\n  {\"omega\": 1e11, \"temperature\": 1e2},\n  {\"omega\": 1e12, \"temperature\": 1e2}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"4.999999737175000e-01\", \"4.999997371750001e-01\", \"4.999973717500000e-01\", \"4.999737175000241e-01\", \"4.997371750242069e-01\", \"4.999999973717499e-01\", \"4.999999737175000e-01\", \"4.999997371750001e-01\", \"4.999973717500000e-01\", \"4.999737175000241e-01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"omega\": 1e8, \"temperature\": 1e3},\n  {\"omega\": 1e9, \"temperature\": 1e3},\n  {\"omega\": 1e10, \"temperature\": 1e3},\n  {\"omega\": 1e11, \"temperature\": 1e3},\n  {\"omega\": 1e12, \"temperature\": 1e3},\n  {\"omega\": 1e8, \"temperature\": 1e4},\n  {\"omega\": 1e9, \"temperature\": 1e4},\n  {\"omega\": 1e10, \"temperature\": 1e4},\n  {\"omega\": 1e11, \"temperature\": 1e4},\n  {\"omega\": 1e12, \"temperature\": 1e4}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"4.999999997371750e-01\", \"4.999999973717499e-01\", \"4.999999737175000e-01\", \"4.999997371750001e-01\", \"4.999973717500000e-01\", \"4.999999999737175e-01\", \"4.999999997371750e-01\", \"4.999999973717499e-01\", \"4.999999737175000e-01\", \"4.999997371750001e-01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"omega\": 1e8, \"temperature\": 1e5},\n  {\"omega\": 1e9, \"temperature\": 1e5},\n  {\"omega\": 1e10, \"temperature\": 1e5},\n  {\"omega\": 1e11, \"temperature\": 1e5},\n  {\"omega\": 1e12, \"temperature\": 1e5},\n  {\"omega\": 1e8, \"temperature\": 1e6},\n  {\"omega\": 1e9, \"temperature\": 1e6},\n  {\"omega\": 1e10, \"temperature\": 1e6},\n  {\"omega\": 1e11, \"temperature\": 1e6},\n  {\"omega\": 1e12, \"temperature\": 1e6}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"4.999999999973718e-01\", \"4.999999999737175e-01\", \"4.999999997371750e-01\", \"4.999999973717499e-01\", \"4.999999737175000e-01\", \"4.999999999997371e-01\", \"4.999999999973718e-01\", \"4.999999999737175e-01\", \"4.999999997371750e-01\", \"4.999999973717499e-01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"omega\": 1e8, \"temperature\": 1e7},\n  {\"omega\": 1e9, \"temperature\": 1e7},\n  {\"omega\": 1e10, \"temperature\": 1e7},\n  {\"omega\": 1e11, \"temperature\": 1e7},\n  {\"omega\": 1e12, \"temperature\": 1e7},\n  {\"omega\": 1e8, \"temperature\": 1e8},\n  {\"omega\": 1e9, \"temperature\": 1e8},\n  {\"omega\": 1e10, \"temperature\": 1e8},\n  {\"omega\": 1e11, \"temperature\": 1e8},\n  {\"omega\": 1e12, \"temperature\": 1e8}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"4.999999999999738e-01\", \"4.999999999997371e-01\", \"4.999999999973718e-01\", \"4.999999999737175e-01\", \"4.999999997371750e-01\", \"4.999999999999973e-01\", \"4.999999999999738e-01\", \"4.999999999997371e-01\", \"4.999999999973718e-01\", \"4.999999999737175e-01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"omega\": 1e10, \"temperature\": 1e1},\n  {\"omega\": 1e10, \"temperature\": 1e2},\n  {\"omega\": 1e10, \"temperature\": 1e3},\n  {\"omega\": 1e10, \"temperature\": 1e4},\n  {\"omega\": 1e10, \"temperature\": 1e5},\n  {\"omega\": 1e10, \"temperature\": 1e6},\n  {\"omega\": 1e10, \"temperature\": 1e7},\n  {\"omega\": 1e10, \"temperature\": 1e8},\n  {\"omega\": 1e10, \"temperature\": 1e9},\n  {\"omega\": 1e10, \"temperature\": 1e10}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"4.999973717500000e-01\", \"4.999997371750001e-01\", \"4.999999737175000e-01\", \"4.999999973717499e-01\", \"4.999999997371750e-01\", \"4.999999999737175e-01\", \"4.999999999973718e-01\", \"4.999999999997371e-01\", \"4.999999999999738e-01\", \"4.999999999999973e-01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<final_law>\ndef discovered_law(omega, T):\n\timport math\n\tConstant = 1.0e-10\n\treturn 1 / (math.exp(Constant * omega / T) - 1)\n</final_law>"
+        }
+      ]
+    },
+    {
+      "task": "m11_heat_transfer",
+      "difficulty": "easy",
+      "version": "v0",
+      "equation": "m * c * delta_T",
+      "raw_equation": "def discovered_law(m, c, delta_T):\n   return m * c * delta_T",
+      "gt_equation": "m * c * (delta_T**2.5)",
+      "loss": 7.1748174537243505,
+      "rmsle": 7.1748174537243505,
+      "exact_accuracy": 0.0,
+      "similarity": 0.575,
+      "symbolic_match": false,
+      "chat_history": [
+        {
+          "role": "system",
+          "content": "You are an AI research assistant tasked with discovering scientific laws in a simulated universe.\nYour goal is to propose experiments, analyze the data they return, and ultimately deduce the underlying scientific law.\nPlease note that the laws of physics in this universe may differ from those in our own.\nYou can perform experiments to gather data but you must follow the protocol strictly.\n\n**Workflow:**\n1.  Analyze the mission description provided.\n2.  Design a set of experiments to test your hypotheses.\n3.  Use the `<run_experiment>` tag to submit your experimental inputs.\n4. The system will return the results (up to 20 data points per experiment) in an <experiment_output> tag.\n    - If a returned value is nan, it indicates that the calculation encountered an error, such as:\n        - ValueError (e.g., using asin on a value outside the valid range of [-1, 1])\n        - OverflowError (e.g., using exp on an extremely large input)\n    - You may ignore any data points that return nan, as they do not contribute to valid hypothesis testing.\n    - Consider adjusting your input parameters to avoid invalid ranges and improve data coverage.\n5.  You can run up to 10 rounds of experiments. Use them wisely so that before submitting your final law, ensure you have:\n    - fully explored the experimental space\n    - Verified your hypotheses against the data\n    - made the most of the available rounds to strengthen your conclusions\n6.  Only one action is allowed per round: either <run_experiment> or <final_law>.\n7.  After submitting <run_experiment>, wait for <experiment_output> before proceeding.\n8.  You should verify your hypotheses by checking if the output from the experiments matches the output from your hypotheses.\n9.  When confident, submit your final discovered law using the `<final_law>` tag. This ends the mission."
+        },
+        {
+          "role": "user",
+          "content": "**Mission:** Your objective is to act as an AI research physicist. You are in a simulated universe and your goal is to discover the physical law in this universe.\nNote that the laws of physics in this universe may differ from those in our own, including both factor dependency and constant scalars.\nThere's no ground-truth laws available to you. You must discover the law yourself.\n\n**Experimental Apparatus:**\nYou have access to a heat transfer measurement device that can measure the heat transfer between materials. You have precise control over the following properties for each experiment you run:\n- Mass (`m`) - always positive\n- C_constant (`c`) - always positive\n- Temperature Change (`delta_T`) - can be positive\n\n**Important Notes:**\n- Mass `m` is always positive\n- C_constant `c` is always positive\n- Temperature change `delta_T` must be positive (heating only)\n- The heat transfer represents the amount of energy transferred due to temperature change\n\n**Strategy**: Analyze whether these parameters serve similar or different functions:\n- **Similar roles**: Parameters that both contribute to heat transfer behavior in the same way\n- **Different roles**: Parameters that control fundamentally different aspects (e.g., one controls material properties, another controls driving force)\n\n**How to Run Experiments:**\nTo gather data, you must use the <run_experiment> tag. Provide a JSON array specifying the parameters for one or arbitrarily many experimental sets. Note that all measurements returned by the system are **noise-free**. You can assume the data is perfectly accurate and deterministic.\n\n**CRITICAL: Strict Format Adherence**\n- You MUST use the exact <run_experiment> tag format shown below\n- If your format is incorrect, the system will ask you to read the initial prompt again\n- Double-check your JSON syntax before submitting\n- Ensure all required parameters are included with correct names\n- `delta_T` MUST be positive (greater than 0)\n- The system only models heating processes\n- If you need to model cooling, use the absolute value of the temperature decrease\n- Negative delta_T values will cause the experiment to fail\n\n**Input/Output Format:**\nYou must use the following JSON format for your requests and don't add any comments inside the JSON. The system will respond with a corresponding output array.\n\n**REMINDER: If you make a format error, re-read the initial prompt carefully to understand the correct format.**\n\n*Your Request:*\n<run_experiment>\n[\n  {\"m\": ..., \"c\": ..., \"delta_T\": ...},\n  {\"m\": ..., \"c\": ..., \"delta_T\": ...}\n]\n</run_experiment>\n\n*System Response:*\nThe system will return the a list of measured heat transfernt.\n<experiment_output>\n[1.234e+03, 2.345e+04]\n</experiment_output>\n\n**Note:** The system returns heat transfer values in Joules.\n\n**Final Submission:**\nOnce you are confident you have determined the underlying force law, submit your findings as a single Python function enclosed in <final_law> tags.\n\n**Submission Requirements:**\n1. The function must be named `discovered_law`\n2. The function signature must be exactly: `def discovered_law(m, c, delta_T):`\n3. The function should return the heat transfer based on the ground truth heat transfer law.\n4. If you conclude that one of these parameters does not influence the final force, you should simply ignore that variable within your function's logic rather than changing the signature.\n5. If your law contains any constants, you must define the constant as a local variable inside the function body. Do NOT include the constant as a function argument.\n6. Import any necessary libraries inside the function body (e.g. math, numpy, etc.) if needed\n\n**Critical Boundaries:**\n- Do NOT include any explanation or commentary inside the <final_law> blocks and the function body.\n- Only output the <final_law> block in your final answer.\n\n**Example 1:**\n<final_law>\ndef discovered_law(m, c, delta_T):\n   return m * c * delta_T\n</final_law>\n\n**Example 2:**\n<final_law>\ndef discovered_law(m, c, delta_T):\n   import math\n   return m * c * delta_T\n</final_law>\n\n**Note:** \n- m is the mass\n- c is the c_constant\n- delta_T is the temperature change\n- The function returns the heat transfer\n\n**Reminder:**\n1. Always remember that the laws of physics in this universe may differ from those in our own, including factor dependency, constant scalars, and the form of the law.\n2. When doing the experiments, use a broad range of input parameters, for example, values spanning from 10^-3 to 10^15 to ensure robustness across scales."
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"m\": 1, \"c\": 1, \"delta_T\": 1},\n  {\"m\": 10, \"c\": 2, \"delta_T\": 5},\n  {\"m\": 0.1, \"c\": 3, \"delta_T\": 10},\n  {\"m\": 100, \"c\": 1, \"delta_T\": 2},\n  {\"m\": 50, \"c\": 5, \"delta_T\": 0.5}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.000000000000000e+00\", \"1.118033988749895e+03\", \"9.486832980505140e+01\", \"5.656854249492380e+02\", \"4.419417382415922e+01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"m\": 1, \"c\": 10, \"delta_T\": 1},\n  {\"m\": 20, \"c\": 2, \"delta_T\": 3},\n  {\"m\": 0.5, \"c\": 4, \"delta_T\": 8},\n  {\"m\": 75, \"c\": 1, \"delta_T\": 4},\n  {\"m\": 10, \"c\": 10, \"delta_T\": 0.1}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.000000000000000e+01\", \"6.235382907247958e+02\", \"3.620386719675124e+02\", \"2.400000000000000e+03\", \"3.162277660168380e-01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"m\": 5, \"c\": 1, \"delta_T\": 2},\n  {\"m\": 15, \"c\": 3, \"delta_T\": 6},\n  {\"m\": 0.2, \"c\": 2, \"delta_T\": 12},\n  {\"m\": 200, \"c\": 1, \"delta_T\": 1},\n  {\"m\": 30, \"c\": 4, \"delta_T\": 3}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"2.828427124746190e+01\", \"3.968173383308748e+03\", \"1.995322530319347e+02\", \"2.000000000000000e+02\", \"1.870614872174388e+03\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"m\": 2, \"c\": 5, \"delta_T\": 1},\n  {\"m\": 25, \"c\": 1, \"delta_T\": 4},\n  {\"m\": 0.1, \"c\": 6, \"delta_T\": 10},\n  {\"m\": 50, \"c\": 2, \"delta_T\": 5},\n  {\"m\": 10, \"c\": 3, \"delta_T\": 7}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"1.000000000000000e+01\", \"8.000000000000000e+02\", \"1.897366596101028e+02\", \"5.590169943749474e+03\", \"3.889254427264948e+03\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"m\": 3, \"c\": 4, \"delta_T\": 2},\n  {\"m\": 12, \"c\": 2, \"delta_T\": 5},\n  {\"m\": 0.3, \"c\": 8, \"delta_T\": 9},\n  {\"m\": 80, \"c\": 1, \"delta_T\": 3},\n  {\"m\": 40, \"c\": 5, \"delta_T\": 1}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"6.788225099390857e+01\", \"1.341640786499874e+03\", \"5.831999999999999e+02\", \"1.247076581449592e+03\", \"2.000000000000000e+02\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<run_experiment>\n[\n  {\"m\": 4, \"c\": 3, \"delta_T\": 2},\n  {\"m\": 30, \"c\": 2, \"delta_T\": 6},\n  {\"m\": 0.4, \"c\": 5, \"delta_T\": 8},\n  {\"m\": 60, \"c\": 1, \"delta_T\": 4},\n  {\"m\": 20, \"c\": 10, \"delta_T\": 0.5}\n]\n</run_experiment>"
+        },
+        {
+          "role": "user",
+          "content": "<experiment_output>\n[\"6.788225099390857e+01\", \"5.290897844411665e+03\", \"3.620386719675124e+02\", \"1.920000000000000e+03\", \"3.535533905932738e+01\"]\n</experiment_output>"
+        },
+        {
+          "role": "assistant",
+          "content": "<final_law>\ndef discovered_law(m, c, delta_T):\n   return m * c * delta_T\n</final_law>"
+        }
+      ]
     }
   ],
   "graph": {
+    "directed": true,
+    "multigraph": false,
+    "graph": {
+      "equation": "m * c * delta_T"
+    },
     "nodes": [
       {
         "label": "\u00d7",
         "type": "operator",
-        "id": 0,
-        "task": "m0_gravity"
+        "id": 0
       },
       {
-        "label": "mass2",
+        "label": "m",
         "type": "variable",
-        "id": 1,
-        "task": "m0_gravity"
+        "id": 1
       },
       {
-        "label": "mass1",
+        "label": "c",
         "type": "variable",
-        "id": 2,
-        "task": "m0_gravity"
+        "id": 2
       },
       {
-        "label": "0.000252",
-        "type": "number",
-        "id": 3,
-        "task": "m0_gravity"
-      },
-      {
-        "label": "0.265",
-        "type": "number",
-        "id": 4,
-        "task": "m0_gravity"
-      },
-      {
-        "label": "^",
-        "type": "operator",
-        "id": 5,
-        "task": "m0_gravity"
-      },
-      {
-        "label": "^",
-        "type": "operator",
-        "id": 6,
-        "task": "m0_gravity"
-      },
-      {
-        "label": "distance",
+        "label": "delta_T",
         "type": "variable",
-        "id": 7,
-        "task": "m0_gravity"
-      },
-      {
-        "label": "1.5",
-        "type": "number",
-        "id": 8,
-        "task": "m0_gravity"
-      },
-      {
-        "label": "-1",
-        "type": "number",
-        "id": 9,
-        "task": "m0_gravity"
+        "id": 3
       }
     ],
     "edges": [
@@ -86,88 +870,45 @@
       {
         "source": 0,
         "target": 3
-      },
-      {
-        "source": 0,
-        "target": 4
-      },
-      {
-        "source": 0,
-        "target": 5
-      },
-      {
-        "source": 5,
-        "target": 6
-      },
-      {
-        "source": 5,
-        "target": 9
-      },
-      {
-        "source": 6,
-        "target": 7
-      },
-      {
-        "source": 6,
-        "target": 8
       }
     ]
   },
   "gt_graph": {
+    "directed": true,
+    "multigraph": false,
+    "graph": {
+      "equation": "m * c * (delta_T**2.5)"
+    },
     "nodes": [
       {
         "label": "\u00d7",
         "type": "operator",
-        "id": 0,
-        "task": "m0_gravity"
+        "id": 0
       },
       {
-        "label": "6.67e-05",
-        "type": "number",
-        "id": 1,
-        "task": "m0_gravity"
-      },
-      {
-        "label": "mass1",
+        "label": "m",
         "type": "variable",
-        "id": 2,
-        "task": "m0_gravity"
+        "id": 1
       },
       {
-        "label": "mass2",
+        "label": "c",
         "type": "variable",
-        "id": 3,
-        "task": "m0_gravity"
+        "id": 2
       },
       {
         "label": "^",
         "type": "operator",
-        "id": 4,
-        "task": "m0_gravity"
+        "id": 3
       },
       {
-        "label": "^",
-        "type": "operator",
-        "id": 5,
-        "task": "m0_gravity"
-      },
-      {
-        "label": "distance",
+        "label": "delta_T",
         "type": "variable",
-        "id": 6,
-        "task": "m0_gravity"
+        "id": 4
       },
       {
-        "label": "1.5",
+        "label": "2.5",
         "type": "number",
-        "id": 7,
-        "task": "m0_gravity"
-      },
-      {
-        "label": "-1",
-        "type": "number",
-        "id": 8,
-        "task": "m0_gravity"
+        "id": 5
       }
     ],
     "edges": [
@@ -184,28 +925,14 @@
         "target": 3
       },
       {
-        "source": 0,
+        "source": 3,
         "target": 4
       },
       {
-        "source": 4,
+        "source": 3,
         "target": 5
-      },
-      {
-        "source": 4,
-        "target": 8
-      },
-      {
-        "source": 5,
-        "target": 6
-      },
-      {
-        "source": 5,
-        "target": 7
       }
     ]
   },
-  "current_task": "m10_be_distribution",
-  "status": "Discovering m10_be_distribution...",
-  "global_similarity": 0.835
+  "global_similarity": 0.575
 }

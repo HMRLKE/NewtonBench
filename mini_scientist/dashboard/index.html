@@ -114,6 +114,78 @@
             outline: none;
         }
 
+        /* Chat Modal */
+        .chat-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .chat-content {
+            background-color: #16213e;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #4a4a6a;
+            width: 80%;
+            max-width: 800px;
+            height: 80%;
+            overflow-y: auto;
+            border-radius: 8px;
+            color: #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .close-chat {
+            color: #aaa;
+            align-self: flex-end;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-chat:hover {
+            color: #fff;
+        }
+
+        .chat-msg {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .msg-role {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+        }
+
+        .msg-system {
+            background: #2c3e50;
+            border-left: 4px solid #95a5a6;
+        }
+
+        .msg-user {
+            background: #0f3460;
+            border-left: 4px solid #e94560;
+        }
+
+        .msg-assistant {
+            background: #1a1a2e;
+            border-left: 4px solid #4cd137;
+        }
+
+        .msg-content {
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+
         /* MathJax Adjustments */
         mjx-container {
             font-size: 1.1em !important;
@@ -123,6 +195,15 @@
 </head>
 
 <body>
+    <!-- Chat Modal -->
+    <div id="chatModal" class="chat-modal">
+        <div class="chat-content">
+            <span class="close-chat" onclick="closeChat()">&times;</span>
+            <h2>LLM Interaction History</h2>
+            <div id="chat-history-container"></div>
+        </div>
+    </div>
+
     <div id="sidebar">
         <h1>Mini Scientist</h1>
         <div id="status">Status: Connecting...</div>
@@ -175,6 +256,47 @@
         var edgesGT = new vis.DataSet([]);
         var netGT = new vis.Network(document.getElementById('network-container-gt'), { nodes: nodesGT, edges: edgesGT }, options);
 
+        // Chat Modal Logic
+        function showChat(index) {
+            const modal = document.getElementById('chatModal');
+            const container = document.getElementById('chat-history-container');
+            container.innerHTML = "";
+
+            if (window.currentLaws && window.currentLaws[index]) {
+                const history = window.currentLaws[index].chat_history || [];
+                if (history.length === 0) {
+                    container.innerHTML = "<div style='color: #aaa;'>No chat history available.</div>";
+                } else {
+                    history.forEach(msg => {
+                        const div = document.createElement('div');
+                        let roleClass = 'msg-user';
+                        if (msg.role === 'system') roleClass = 'msg-system';
+                        else if (msg.role === 'assistant') roleClass = 'msg-assistant';
+
+                        div.className = `chat-msg ${roleClass}`;
+                        div.innerHTML = `
+                            <div class="msg-role">${msg.role}</div>
+                            <div class="msg-content">${msg.content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+                        `;
+                        container.appendChild(div);
+                    });
+                }
+            }
+            modal.style.display = "block";
+        }
+
+        function closeChat() {
+            document.getElementById('chatModal').style.display = "none";
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            const modal = document.getElementById('chatModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
         var lastLawCount = 0;
 
         function fetchUpdate() {
@@ -191,10 +313,14 @@
                     }
 
                     // Update Laws List
-                    if (kg.laws && (kg.laws.length > lastLawCount || kg.laws.length === 0)) {
+                    if (kg.laws) {
                         const list = document.getElementById('law-list');
+                        // Only update if changed logic ideally, but for now simple rebuild is safer to ensure index works
+                        // To avoid flickering, maybe check if we really need to update? 
+                        // But we need to update to show new "best" laws if metrics changed.
+                        // So let's rebuild.
                         list.innerHTML = "";
-                        kg.laws.forEach(law => {
+                        kg.laws.forEach((law, index) => {
                             const div = document.createElement('div');
                             div.className = 'law-card';
 
@@ -227,6 +353,9 @@
                             let matchTag = law.symbolic_match ?
                                 `<div style="font-size: 0.7em; background: #2f3542; color: #2ecc71; padding: 2px 6px; border-radius: 10px; font-weight: bold; border: 1px solid #2ecc71;">MATCH</div>` : '';
 
+                            // Store chat history in a data attribute or global map (using index here for simplicity)
+                            div.dataset.chatIndex = index;
+
                             div.innerHTML = `
                                   <div style="display: flex; justify-content: space-between; align-items: center;">
                                       <div class="law-task">${law.task}</div>
@@ -251,9 +380,13 @@
                                      <small>Ground Truth:</small>
                                      <div style="padding: 10px; color: #4cd137;">$$ ${dispGt} $$</div>
                                  </div>
+                                 <button onclick="showChat(${index})" style="margin-top: 10px; background: #e94560; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">View LLM Chat</button>
                              `;
                             list.appendChild(div);
                         });
+
+                        // Make laws available globally for chat access
+                        window.currentLaws = kg.laws;
 
                         // Update Global Sim
                         if (kg.global_similarity !== undefined) {
@@ -297,13 +430,28 @@
                             if (n.type === 'operator') shape = 'circle';
                             if (n.type === 'variable') shape = 'box';
 
+                            // Node Coloring Logic
+                            let bgColor = '#eee';
+                            let borderColor = '#999';
+
+                            if (task && taskColors[task]) {
+                                bgColor = taskColors[task];
+                                borderColor = '#2c3e50';
+                            }
+
+                            // Operator Nodes (Circles) - slightly darker/different shade
+                            if (n.type === 'operator') {
+                                // brightness dim for operators
+                                // simple hack: use same hue but maybe different shape is enough
+                            }
+
                             return {
                                 id: n.id,
                                 label: String(n.label || n.id),
                                 shape: shape,
                                 color: {
-                                    background: taskColors[task],
-                                    border: '#2c3e50', // Dark border for contrast
+                                    background: bgColor,
+                                    border: borderColor,
                                     highlight: { background: '#fff', border: '#e94560' }
                                 },
                                 font: {

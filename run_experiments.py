@@ -9,9 +9,12 @@ from datetime import datetime
 from multiprocessing import Pool, cpu_count
 import numpy as np
 import traceback
-import pandas as pd
-
+import time
+import os
+import subprocess
+import signal
 from utils.vanilla_agent import conduct_exploration
+from utils.kg_utils import update_global_dashboard
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -31,7 +34,7 @@ def format_chat_history(chat_history):
     return '\n'.join(lines)
 
 def write_fail_result_with_retries(args, final_error, retry_history, func_sig):
-    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend = args
+    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend, dashboard = args
     fail_result = {
         "trial_id": trial_id,
         "module_name": module_name,
@@ -84,7 +87,7 @@ def run_trial(args):
     - A `run_experiment_for_module(...)` function.
     - An `evaluate_law(str)` function.
     """
-    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend = args
+    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend, dashboard = args
     print(f"Starting trial {trial_id} for module '{module_name}' with {model_name}, noise {noise_level} (equation difficulty: {difficulty}, model system: {system}, law version: {law_version}, backend: {agent_backend}")
     
     retry_history = []
@@ -167,6 +170,21 @@ def run_trial(args):
             with open(chat_log_path, 'w', encoding='utf-8') as f:
                 f.write(format_chat_history(exploration_result.get("chat_history", [])))
 
+            # 4. Update Dashboard if enabled
+            if dashboard:
+                try:
+                    update_global_dashboard(
+                        trial_id=trial_id,
+                        module_name=module_name,
+                        equation=exploration_result["submitted_law"],
+                        difficulty=difficulty,
+                        law_version=law_version,
+                        metrics=evaluation_metrics,
+                        chat_history=exploration_result.get("chat_history", [])
+                    )
+                except Exception as e:
+                    print(f"[Trial {trial_id} DASHBOARD ERROR] {e}")
+
             # Return full result for aggregation
             return final_result
             
@@ -227,7 +245,7 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
     judge_model_name = "gpt41"
     
     pool_args = [
-        (i, cli_args.noise, cli_args.model_name, cli_args.module, cli_args.equation_difficulty, cli_args.model_system, law_version, trials_dir, max_retries, judge_model_name, cli_args.agent_backend)
+        (i, cli_args.noise, cli_args.model_name, cli_args.module, cli_args.equation_difficulty, cli_args.model_system, law_version, trials_dir, max_retries, judge_model_name, cli_args.agent_backend, cli_args.dashboard)
         for i in range(num_trials)
     ]
     
@@ -375,7 +393,19 @@ if __name__ == "__main__":
                       help="Specific law version to use, 'all' for all versions, or None for random selection or a specific version (e.g. v0, v1, v2)")
     parser.add_argument("-b", "--agent_backend", type=str, default="vanilla_agent", choices=["vanilla_agent", "code_assisted_agent"],
                       help="Agent backend to use for exploration. Default is vanilla_agent. When code_assisted_agent is selected, LLM is equipped with <python> tool use.")
+    parser.add_argument("--dashboard", action="store_true", help="Enable real-time dashboard updates.")
+    parser.add_argument("--keep_history", action="store_true", help="Do NOT clear existing dashboard data (accumulate results). Default is to reset.")
     cli_args = parser.parse_args()
+
+    # --- Dashboard Reset (Default behavior unless --keep_history) ---
+    if cli_args.dashboard and not cli_args.keep_history:
+        acc_path = os.path.join("accumulation", "global_kg.json")
+        if os.path.exists(acc_path):
+            try:
+                os.remove(acc_path)
+                print(f"[INFO] Dashboard data reset: Deleted {acc_path}")
+            except Exception as e:
+                print(f"[WARN] Could not reset dashboard data: {e}")
 
     # --- Pre-flight Check ---
     try:
@@ -419,9 +449,28 @@ if __name__ == "__main__":
             trials_per_version[version] = base_trials + (1 if i < extra_trials else 0)
 
     # Run a separate experiment for each version
-    for version in versions_to_run:
-        num_trials_for_version = trials_per_version.get(version, 0)
-        if num_trials_for_version > 0:
-            run_experiment_for_version(cli_args, module, version, num_trials_for_version)
-        else:
-            print(f"Skipping law_version {version} as it has 0 trials assigned.")
+    dashboard_server = None
+    if cli_args.dashboard:
+        print("\n--- Starting Human Eval Dashboard Server ---")
+        dashboard_server = subprocess.Popen(
+            ["python", "mini_scientist/server.py", "--port", "8000"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        print("Dashboard serving at http://localhost:8000/mini_scientist/dashboard/index.html")
+        time.sleep(2) # Give server a moment to start
+
+    try:
+        for version in versions_to_run:
+            num_trials_for_version = trials_per_version.get(version, 0)
+            if num_trials_for_version > 0:
+                run_experiment_for_version(cli_args, module, version, num_trials_for_version)
+            else:
+                print(f"Skipping law_version {version} as it has 0 trials assigned.")
+    finally:
+        if dashboard_server:
+            print("\nShutting down Dashboard Server...")
+            if os.name == 'nt':
+                subprocess.run(['taskkill', '/F', '/T', '/PID', str(dashboard_server.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                dashboard_server.terminate()

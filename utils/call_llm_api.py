@@ -31,6 +31,8 @@ keys = {
 # optional: MAY evaluated in final stage, may not.
 api_source_mapping = {
     # OpenAI-native models: provide both OA (direct) and OR (OpenRouter) routes
+    "gpt-4o": {"oa": "gpt-4o", "or": "openai/gpt-4o"},
+    "gpt-4o-mini": {"oa": "gpt-4o-mini", "or": "openai/gpt-4o-mini"},
     "gpt41mini": {"oa": "gpt-4.1-mini-2025-04-14", "or": "openai/gpt-4.1-mini"},  #development-LLM
     "gpt41": {"oa": "gpt-4.1-2025-04-14", "or": "openai/gpt-4.1"}, #formal-LLM
     "o4mini": {"oa": "o4-mini-2025-04-16", "or": "openai/o4-mini"}, #formal-LRM 
