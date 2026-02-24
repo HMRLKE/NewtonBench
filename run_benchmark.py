@@ -1,7 +1,7 @@
-
 import os
 import subprocess
 import time
+from utils.kg_utils import initialize_global_dashboard
 
 # List of modules to benchmark
 # Exclude 'common' or any non-task directories
@@ -31,11 +31,13 @@ def run_benchmark():
     print(f"Modules: {len(MODULES)}")
     print(f"Configuration: Model={MODEL_NAME}, Trials={TRIALS}, Difficulty={DIFFICULTY}")
     
-    # 1. Clear dashboard once at the beginning
+    # 1. Clear dashboard and pre-initialize a unified Ground Truth Knowledge Graph
     acc_path = os.path.join("accumulation", "global_kg.json")
     if os.path.exists(acc_path):
         os.remove(acc_path)
         print("Cleared previous dashboard data.")
+        
+    initialize_global_dashboard(MODULES, DIFFICULTY, LAW_VERSION)
 
     for i, module in enumerate(MODULES):
         print(f"\n[{i+1}/{len(MODULES)}] Running benchmark for: {module}")

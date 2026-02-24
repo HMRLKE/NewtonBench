@@ -219,12 +219,11 @@
         </div>
     </div>
     <div id="main">
-        <div class="network-wrapper" style="margin-bottom: 20px;">
-            <div class="graph-header">Discovered Knowledge Graph</div>
-            <div id="network-container-disc"></div>
-        </div>
-        <div class="network-wrapper">
-            <div class="graph-header" style="margin-top: 10px;">Ground Truth Knowledge Graph</div>
+        <div class="network-wrapper" style="height: 100%;">
+            <div class="graph-header" style="margin-top: 10px; display: flex; justify-content: space-between;">
+                <span>Unified Ground Truth Knowledge Graph</span>
+                <span style="color: #2ecc71;">Green = Discovered Triples</span>
+            </div>
             <div id="network-container-gt"></div>
         </div>
     </div>
@@ -233,25 +232,26 @@
         // --- VISUALIZATION SETUP ---
         var options = {
             nodes: { shape: 'dot', size: 20, font: { size: 14 } },
-            edges: { width: 2, arrows: 'to', smooth: { type: 'continuous' } },
+            edges: { width: 2, arrows: 'to', smooth: { type: 'dynamic' } },
+            layout: {
+                hierarchical: {
+                    enabled: true,
+                    direction: 'UD',
+                    sortMethod: 'directed',
+                    levelSeparation: 80,
+                    nodeSpacing: 100
+                }
+            },
             groups: {
                 variable: { color: { background: '#97C2FC', border: '#2B7CE9' } },
                 operator: { color: { background: '#FF9999', border: '#FF5555' } },
                 constant: { color: { background: '#99FF99', border: '#55FF55' } },
                 default: { color: { background: '#eee', border: '#999' } }
             },
-            physics: {
-                stabilization: false,
-                barnesHut: { gravitationalConstant: -2000, springConstant: 0.04, springLength: 95 }
-            }
+            physics: false // Disabled physics / animations for stable UI
         };
 
-        // Discovered Graph
-        var nodesDisc = new vis.DataSet([]);
-        var edgesDisc = new vis.DataSet([]);
-        var netDisc = new vis.Network(document.getElementById('network-container-disc'), { nodes: nodesDisc, edges: edgesDisc }, options);
-
-        // Ground Truth Graph
+        // Ground Truth Graph (Unified)
         var nodesGT = new vis.DataSet([]);
         var edgesGT = new vis.DataSet([]);
         var netGT = new vis.Network(document.getElementById('network-container-gt'), { nodes: nodesGT, edges: edgesGT }, options);
@@ -403,79 +403,69 @@
                         }
                     }
 
+                    // Parse Discovered Triples for highlighting
+                    const discoveredTriples = new Set();
+                    const discNodesMap = {};
+                    if (kg.graph && kg.graph.nodes) {
+                        kg.graph.nodes.forEach(n => discNodesMap[n.id] = n);
+                        kg.graph.edges = kg.graph.edges || kg.graph.links || [];
+                        kg.graph.edges.forEach(e => {
+                            const s = discNodesMap[e.source];
+                            const t = discNodesMap[e.target];
+                            if (s && t) discoveredTriples.add(`${s.label}:${s.type}->${t.label}:${t.type}`);
+                        });
+                    }
+
                     // Update Graphs
                     function updateGraph(nodesDS, edgesDS, graphData) {
                         if (!graphData || !graphData.nodes) return;
 
-                        const taskColors = {
-                            'shared': '#f1f2f6',
-                            'm0_gravity': '#ff7979',
-                            'm1_coulomb_force': '#7ed6df',
-                            'm2_magnetic_force': '#badc58',
-                            'm3_fourier_law': '#f0932b',
-                            'm4_snell_law': '#eb4d4b',
-                            'm11_heat_transfer': '#686de0'
-                        };
-                        const palette = ['#ffbe76', '#ff7979', '#badc58', '#dff9fb', '#f9ca24', '#f0932b', '#eb4d4b', '#6ab04c', '#7ed6df', '#e056fd', '#686de0', '#4834d4', '#be2edd', '#95afc0'];
+                        const gtNodesMap = {};
+                        graphData.nodes.forEach(n => gtNodesMap[n.id] = n);
+
+                        const newEdges = (graphData.edges || graphData.links || []).map(e => {
+                            const s = gtNodesMap[e.source];
+                            const t = gtNodesMap[e.target];
+                            const trip = (s && t) ? `${s.label}:${s.type}->${t.label}:${t.type}` : "";
+                            const isDiscovered = discoveredTriples.has(trip);
+                            return {
+                                from: e.source,
+                                to: e.target,
+                                color: isDiscovered ? { color: '#2ecc71', opacity: 1.0 } : { color: '#2c3e50', opacity: 0.15 },
+                                width: isDiscovered ? 4 : 1,
+                                arrows: 'to'
+                            };
+                        });
 
                         const newNodes = graphData.nodes.map(n => {
-                            let task = n.task || 'shared';
-                            if (!taskColors[task]) {
-                                let idx = Object.keys(taskColors).length;
-                                taskColors[task] = palette[idx % palette.length];
-                            }
-
-                            // Visual distinction by type
-                            let shape = 'ellipse';
-                            if (n.type === 'operator') shape = 'circle';
-                            if (n.type === 'variable') shape = 'box';
-
-                            // Node Coloring Logic
-                            let bgColor = '#eee';
-                            let borderColor = '#999';
-
-                            if (task && taskColors[task]) {
-                                bgColor = taskColors[task];
-                                borderColor = '#2c3e50';
-                            }
-
-                            // Operator Nodes (Circles) - slightly darker/different shade
-                            if (n.type === 'operator') {
-                                // brightness dim for operators
-                                // simple hack: use same hue but maybe different shape is enough
+                            // Check if node is part of any discovered triple
+                            let isDiscovered = false;
+                            for (let trip of discoveredTriples) {
+                                if (trip.includes(`${n.label}:${n.type}`)) isDiscovered = true;
                             }
 
                             return {
                                 id: n.id,
                                 label: String(n.label || n.id),
-                                shape: shape,
+                                shape: n.type === 'operator' ? 'circle' : 'box',
                                 color: {
-                                    background: bgColor,
-                                    border: borderColor,
-                                    highlight: { background: '#fff', border: '#e94560' }
+                                    background: isDiscovered ? '#55efc4' : '#f1f2f6',
+                                    border: isDiscovered ? '#2ecc71' : '#bdc3c7',
+                                    highlight: { background: '#fff', border: '#2ecc71' }
                                 },
                                 font: {
-                                    color: '#000',
-                                    size: 14,
+                                    color: isDiscovered ? '#fff' : '#7f8c8d',
+                                    size: isDiscovered ? 16 : 14,
                                     face: 'monospace'
                                 },
-                                title: `Task: ${task}\nType: ${n.type}`
+                                title: `Type: ${n.type}`
                             };
                         });
-
-                        const newEdges = graphData.edges.map(e => ({
-                            from: e.source,
-                            to: e.target,
-                            color: { color: '#2c3e50', opacity: 0.3 },
-                            arrows: 'to',
-                            width: 1
-                        }));
 
                         nodesDS.update(newNodes);
                         edgesDS.update(newEdges);
                     }
 
-                    updateGraph(nodesDisc, edgesDisc, kg.graph);
                     updateGraph(nodesGT, edgesGT, kg.gt_graph || { nodes: [], edges: [] });
                 })
                 .catch(err => {

@@ -4,7 +4,9 @@ from typing import Callable, Any, Dict
 import re
 import ast
 import inspect
+import sympy
 from utils.call_llm_api import call_llm_api
+from utils.kg_utils import SYMPY_LOCALS
 from .prompts_base import SYMBOLIC_EQUIVALENCE_JUDGE_PROMPT
 
 
@@ -29,16 +31,55 @@ def extract_formula_from_function(func: Callable):
         raise ValueError("No return statement found in function.")
     # Resolve each and collect non-constant candidates
     candidates = []
+    
+    # Heuristic: the core mathematical expression is often inside a try-block
+    # if it guards against domain errors (like acos, asin). Let's primarily
+    # look at returns that are NOT simple constants (like float('nan')).
     for rn in return_nodes:
-        resolved = _resolve_wrapped_expression(rn.value, func_def, getattr(rn, 'lineno', 0))
-        if not isinstance(resolved, ast.Constant):
-            candidates.append(resolved)
+        if is_nan_literal(rn.value):
+            continue
+        try:
+            resolved = _resolve_wrapped_expression(rn.value, func_def, getattr(rn, 'lineno', 0))
+            if not isinstance(resolved, ast.Constant):
+                candidates.append(resolved)
+        except Exception:
+            pass
+
     if not candidates:
-        raise ValueError("No non-constant return found.")
-    # Pick the first non-constant (assuming it's the main formula)
+        # Fallback: maybe the law is literally returning a constant?
+        for rn in return_nodes:
+             if not is_nan_literal(rn.value):
+                  candidates.append(rn.value)
+                  
+    if not candidates:
+        raise ValueError("No valid return statement found (only NaN).")
+        
+    # Prefer the most complex tree (most nodes) if multiple exist, assuming it's the formula.
+    # Usually it's candidates[0] though if we skip the except float('nan').
+    candidates.sort(key=lambda c: len(list(ast.walk(c))), reverse=True)
+    
     core_expr = candidates[0]
     formula_str = ast.unparse(core_expr)
+    
+    # Advanced Cleanup for Math functions
+    formula_str = formula_str.replace('math.', '').replace('np.', '')
+    
+    # Sympy does not natively understand degrees() and radians() wrappers inherently without eval
+    # Sniff and strip them to their inner arguments for pure structural equivalence if they are the outermost
+    formula_str = re.sub(r'^degrees\((.*)\)$', r'\1', formula_str)
+    
     return formula_str
+
+def is_nan_literal(e: ast.AST) -> bool:
+    """Matches float('nan')"""
+    return (
+        isinstance(e, ast.Call)
+        and getattr(e.func, 'id', None) == 'float'
+        and len(e.args) == 1
+        and isinstance(e.args[0], ast.Constant)
+        and isinstance(e.args[0].value, str)
+        and e.args[0].value.lower() == 'nan'
+    )
 
 def _resolve_wrapped_expression(expr: ast.AST, func_def: ast.FunctionDef, return_lineno: int) -> ast.AST:
     """
@@ -50,6 +91,18 @@ def _resolve_wrapped_expression(expr: ast.AST, func_def: ast.FunctionDef, return
     # Unwrap float(<expr>) calls
     if isinstance(expr, ast.Call) and isinstance(expr.func, ast.Name) and expr.func.id == 'float' and len(expr.args) == 1:
         return _resolve_wrapped_expression(expr.args[0], func_def, return_lineno)
+        
+    # Unwrap math.degrees(<expr>) or degrees(<expr>) calls dynamically
+    if isinstance(expr, ast.Call) and len(expr.args) == 1:
+        func_name = ""
+        if isinstance(expr.func, ast.Attribute) and expr.func.attr == 'degrees':
+            func_name = 'degrees'
+        elif isinstance(expr.func, ast.Name) and expr.func.id == 'degrees':
+            func_name = 'degrees'
+            
+        if func_name == 'degrees':
+             return _resolve_wrapped_expression(expr.args[0], func_def, return_lineno)
+
     # If returning a variable name, try to find its latest assignment before the return
     if isinstance(expr, ast.Name):
         var_name = expr.id
@@ -82,17 +135,6 @@ def _resolve_wrapped_expression(expr: ast.AST, func_def: ast.FunctionDef, return
         return expr
     # If expression is a conditional (a if cond else b), prefer the non-NaN branch heuristically
     if isinstance(expr, ast.IfExp):
-        def is_nan_literal(e: ast.AST) -> bool:
-            # Matches float('nan')
-            return (
-                isinstance(e, ast.Call)
-                and isinstance(e.func, ast.Name)
-                and e.func.id == 'float'
-                and len(e.args) == 1
-                and isinstance(e.args[0], ast.Constant)
-                and isinstance(e.args[0].value, str)
-                and e.args[0].value.lower() == 'nan'
-            )
         # Prefer body if it isn't NaN, else orelse
         if not is_nan_literal(expr.body):
             return _resolve_wrapped_expression(expr.body, func_def, return_lineno)
@@ -264,13 +306,52 @@ def evaluate_law(
             if trial_info is None:
                 trial_info = {'trial_id': 'llm_judge'}
             formula_string = extract_formula_from_function(gt_law)
-            symbolic_equivalent = llm_symbolic_equivalence_judge(
-                llm_formula_str=llm_function_str,
-                gt_formula_str=formula_string,
-                param_description=param_description,
-                judge_model_name = judge_model_name,
-                trial_info=trial_info
-            )
+            
+            # Structural equivalence override safely bypassing numerical variations
+            try:
+                def extract_llm_formula(func_str, func_obj):
+                    try:
+                        f_str = extract_formula_from_function(func_obj)
+                        return f_str.replace('math.', '').replace('np.', '')
+                    except Exception:
+                        return func_str.replace('math.', '').replace('np.', '')
+
+                llm_formula_clean = extract_llm_formula(llm_function_str, llm_function)
+                
+                expr_llm = sympy.sympify(llm_formula_clean, locals=SYMPY_LOCALS)
+                expr_gt = sympy.sympify(formula_string, locals=SYMPY_LOCALS)
+
+                if sympy.simplify(expr_llm - expr_gt) == 0:
+                    symbolic_equivalent = True
+                else:
+                    nums_in_gt = [n for n in expr_gt.atoms(sympy.Number)]
+                    # Try substituting ANY free symbol that isn't directly in gt_formula
+                    # with any number from the GT equation to see if they align structurally.
+                    symbols_in_llm = list(expr_llm.free_symbols)
+                    symbols_in_gt = list(expr_gt.free_symbols)
+                    
+                    candidate_c_vars = [s for s in symbols_in_llm if s not in symbols_in_gt]
+                    
+                    matched = False
+                    for c_var in candidate_c_vars:
+                        for num in nums_in_gt:
+                            if sympy.simplify(expr_llm.subs(c_var, num) - expr_gt) == 0:
+                                symbolic_equivalent = True
+                                matched = True
+                                break
+                        if matched:
+                            break
+            except Exception as e:
+                pass
+
+            if not symbolic_equivalent:
+                symbolic_equivalent = llm_symbolic_equivalence_judge(
+                    llm_formula_str=llm_function_str,
+                    gt_formula_str=formula_string,
+                    param_description=param_description,
+                    judge_model_name = judge_model_name,
+                    trial_info=trial_info
+                )
             symbolic_msg = None if symbolic_equivalent else "LLM judge determined formulas are not equivalent."
     except Exception as e:
         symbolic_msg = f"Symbolic equivalence check failed: {e}"

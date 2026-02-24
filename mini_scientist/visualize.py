@@ -92,6 +92,21 @@ def get_gt_equation_string(difficulty, law_version, task_name='m0_gravity'):
         # F = (C * i1 * i2) / distance
         return f"({C} * current1 * current2) / distance"
 
+    if 'malus_law' in task_name:
+        if difficulty == 'easy':
+            if law_version == 'v1': return "I_0 * (sin(theta) / cos(theta))**2"
+            if law_version == 'v2': return "I_0 * (cos(theta) / sin(theta))**2"
+            return "I_0 * (sin(theta) + cos(theta))**2"
+        elif difficulty == 'medium':
+            if law_version == 'v1': return "I_0 * (sin(theta)**2) / (cos(theta)**3)"
+            if law_version == 'v2': return "I_0 * (cos(theta) / sin(theta))**exp(1)"
+            return "I_0 * (2 * sin(theta) + cos(theta))**2"
+        elif difficulty == 'hard':
+            if law_version == 'v1': return "I_0 * ((sin(theta)**2) / (cos(theta)**3))**exp(1)"
+            if law_version == 'v2': return "I_0 * ((sin(theta)**2) / cos(theta))**exp(1)"
+            return "I_0 * (2 * sin(theta) + 1.5 * cos(theta))**2"
+        return "I_0 * (sin(theta) + cos(theta))**2"
+
     if 'harmonic' in task_name and 'underdamped' not in task_name:
          # Fallback for simple harmonic if any
          return "sqrt(k/m)"

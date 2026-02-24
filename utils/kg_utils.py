@@ -1,10 +1,11 @@
 import sympy
+from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application
+import json
+import os
+import random
+import time
 import networkx as nx
 from networkx.readwrite import json_graph
-import os
-import json
-import time
-import random
 
 # Symbols to avoid name conflicts with SymPy functions
 SYMPY_LOCALS = {
@@ -94,6 +95,20 @@ def get_gt_equation_string(difficulty, law_version, task_name='m0_gravity'):
     if 'magnetic' in task_name:
         C = "2.0"
         return f"({C} * current1 * current2) / distance"
+    if 'malus_law' in task_name:
+        if difficulty == 'easy':
+            if law_version == 'v1': return "I_0 * (sin(theta) / cos(theta))**2"
+            if law_version == 'v2': return "I_0 * (cos(theta) / sin(theta))**2"
+            return "I_0 * (sin(theta) + cos(theta))**2"
+        elif difficulty == 'medium':
+            if law_version == 'v1': return "I_0 * (sin(theta)**2) / (cos(theta)**3)"
+            if law_version == 'v2': return "I_0 * (cos(theta) / sin(theta))**exp(1)"
+            return "I_0 * (2 * sin(theta) + cos(theta))**2"
+        elif difficulty == 'hard':
+            if law_version == 'v1': return "I_0 * ((sin(theta)**2) / (cos(theta)**3))**exp(1)"
+            if law_version == 'v2': return "I_0 * ((sin(theta)**2) / cos(theta))**exp(1)"
+            return "I_0 * (2 * sin(theta) + 1.5 * cos(theta))**2"
+        return "I_0 * (sin(theta) + cos(theta))**2"
     if 'harmonic' in task_name and 'underdamped' not in task_name:
          return "sqrt(k/m)"
     elif 'gravity' in task_name or task_name == 'm0':
@@ -131,6 +146,10 @@ def equation_to_kg(equation_str: str) -> dict:
     Special handling for division to avoid nested negative powers.
     """
     equation_str = extract_expression(equation_str)
+    
+    # Strip common math namespace prefixes safely
+    equation_str = equation_str.replace('math.', '').replace('np.', '')
+    
     try:
         expr = sympy.sympify(equation_str, locals=SYMPY_LOCALS, evaluate=False)
     except Exception as e:
@@ -144,17 +163,15 @@ def equation_to_kg(equation_str: str) -> dict:
     def add_node(label, type="operator", sympy_node=None):
         nonlocal counter
         
-        # Deduplication for non-operator nodes (vars/numbers)
-        if type != "operator":
-            key = (label, type)
-            if key in node_lookup: return node_lookup[key]
+        # Deduplication for ALL nodes
+        key = (label, type)
+        if key in node_lookup: return node_lookup[key]
         
         node_id = counter
         counter += 1
         G.add_node(node_id, label=label, type=type)
         
-        if type != "operator":
-            node_lookup[(label, type)] = node_id
+        node_lookup[(label, type)] = node_id
         
         return node_id
 
@@ -325,17 +342,23 @@ def update_global_dashboard(trial_id, module_name, equation, difficulty, law_ver
     """
     if chat_history is None: chat_history = []
     
-    # helper for cleaning equation
-    def clean_equation_for_display(eq_str):
-        # 1. Remove def ... return
-        if "def discovered_law" in eq_str:
-            lines = eq_str.split("\n")
-            for line in reversed(lines):
-                if line.strip().startswith("return "):
-                    eq_str = line.strip().replace("return ", "")
-                    break
-        # 2. Basic cleanup for MathJax (python to latex-ish)
+    # Parse the LLM returned final_law using AST to extract exactly just the mathematical formula string
+    import ast
+    def get_returned_formula_string(eq_str):
+        try:
+            tree = ast.parse(eq_str)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Return):
+                    # Skip the known float('nan') fallback blocks generated dynamically
+                    if isinstance(node.value, ast.Call) and getattr(node.value.func, 'id', '') == 'float':
+                        continue 
+                    return ast.unparse(node.value)
+        except Exception:
+            pass
         return eq_str
+
+    clean_eq = get_returned_formula_string(equation)
+    clean_eq = clean_eq.replace("math.", "").replace("np.", "")
 
     if not os.path.exists(accumulation_dir):
         os.makedirs(accumulation_dir)
@@ -392,9 +415,7 @@ def update_global_dashboard(trial_id, module_name, equation, difficulty, law_ver
                 print(f"[Dashboard] Skipping update for {module_name} (New RMSLE: {new_rmsle:.4f} not better than existing)")
                 return
 
-            # Prepare new law entry
             gt_eqn_str = get_gt_equation_string(difficulty=difficulty, law_version=law_version, task_name=module_name)
-            clean_eq = clean_equation_for_display(equation)
 
             new_law = {
                 "task": module_name,
@@ -430,9 +451,9 @@ def update_global_dashboard(trial_id, module_name, equation, difficulty, law_ver
             else:
                 global_kg["laws"].append(new_law)
             
-            # For now, dashboard graph view shows ONLY the current updated law
+            # Update the discovered graph keys for the current law using merge_graph logic
+            # to only color edges in the dashboard
             global_kg["graph"] = trial_kg
-            global_kg["gt_graph"] = gt_kg
             
             # Recalculate global similarity
             sim_score = calculate_kg_similarity(trial_kg, gt_kg)
@@ -473,4 +494,32 @@ def merge_into_graph(global_kg, graph_key, source_kg, task_name):
         if src in id_map and tgt in id_map:
             new_edge = {'source': id_map[src], 'target': id_map[tgt]}
             if new_edge not in current_edges: current_edges.append(new_edge)
+
+def initialize_global_dashboard(modules, difficulty, law_version, accumulation_dir="accumulation"):
+    """
+    Pre-computes and initializes the global Knowledge Graph (gt_graph) for all specified tasks.
+    """
+    if not os.path.exists(accumulation_dir):
+        os.makedirs(accumulation_dir)
+    global_kg_path = os.path.join(accumulation_dir, "global_kg.json")
+    
+    global_kg = {
+        "status": "Online (Polling)",
+        "laws": [],
+        "graph": {"nodes": [], "edges": []},
+        "gt_graph": {"nodes": [], "edges": []},
+        "global_similarity": 0.0
+    }
+    
+    for module_name in modules:
+        gt_eqn_str = get_gt_equation_string(difficulty=difficulty, law_version=law_version, task_name=module_name)
+        try:
+            gt_kg = equation_to_kg(gt_eqn_str)
+            merge_into_graph(global_kg, "gt_graph", gt_kg, module_name)
+        except Exception as e:
+            print(f"Error parsing ground truth equation for {module_name}: {e}")
+            
+    with open(global_kg_path, "w") as f:
+        json.dump(global_kg, f, indent=2)
+    print(f"[Dashboard] Global KG initialized successfully.")
 
