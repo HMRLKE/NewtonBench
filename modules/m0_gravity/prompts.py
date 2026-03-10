@@ -279,7 +279,7 @@ for m1, m2, d in zip(test_mass1, test_mass2, test_distance):
 5. **Submit final law** using <final_law> tags with proper Python function format"""
 
 
-def get_task_prompt(system: str, is_code_assisted: bool = False, noise_level: float = 0.0) -> str:
+def get_task_prompt(system: str, is_code_assisted: bool = False, noise_level: float = 0.0, prompt_set: str = 'original') -> str:
 	"""
 	Return the appropriate task prompt based on system.
 	Args:

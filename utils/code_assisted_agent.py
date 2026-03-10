@@ -1,10 +1,11 @@
+import copy
 import json
 import time
 from typing import Dict, List, Any, Optional
+import re
 from .code_executor import CodeExecutor
 from .call_llm_api import call_llm_api
-import re
-
+from .prompt_utils import get_discovered_laws_context
 
 def conduct_code_assisted_exploration(
     module,
@@ -13,7 +14,9 @@ def conduct_code_assisted_exploration(
     difficulty: str,
     system: str,
     law_version: str = None,
-    trial_info: Dict[str, Any] = None
+    trial_info: Dict[str, Any] = None,
+    prompt_set: str = 'original',
+    consistency: bool = False
 ) -> Dict[str, Any]:
     """
     Conduct physics discovery exploration using code assistant with per-turn Python call limits.
@@ -51,7 +54,13 @@ def conduct_code_assisted_exploration(
     ]
     
     # Add the task prompt as the first user message
-    task_prompt = module.get_task_prompt(system, is_code_assisted=True, noise_level=noise_level)
+    task_prompt = module.get_task_prompt(system, is_code_assisted=True, noise_level=noise_level, prompt_set=prompt_set)
+    
+    if prompt_set == 'modified':
+        discovered_context = get_discovered_laws_context()
+        if discovered_context:
+            task_prompt = discovered_context + "\n\n" + task_prompt
+
     messages.append({"role": "user", "content": task_prompt})
     
     # Initialize chat history with the system and task prompts
@@ -388,7 +397,8 @@ def run_experiment_from_response(module, response: str, system: str, noise_level
                             noise_level=noise_level, 
                             difficulty=difficulty,
                             system=system,
-                            law_version=law_version
+                            law_version=law_version,
+                            consistency=consistency
                         )
                         results.append(result)
                     else:
@@ -402,7 +412,8 @@ def run_experiment_from_response(module, response: str, system: str, noise_level
                         noise_level=noise_level, 
                         difficulty=difficulty,
                         system=system,
-                        law_version=law_version
+                        law_version=law_version,
+                        consistency=consistency
                     )
                     return result
                 else:

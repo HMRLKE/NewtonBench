@@ -3,6 +3,7 @@
 import re
 from typing import List, Dict, Any, Tuple
 import json
+from .prompt_utils import get_discovered_laws_context
 
 from utils.call_llm_api import call_llm_api
 
@@ -95,7 +96,7 @@ def _call_llm_and_process_response(messages: List[Dict[str, str]], model_name: s
     messages.append({"role": "assistant", "content": combined_content})
     return messages, tokens, response_text
 
-def conduct_exploration(module: Any, model_name: str, noise_level: float, difficulty: str = 'easy', system: str = 'vanilla_equation', law_version: str = None, max_turns: int = 10, trial_info: Dict[str, Any] = None) -> Dict[str, Any]:
+def conduct_exploration(module: Any, model_name: str, noise_level: float, difficulty: str = 'easy', system: str = 'vanilla_equation', law_version: str = None, max_turns: int = 10, trial_info: Dict[str, Any] = None, prompt_set: str = 'original', consistency: bool = False) -> Dict[str, Any]:
     """
     Manages the iterative exploration process with the LLM.
 
@@ -115,7 +116,13 @@ def conduct_exploration(module: Any, model_name: str, noise_level: float, diffic
     if "nemotron" in model_name:
         base_prompt = "detailed thinking on \n" + base_prompt
     messages = [{"role": "system", "content": base_prompt}]
-    messages.append({"role": "user", "content": module.get_task_prompt(system, noise_level=noise_level)})
+    prompt = module.get_task_prompt(system, noise_level=noise_level, prompt_set=prompt_set)
+    if prompt_set == 'modified':
+        discovered_context = get_discovered_laws_context()
+        if discovered_context:
+            prompt = discovered_context + "\n\n" + prompt
+
+    messages.append({"role": "user", "content": prompt})
     
     total_tokens = 0
     num_experiments_run = 0
@@ -144,7 +151,7 @@ def conduct_exploration(module: Any, model_name: str, noise_level: float, diffic
             results = []
             for exp in experiments_to_run:
                 # Pass system and law_version to run_experiment_for_module
-                result = module.run_experiment_for_module(**exp, noise_level=noise_level, difficulty=difficulty, system=system, law_version=law_version)
+                result = module.run_experiment_for_module(**exp, noise_level=noise_level, difficulty=difficulty, system=system, law_version=law_version, consistency=consistency)
                 if system == "vanilla_equation":
                     result = "{:.15e}".format(result)            
                 results.append(result)

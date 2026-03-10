@@ -60,26 +60,112 @@ def _ground_truth_law_hard_v2(q1: float, q2: float, distance: float) -> float:
         return 0.0
     return (CONSTANT * q1 ** 3 * q2 ** 2) / (distance ** np.exp(1))
 
+
+# --- Consistent Laws (for --consistency flag) ---
+def _ground_truth_law_easy_v0_consistent(q1: float, q2: float, distance: float) -> float:
+    """Consistent easy v0 law"""
+    try:
+        if distance <= 0:
+            return 0.0
+        return (CONSTANT * q1 * q2) / (distance ** 1.5)
+    except (ValueError, ZeroDivisionError):
+        return float('nan')
+
+def _ground_truth_law_easy_v1_consistent(q1: float, q2: float, distance: float) -> float:
+    """Consistent easy v1 law"""
+    try:
+        if distance <= 0:
+            return 0.0
+        return (CONSTANT * q1 * q2) / (distance ** 2.5)
+    except (ValueError, ZeroDivisionError):
+        return float('nan')
+
+def _ground_truth_law_easy_v2_consistent(q1: float, q2: float, distance: float) -> float:
+    """Consistent easy v2 law"""
+    try:
+        if distance <= 0:
+            return 0.0
+        return (CONSTANT * q1 * q2) / (distance ** 3.0)
+    except (ValueError, ZeroDivisionError):
+        return float('nan')
+
+def _ground_truth_law_medium_v0_consistent(q1: float, q2: float, distance: float) -> float:
+    """Consistent medium v0 law"""
+    try:
+        if distance <= 0:
+            return 0.0
+        return (CONSTANT * q1 * q2) / (distance ** 1.5)
+    except (ValueError, ZeroDivisionError):
+        return float('nan')
+
+def _ground_truth_law_medium_v1_consistent(q1: float, q2: float, distance: float) -> float:
+    """Consistent medium v1 law"""
+    try:
+        if distance <= 0:
+            return 0.0
+        return (CONSTANT * q1 * q2) / (distance ** 2.6)
+    except (ValueError, ZeroDivisionError):
+        return float('nan')
+
+def _ground_truth_law_medium_v2_consistent(q1: float, q2: float, distance: float) -> float:
+    """Consistent medium v2 law"""
+    try:
+        if distance <= 0:
+            return 0.0
+        return (CONSTANT * q1 * q2) / (distance ** 3.8)
+    except (ValueError, ZeroDivisionError):
+        return float('nan')
+
+def _ground_truth_law_hard_v0_consistent(q1: float, q2: float, distance: float) -> float:
+    """Consistent hard v0 law"""
+    try:
+        if distance <= 0:
+            return 0.0
+        return (CONSTANT * q1 * q2) / (distance ** 2.718)
+    except (ValueError, ZeroDivisionError):
+        return float('nan')
+
+def _ground_truth_law_hard_v1_consistent(q1: float, q2: float, distance: float) -> float:
+    """Consistent hard v1 law"""
+    try:
+        if distance <= 0:
+            return 0.0
+        return (CONSTANT * q1 * q2) / (distance ** 2.6)
+    except (ValueError, ZeroDivisionError):
+        return float('nan')
+
+def _ground_truth_law_hard_v2_consistent(q1: float, q2: float, distance: float) -> float:
+    """Consistent hard v2 law"""
+    try:
+        if distance <= 0:
+            return 0.0
+        return (CONSTANT * q1 * q2) / (distance ** 3.8)
+    except (ValueError, ZeroDivisionError):
+        return float('nan')
+
 # --- Law Registry ---
 LAW_REGISTRY = {
     'easy': {
+        'v_unchanged': _ground_truth_law_v_unchanged,
         'v0': _ground_truth_law_easy_v0,
         'v1': _ground_truth_law_easy_v1,
         'v2': _ground_truth_law_easy_v2,
     },
     'medium': {
+        'v_unchanged': _ground_truth_law_v_unchanged,
         'v0': _ground_truth_law_medium_v0,
         'v1': _ground_truth_law_medium_v1,
         'v2': _ground_truth_law_medium_v2,
     },
     'hard': {
+        'v_unchanged': _ground_truth_law_v_unchanged,
         'v0': _ground_truth_law_hard_v0,
         'v1': _ground_truth_law_hard_v1,
         'v2': _ground_truth_law_hard_v2,
     },
 }
 
-def get_ground_truth_law(difficulty: str, law_version: Optional[str] = None) -> Tuple[Callable, str]:
+def get_ground_truth_law(difficulty: str, law_version: Optional[str] = None, consistency: bool = False) -> Tuple[Callable, str]:
     """
     Get ground truth law function for the given difficulty and optional specific version.
     
@@ -103,6 +189,14 @@ def get_ground_truth_law(difficulty: str, law_version: Optional[str] = None) -> 
             raise ValueError(f"Invalid law version '{law_version}' for difficulty '{difficulty}'. Available: {available_versions}")
         selected_version = law_version
     
+    if consistency and law_version in ['v0', 'v1', 'v2']:
+        consistent_name = f"_ground_truth_law_{difficulty}_{law_version}_consistent"
+        import sys
+        mod_obj = sys.modules[__name__]
+        if hasattr(mod_obj, consistent_name):
+            consistent_func = getattr(mod_obj, consistent_name)
+            return consistent_func, law_version
+
     return LAW_REGISTRY[difficulty][selected_version], selected_version
 
 def get_available_law_versions(difficulty: str) -> List[str]:

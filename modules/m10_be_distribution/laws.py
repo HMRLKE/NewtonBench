@@ -8,6 +8,18 @@ HIDDEN_CONSTANT = 1.0513e-14
 
 # --- Ground Truth Laws ---
 
+# --- v_unchanged law ---
+def _ground_truth_law_v_unchanged(omega: float, T: float) -> float:
+    """Unchanged real-world law"""
+    try:
+        with np.errstate(over='raise', divide='raise', invalid='raise', under='ignore'):
+            value = 1 / (np.exp(HIDDEN_CONSTANT * omega / T) - 1)
+        if value > 0 and np.isfinite(value):
+            return value
+        return float('nan')
+    except:
+        return float('nan')
+
 # --- v0 laws ---
 def _ground_truth_law_easy_v0(omega: float, T: float) -> float:
     """Easy law: n = 1 / (exp(C * ω / T) + 1)"""
@@ -122,23 +134,26 @@ def _ground_truth_law_hard_v2(omega: float, T: float) -> float:
 # --- Law Registry ---
 LAW_REGISTRY = {
     'easy': {
+        'v_unchanged': _ground_truth_law_v_unchanged,
         'v0': _ground_truth_law_easy_v0,
         'v1': _ground_truth_law_easy_v1,
         'v2': _ground_truth_law_easy_v2,
     },
     'medium': {
+        'v_unchanged': _ground_truth_law_v_unchanged,
         'v0': _ground_truth_law_medium_v0,
         'v1': _ground_truth_law_medium_v1,
         'v2': _ground_truth_law_medium_v2,
     },
     'hard': {
+        'v_unchanged': _ground_truth_law_v_unchanged,
         'v0': _ground_truth_law_hard_v0,
         'v1': _ground_truth_law_hard_v1,
         'v2': _ground_truth_law_hard_v2,
     }
 }
 
-def get_ground_truth_law(difficulty: str, law_version: Optional[str] = None) -> Tuple[Callable, str]:
+def get_ground_truth_law(difficulty: str, law_version: Optional[str] = None, consistency: bool = False) -> Tuple[Callable, str]:
     """
     Get the ground truth law function for the specified difficulty and version.
     """

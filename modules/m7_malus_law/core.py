@@ -122,6 +122,7 @@ def run_experiment_for_module(
     difficulty: str = 'easy',
     system: str = 'vanilla_equation',
     law_version: str = None,
+    consistency: bool = False,
     **kwargs
 ) -> Union[float, Dict[str, Any]]:
     """
@@ -148,7 +149,7 @@ def run_experiment_for_module(
     num_points = kwargs.get('num_points', MALUS_DEFAULTS['num_points'])
     
     # Get the ground truth law
-    malus_law, _ = get_ground_truth_law(difficulty, law_version)
+    malus_law, _ = get_ground_truth_law(difficulty, law_version, consistency)
     
     if system == ExperimentSystem.VANILLA_EQUATION:
         true_intensity = malus_law(I_0, theta)
@@ -172,6 +173,7 @@ def evaluate_law(
     law_version: str = None,
     judge_model_name: str = "nemotron-ultra",
     trial_info=None,
+    consistency: bool = False,
 ) -> dict:
     """
     Evaluator assessing the symbolic equivalence and RMSLE of the LLM's submitted function.
@@ -191,7 +193,7 @@ def evaluate_law(
         return {"rmsle": float('nan'), "exact_accuracy": 0.0, "symbolic_equivalent": False, "symbolic_msg": validation_error, "error": validation_error}
     
     # Get the ground truth law
-    gt_law, _ = get_ground_truth_law(difficulty, law_version)
+    gt_law, _ = get_ground_truth_law(difficulty, law_version, consistency)
     
     # Generate test data
     num_points = 5000

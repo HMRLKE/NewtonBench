@@ -34,7 +34,7 @@ def format_chat_history(chat_history):
     return '\n'.join(lines)
 
 def write_fail_result_with_retries(args, final_error, retry_history, func_sig):
-    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend, dashboard = args
+    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend, dashboard, prompt_set, consistency = args
     fail_result = {
         "trial_id": trial_id,
         "module_name": module_name,
@@ -87,8 +87,8 @@ def run_trial(args):
     - A `run_experiment_for_module(...)` function.
     - An `evaluate_law(str)` function.
     """
-    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend, dashboard = args
-    print(f"Starting trial {trial_id} for module '{module_name}' with {model_name}, noise {noise_level} (equation difficulty: {difficulty}, model system: {system}, law version: {law_version}, backend: {agent_backend}")
+    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend, dashboard, prompt_set, consistency = args
+    print(f"Starting trial {trial_id} for module '{module_name}' with {model_name}, noise {noise_level} (equation difficulty: {difficulty}, model system: {system}, law version: {law_version}, backend: {agent_backend}, consistency: {consistency})")
     
     retry_history = []
     final_error = None
@@ -116,7 +116,9 @@ def run_trial(args):
                     difficulty=difficulty,
                     system=system,
                     law_version=law_version,
-                    trial_info=trial_info
+                    trial_info=trial_info,
+                    prompt_set=prompt_set,
+                    consistency=consistency
                 )
             else:
                 exploration_result = conduct_exploration(
@@ -126,7 +128,9 @@ def run_trial(args):
                     difficulty=difficulty,
                     system=system,
                     law_version=law_version,
-                    trial_info=trial_info
+                    trial_info=trial_info,
+                    prompt_set=prompt_set,
+                    consistency=consistency
                 )
 
             # 2. Evaluate the submitted law using the module's specific evaluator
@@ -136,7 +140,8 @@ def run_trial(args):
                 difficulty=difficulty, 
                 law_version=law_version, 
                 judge_model_name=judge_model_name, 
-                trial_info=trial_info
+                trial_info=trial_info,
+                consistency=consistency
             )
 
             # 3. Combine all results for this trial
@@ -228,9 +233,10 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
        
     base_dir = os.path.join("evaluation_results", cli_args.model_name, cli_args.module, cli_args.agent_backend, cli_args.equation_difficulty, law_version_str)
     
+    consistency_str = "consistent" if cli_args.consistency else "inconsistent"
     version_num = 1
     while True:
-        experiment_name = f"{cli_args.model_system}_noise{noise_str}_v{version_num}"
+        experiment_name = f"{cli_args.model_system}_noise{noise_str}_prompt_{cli_args.prompt_set}_{consistency_str}_v{version_num}"
         full_path = os.path.join(base_dir, experiment_name)
         if not os.path.exists(full_path):
             break
@@ -245,7 +251,7 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
     judge_model_name = "gpt41"
     
     pool_args = [
-        (i, cli_args.noise, cli_args.model_name, cli_args.module, cli_args.equation_difficulty, cli_args.model_system, law_version, trials_dir, max_retries, judge_model_name, cli_args.agent_backend, cli_args.dashboard)
+        (i, cli_args.noise, cli_args.model_name, cli_args.module, cli_args.equation_difficulty, cli_args.model_system, law_version, trials_dir, max_retries, judge_model_name, cli_args.agent_backend, cli_args.dashboard, cli_args.prompt_set, cli_args.consistency)
         for i in range(num_trials)
     ]
     
@@ -395,7 +401,13 @@ if __name__ == "__main__":
                       help="Agent backend to use for exploration. Default is vanilla_agent. When code_assisted_agent is selected, LLM is equipped with <python> tool use.")
     parser.add_argument("--dashboard", action="store_true", help="Enable real-time dashboard updates.")
     parser.add_argument("--keep_history", action="store_true", help="Do NOT clear existing dashboard data (accumulate results). Default is to reset.")
+    parser.add_argument("--easiest", action="store_true", help="Run easiest experiments (zero noise/settings).")
+    parser.add_argument("-p", "--prompt_set", type=str, default="original", choices=["original", "modified"], help="Select the prompt set to use.")
+    parser.add_argument("-c", "--consistency", action="store_true", help="Apply consistent law modifications across related laws.")
     cli_args = parser.parse_args()
+
+    if cli_args.easiest:
+        cli_args.noise = 0.0
 
     # --- Dashboard Reset (Default behavior unless --keep_history) ---
     if cli_args.dashboard and not cli_args.keep_history:

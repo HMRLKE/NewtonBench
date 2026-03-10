@@ -95,7 +95,7 @@ def run_experiment_for_module(
     **kwargs
 ) -> Union[float, Dict[str, Any]]:
     """Experiment runner for the Snell's Law module."""
-    ground_truth_law, _ = get_ground_truth_law(difficulty, law_version)
+    ground_truth_law, _ = get_ground_truth_law(difficulty, law_version, consistency)
 
     if system == ExperimentSystem.VANILLA_EQUATION:
         refractive_index_1 = kwargs.get('refractive_index_1', 1.1)
@@ -151,13 +151,14 @@ def evaluate_law(
     law_version: Optional[str] = None,
     judge_model_name: str = "nemotron-ultra",
     trial_info=None,
+    consistency: bool = False,
 ) -> dict:
     """Evaluator for the Snell's Law module."""
     is_valid, validation_error = validate_function_definition(llm_function_str)
     if not is_valid:
         return {"rmsle": float('nan'), "exact_accuracy": 0.0, "symbolic_equivalent": False, "symbolic_msg": validation_error, "error": validation_error}
 
-    gt_law, _ = get_ground_truth_law(difficulty, law_version)
+    gt_law, _ = get_ground_truth_law(difficulty, law_version, consistency)
     
     # Generate test data covering a wide range of scenarios
     num_points = 5000

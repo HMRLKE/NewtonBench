@@ -4,6 +4,14 @@ import random
 
 # --- Ground Truth Laws ---
 
+# --- v_unchanged law ---
+def _ground_truth_law_v_unchanged(k: float, m: float, b: float) -> float:
+    """Unchanged real-world law"""
+    try:
+        return math.sqrt(k/m - (b/(2*m))**2)
+    except (ValueError, ZeroDivisionError):
+        return float('nan')
+
 # --- v0 laws ---
 def _ground_truth_law_easy_v0(k: float, m: float, b: float) -> float:
     """Easy law: ω = sqrt(k/m - (b/(2*m)))"""
@@ -76,23 +84,26 @@ def _ground_truth_law_hard_v2(k: float, m: float, b: float) -> float:
 # --- Law Registry ---
 LAW_REGISTRY = {
     'easy': {
+        'v_unchanged': _ground_truth_law_v_unchanged,
         'v0': _ground_truth_law_easy_v0,
         'v1': _ground_truth_law_easy_v1,
         'v2': _ground_truth_law_easy_v2,
     },
     'medium': {
+        'v_unchanged': _ground_truth_law_v_unchanged,
         'v0': _ground_truth_law_medium_v0,
         'v1': _ground_truth_law_medium_v1,
         'v2': _ground_truth_law_medium_v2,
     },
     'hard': {
+        'v_unchanged': _ground_truth_law_v_unchanged,
         'v0': _ground_truth_law_hard_v0,
         'v1': _ground_truth_law_hard_v1,
         'v2': _ground_truth_law_hard_v2,
     }
 }
 
-def get_ground_truth_law(difficulty: str, law_version: Optional[str] = None) -> Tuple[Callable, str]:
+def get_ground_truth_law(difficulty: str, law_version: Optional[str] = None, consistency: bool = False) -> Tuple[Callable, str]:
     """
     Get the ground truth law function for the specified difficulty and version.
     """

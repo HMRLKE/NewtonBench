@@ -1,0 +1,49 @@
+interaction_laws:
+  modules: 
+    - m0_gravity
+    - m1_coulomb_force
+    - m2_magnetic_force
+  shared_axes:
+    - distance_exponent
+  axes_mapping:
+    easy:
+      v0: {distance_exponent: 1.5}
+      v1: {distance_exponent: 2.5}
+      v2: {distance_exponent: 3.0}
+    medium:
+      v0: {distance_exponent: 1.5}
+      v1: {distance_exponent: 2.6}
+      v2: {distance_exponent: 3.8}
+    hard:
+      v0: {distance_exponent: 2.718} # e
+      v1: {distance_exponent: 2.6}
+      v2: {distance_exponent: 3.8}
+  shared_constants: []
+
+thermal_laws:
+  modules:
+    - m3_fourier_law
+    - m11_heat_transfer
+  shared_axes: []
+  shared_constants: []
+
+oscillation_laws:
+  modules:
+    - m6_underdamped_harmonic
+    - m9_hooke_law
+  shared_axes: []
+  shared_constants: []
+
+optical_laws:
+  modules:
+    - m4_snell_law
+    - m7_malus_law
+  shared_axes: []
+  shared_constants: []
+
+modern_physics_laws:
+  modules:
+    - m5_radioactive_decay
+    - m10_be_distribution
+  shared_axes: []
+  shared_constants: []

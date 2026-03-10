@@ -320,7 +320,7 @@ print("This suggests the law is P ∝ T^4.0")
 4. **Repeat** with more <python> tags until you're confident in your solution.
 5. **Submit final law** using <final_law> tags with the proper Python function format."""
 
-def get_task_prompt(system: str, is_code_assisted: bool = False, noise_level: float = 0.0) -> str:
+def get_task_prompt(system: str, is_code_assisted: bool = False, noise_level: float = 0.0, prompt_set: str = 'original') -> str:
 	"""Return the appropriate task prompt based on system."""
 	prompts = [OBJECTIVE_PROMPT]
 

@@ -215,6 +215,7 @@ def run_experiment_for_module(
     difficulty: str = 'easy',
     system: str = 'vanilla_equation',
     law_version: str = None,
+    consistency: bool = False,
     **kwargs
 ) -> Union[float, Dict[str, Any]]:
     """
@@ -241,7 +242,7 @@ def run_experiment_for_module(
         For simple/complex_system: time series data (dict)
     """
     # Get the appropriate force law
-    force_law, selected_law_version = get_ground_truth_law(difficulty, law_version)
+    force_law, selected_law_version = get_ground_truth_law(difficulty, law_version, consistency)
 
     # Vanilla equation (direct force measurement)
     if system == ExperimentSystem.VANILLA_EQUATION:
@@ -285,6 +286,7 @@ def evaluate_law(
     law_version: str = None,
     judge_model_name: str = "nemotron-ultra",
     trial_info=None,
+    consistency: bool = False,
 ) -> dict:
     """Evaluator for the Gravity module."""
     # Validate LLM function
@@ -298,7 +300,7 @@ def evaluate_law(
             "error": validation_error
         }
     # --- Extract ground truth law and test data ---
-    gt_law, selected_law_version = get_ground_truth_law(difficulty, law_version)
+    gt_law, selected_law_version = get_ground_truth_law(difficulty, law_version, consistency)
     num_points = 5000
     # Use log-uniform sampling for all parameters
     test_data = {

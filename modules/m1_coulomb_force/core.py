@@ -164,6 +164,7 @@ def run_experiment_for_module(
     difficulty: str = 'easy',
     system: str = 'vanilla_equation',
     law_version: str = None,
+    consistency: bool = False,
     **kwargs
 ) -> Union[float, Dict[str, Any]]:
     """
@@ -185,7 +186,7 @@ def run_experiment_for_module(
     q2 = kwargs.get('q2', 1.0)
     distance = kwargs.get('distance', 1.0)
     
-    force_law, selected_law_version = get_ground_truth_law(difficulty, law_version)
+    force_law, selected_law_version = get_ground_truth_law(difficulty, law_version, consistency)
 
     if system == ExperimentSystem.VANILLA_EQUATION:
         true_force = force_law(q1, q2, distance)
@@ -229,6 +230,7 @@ def evaluate_law(
     law_version: str = None,
     judge_model_name: str = "nemotron-ultra",
     trial_info=None,
+    consistency: bool = False,
 ) -> dict:
     """
     Evaluator assessing the symbolic equivalence, and RMSLE of the LLM's submitted function.
@@ -249,7 +251,7 @@ def evaluate_law(
             "error": validation_error
         }
     # --- Extract ground truth law and test data ---
-    gt_law, selected_law_version = get_ground_truth_law(difficulty, law_version)
+    gt_law, selected_law_version = get_ground_truth_law(difficulty, law_version, consistency)
     # np.random.seed(42)
     num_points = 5000
     # Use log-uniform sampling for all parameters
