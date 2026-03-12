@@ -6,6 +6,14 @@ from typing import Dict, List, Tuple, Callable, Optional
 CONSTANT = 2.0
 
 # --- Ground Truth Physics Engine ---
+# --- v_unchanged law ---
+def _ground_truth_law_v_unchanged(q1: float, q2: float, distance: float) -> float:
+    """Unchanged real-world law"""
+    K = 8.98755e9
+    if distance <= 0:
+        return 0.0
+    return (K * q1 * q2) / (distance ** 2)
+
 def _ground_truth_law_easy_v0(q1: float, q2: float, distance: float) -> float:
     """Easy law: F = K * q1 * q2 / r^3"""
     if distance <= 0 or q1 == 0 or q2 == 0:

@@ -7,9 +7,15 @@ the transmission of polarized light through polarizers at different angles.
 """
 
 import numpy as np
+import math
 import random
 from typing import Dict, List, Tuple, Callable, Optional
 
+
+# --- v_unchanged law ---
+def _ground_truth_law_v_unchanged(I0: float, theta: float) -> float:
+    """Unchanged real-world law"""
+    return I0 * (math.cos(theta) ** 2)
 
 def _ground_truth_law_easy_v0(I_0: float, theta: float) -> float:
     """

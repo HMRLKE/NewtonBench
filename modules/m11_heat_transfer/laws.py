@@ -3,6 +3,11 @@ import random
 from typing import Dict, List, Tuple, Callable, Optional
 
 # --- Easy Difficulty Laws (v0 only) ---
+# --- v_unchanged law ---
+def _ground_truth_law_v_unchanged(m: float, c: float, delta_T: float) -> float:
+    """Unchanged real-world law"""
+    return m * c * delta_T
+
 def _ground_truth_law_easy_v0(m: float, c: float, delta_T: float) -> float:
     """
     Easy heat transfer law: Q = m * c * (delta_T)^2.5

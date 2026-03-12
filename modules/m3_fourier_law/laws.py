@@ -5,6 +5,13 @@ from typing import Dict, List, Tuple, Callable, Optional
 
 # --- Easy Difficulty Laws ---
 
+# --- v_unchanged law ---
+def _ground_truth_law_v_unchanged(k: float, A: float, delta_T: float, d: float) -> float:
+    """Unchanged real-world law"""
+    if d <= 0:
+        return 0.0
+    return (k * A * delta_T) / d
+
 def _ground_truth_law_easy_v0(k: float, A: float, delta_T: float, d: float) -> float:
     """Easy Fourier law: P = (k * A * delta_T) / d^2"""
     try:

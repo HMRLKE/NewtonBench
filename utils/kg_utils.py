@@ -417,21 +417,6 @@ def update_global_dashboard(trial_id, module_name, equation, difficulty, law_ver
 
             gt_eqn_str = get_gt_equation_string(difficulty=difficulty, law_version=law_version, task_name=module_name)
 
-            new_law = {
-                "task": module_name,
-                "difficulty": difficulty,
-                "version": law_version,
-                "equation": clean_eq, # Cleaned for display
-                "raw_equation": equation, # Keep raw just in case
-                "gt_equation": gt_eqn_str, 
-                "loss": metrics.get("rmsle", 0), # Use RMSLE as loss since RMSE isn't returned
-                "rmsle": metrics.get("rmsle", 0),
-                "exact_accuracy": metrics.get("exact_accuracy", 0.0),
-                "similarity": metrics.get("kg_similarity", 0),
-                "symbolic_match": metrics.get("symbolic_equivalent", False),
-                "chat_history": chat_history # Add history
-            }
-
             try:
                 trial_kg = equation_to_kg(clean_eq)
             except Exception as e:
@@ -443,6 +428,22 @@ def update_global_dashboard(trial_id, module_name, equation, difficulty, law_ver
             except Exception as e:
                 # Expected if gt is unknown or parsing fails
                 gt_kg = {"nodes": [], "edges": []}
+
+            new_law = {
+                "task": module_name,
+                "difficulty": difficulty,
+                "version": law_version,
+                "equation": clean_eq, # Cleaned for display
+                "raw_equation": equation, # Keep raw just in case
+                "gt_equation": gt_eqn_str, 
+                "loss": metrics.get("rmsle", 0), # Use RMSLE as loss since RMSE isn't returned
+                "rmsle": metrics.get("rmsle", 0),
+                "exact_accuracy": metrics.get("exact_accuracy", 0.0),
+                "similarity": metrics.get("kg_similarity", 0),
+                "chat_history": chat_history, # Add history
+                "disc_graph": trial_kg,
+                "gt_graph": gt_kg
+            }
             
             
             # --- UPDATE GLOBAL STATE ---

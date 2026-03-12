@@ -62,6 +62,7 @@ def run_experiment_for_module(
     difficulty: str = 'easy',
     system: str = 'vanilla_equation',
     law_version: Optional[str] = None,
+    consistency: bool = False,
     **kwargs
 ) -> Union[float, Dict[str, Any]]:
     """Experiment runner for the Bose-Einstein distribution module."""

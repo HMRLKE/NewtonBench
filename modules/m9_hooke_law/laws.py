@@ -7,6 +7,11 @@ CONSTANT2 = 1241.9012
 CONSTANT3 = 12.578
 
 # --- Easy Difficulty Laws ---
+# --- v_unchanged law ---
+def _ground_truth_law_v_unchanged(k: float, x: float) -> float:
+    """Unchanged real-world law"""
+    return -k * x
+
 def _ground_truth_law_easy_v0(x: float) -> float:
     """Easy Hooke's law: U = 2kx^2"""
     try:

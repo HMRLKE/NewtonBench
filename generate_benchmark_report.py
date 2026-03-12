@@ -11,8 +11,8 @@ def aggregate_results(base_dir: str = "evaluation_results") -> pd.DataFrame:
         return pd.DataFrame()
 
     for root, dirs, files in os.walk(base_dir):
-        if "agg_results.json" in files:
-            file_path = os.path.join(root, "agg_results.json")
+        if "aggregated_results.json" in files:
+            file_path = os.path.join(root, "aggregated_results.json")
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
@@ -77,6 +77,10 @@ if __name__ == "__main__":
         
         # Print a nice Markdown table
         print("\n### Benchmark Summary Table\n")
-        print(df.to_markdown(index=False))
+        try:
+            print(df.to_markdown(index=False))
+        except ImportError:
+            # Fallback if tabulate is not installed
+            print(df.to_string(index=False))
     else:
         print("No results found to aggregate.")

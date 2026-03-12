@@ -1,8 +1,14 @@
 import numpy as np
+import math
 import random
 from typing import Dict, List, Tuple, Callable, Optional
 
 # --- Easy Difficulty Laws (v0 only) ---
+# --- v_unchanged law ---
+def _ground_truth_law_v_unchanged(N0: float, lam: float, t: float) -> float:
+    """Unchanged real-world law"""
+    return N0 * math.exp(-lam * t)
+
 def _ground_truth_law_easy_v0(N0: float, lambda_constant: float, t: float) -> float:
     """Easy radioactive decay law: N(t) = N₀ * e^(-λ * t^1.5)"""
     try:

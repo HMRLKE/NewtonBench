@@ -44,16 +44,21 @@ def run_benchmark():
                             
                         # Run the experiment
                         try:
-                            # We don't use check=True to allow benchmark to continue if one trial fails
-                            subprocess.run(cmd)
+                            # Use run instead of Popen for synchronous execution
+                            subprocess.run(cmd, check=False)
                         except KeyboardInterrupt:
-                            print("Benchmark aborted by user.")
+                            print("\n[ABORT] Benchmark interrupted by user.")
                             return
                         except Exception as e:
-                            print(f"Error running experiment: {e}")
+                            print(f"\n[ERROR] Failed to run trial: {e}")
 
-    print("\nComprehensive benchmark finished.")
-    print("Run 'python generate_benchmark_report.py' to see results.")
+    print("\n" + "="*50)
+    print("NEWTONBENCH COMPREHENSIVE BENCHMARK COMPLETE")
+    print("="*50)
+    print("All results have been stored in 'evaluation_results/'.")
+    print("To generate the final analytical table, run:")
+    print("    python generate_benchmark_report.py")
+    print("="*50)
 
 if __name__ == "__main__":
     run_benchmark()
