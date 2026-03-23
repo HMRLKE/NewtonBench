@@ -1,21 +1,13 @@
 import argparse
-import os
 import json
-import pandas as pd
-import numpy as np
+import os
 import re
-import time
 from pathlib import Path
-from typing import List
+from typing import Dict, Iterable, List, Optional, Tuple
 
-def extract_version_from_path(results_dir):
-    """Extract version (v10, v15, etc.) from results directory path"""
-    match = re.search(r'v(\d+)$', results_dir.rstrip('/'))
-    if match:
-        return f"v{match.group(1)}"
-    else:
-        return "v_unknown"  # fallback
-    
+import numpy as np
+import pandas as pd
+
 
 def read_models_from_file(models_file: Path) -> List[str]:
     if not models_file.exists():
@@ -30,285 +22,313 @@ def read_models_from_file(models_file: Path) -> List[str]:
     return models
 
 
-def update_results(model_name, result_dir):
-    """Update the results_by_trial.csv file with the latest trial results."""
-    csv_path = 'result_analysis/results_by_trial.csv'
+def parse_experiment_name(experiment_name: str) -> Dict[str, object]:
+    metadata: Dict[str, object] = {
+        "noise_level": np.nan,
+        "prompt_set": "original",
+        "consistency": False,
+        "file_version": "v_unknown",
+    }
 
-    if os.path.exists(csv_path):
-        df = pd.read_csv(csv_path)
-    else:
-        df = pd.DataFrame(columns=[
-            'trial_id', 'module', 'model_name', 'noise_level', 'equation_difficulty', 'model_system',
-            'law_version', 'agent_backend', 'rmsle', 'exact_accuracy', 'rounds',
-            'experiments', 'total_tokens', 'file_version'
-        ])
+    noise_match = re.search(r'noise([0-9]+(?:_[0-9]+)*)', experiment_name)
+    if noise_match:
+        metadata["noise_level"] = float(noise_match.group(1).replace("_", "."))
 
-    model_dir = os.path.join(result_dir, model_name)
-    if not os.path.isdir(model_dir):
-        print(f"Directory not found for model: {model_name}")
-        return
+    if "_prompt_modified_" in experiment_name:
+        metadata["prompt_set"] = "modified"
 
-    modules_to_process = os.listdir(model_dir)
+    if "_inconsistent_" in experiment_name:
+        metadata["consistency"] = False
+    elif "_consistent_" in experiment_name:
+        metadata["consistency"] = True
 
-    for module in modules_to_process:
-        module_path = os.path.join(model_dir, module)
-        if not os.path.isdir(module_path):
+    version_match = re.search(r'_v(\d+)$', experiment_name)
+    if version_match:
+        metadata["file_version"] = f"v{version_match.group(1)}"
+
+    return metadata
+
+
+def iter_experiment_dirs(result_dir: Path) -> Iterable[Path]:
+    for root, dirs, files in os.walk(result_dir):
+        if "aggregated_results.json" in files:
+            yield Path(root)
+
+
+def load_experiment_config(experiment_dir: Path, result_dir: Path) -> Optional[Dict[str, object]]:
+    aggregated_path = experiment_dir / "aggregated_results.json"
+    try:
+        with aggregated_path.open("r", encoding="utf-8") as f:
+            payload = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    config = payload.get("config", {}).copy()
+    rel_parts = experiment_dir.relative_to(result_dir).parts
+    if len(rel_parts) < 6:
+        return None
+
+    model_name, module_name, agent_backend, difficulty, law_version, experiment_name = rel_parts[:6]
+    parsed_name = parse_experiment_name(experiment_name)
+
+    config.setdefault("model_name", model_name)
+    config.setdefault("module", module_name)
+    config.setdefault("Agent backend", agent_backend)
+    config.setdefault("equation_difficulty", difficulty)
+    config.setdefault("law_version", law_version)
+    config.setdefault("experiment_name", experiment_name)
+    config.setdefault("noise_level", parsed_name["noise_level"])
+    config.setdefault("prompt_set", parsed_name["prompt_set"])
+    config.setdefault("consistency", parsed_name["consistency"])
+    config.setdefault("run_tag", None)
+    config["experiment_uid"] = str(experiment_dir.relative_to(result_dir)).replace("\\", "/")
+    config["file_version"] = parsed_name["file_version"]
+    return config
+
+
+def collect_trial_rows(
+    result_dir: Path,
+    model_name: Optional[str] = None,
+    run_tag: Optional[str] = None,
+) -> List[Dict[str, object]]:
+    rows: List[Dict[str, object]] = []
+    for experiment_dir in iter_experiment_dirs(result_dir):
+        config = load_experiment_config(experiment_dir, result_dir)
+        if config is None:
+            continue
+        if model_name and config.get("model_name") != model_name:
+            continue
+        if run_tag is not None and config.get("run_tag") != run_tag:
             continue
 
-        for root, dirs, files in os.walk(module_path):
-            if 'trials' in dirs:
-                trials_dir = os.path.join(root, 'trials')
-                for file in os.listdir(trials_dir):
-                    if file.endswith('.json') and 'fail' not in file:
-                        trial_id_match = re.search(r'trial(\d+)', file)
-                        if not trial_id_match:
-                            continue
-                        trial_id = int(trial_id_match.group(1))
+        trials_dir = experiment_dir / "trials"
+        if not trials_dir.is_dir():
+            continue
 
-                        file_path = os.path.join(trials_dir, file)
-                        with open(file_path, 'r') as f:
-                            data = json.load(f)
+        for trial_file in sorted(trials_dir.glob("trial*.json")):
+            try:
+                with trial_file.open("r", encoding="utf-8") as f:
+                    trial = json.load(f)
+            except (OSError, json.JSONDecodeError):
+                continue
 
-                        file_version = extract_version_from_path(root)
-
-                        new_row = {
-                            'trial_id': trial_id,
-                            'module': data.get('module_name'),
-                            'model_name': data.get('model_name'),
-                            'noise_level': data.get('noise_level'),
-                            'equation_difficulty': data.get('equation_difficulty'),
-                            'model_system': data.get('model_system'),
-                            'law_version': data.get('law_version'),
-                            'agent_backend': data.get('agent_backend'),
-                            'rmsle': data.get('evaluation', {}).get('rmsle'),
-                            'exact_accuracy': data.get('evaluation', {}).get('exact_accuracy'),
-                            'rounds': data.get('rounds'),
-                            'experiments': data.get('num_experiments'),
-                            'total_tokens': data.get('total_tokens'),
-                            'file_version': file_version
-                        }
-
-                        # Check if the trial already exists and update it
-                        mask = (df['trial_id'] == new_row['trial_id']) & \
-                                (df['module'] == new_row['module']) & \
-                                (df['model_name'] == new_row['model_name']) & \
-                                (df['noise_level'] == new_row['noise_level']) & \
-                                (df['equation_difficulty'] == new_row['equation_difficulty']) & \
-                                (df['model_system'] == new_row['model_system']) & \
-                                (df['law_version'] == new_row['law_version']) & \
-                                (df['agent_backend'] == new_row['agent_backend'])
-
-                        if mask.any():
-                            df.loc[mask, new_row.keys()] = new_row.values()
-                        else:
-                            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-
-    df.to_csv(csv_path, index=False)
-    print(f"Results updated in {csv_path}")
+            evaluation = trial.get("evaluation", {})
+            row = {
+                "trial_uid": str(trial_file.relative_to(result_dir)).replace("\\", "/"),
+                "experiment_uid": config["experiment_uid"],
+                "file_version": config["file_version"],
+                "run_tag": config.get("run_tag"),
+                "model_name": trial.get("model_name", config.get("model_name")),
+                "module": trial.get("module_name", config.get("module")),
+                "noise_level": trial.get("noise_level", config.get("noise_level")),
+                "equation_difficulty": trial.get("equation_difficulty", config.get("equation_difficulty")),
+                "model_system": trial.get("model_system", config.get("model_system")),
+                "law_version": trial.get("law_version", config.get("law_version")),
+                "agent_backend": trial.get("agent_backend", config.get("Agent backend")),
+                "prompt_set": trial.get("prompt_set", config.get("prompt_set")),
+                "consistency": bool(trial.get("consistency", config.get("consistency", False))),
+                "trial_id": trial.get("trial_id"),
+                "status": trial.get("status", "unknown"),
+                "top_level_error": trial.get("error"),
+                "evaluation_error": evaluation.get("error"),
+                "symbolic_equivalent": evaluation.get("symbolic_equivalent"),
+                "rmsle": evaluation.get("rmsle"),
+                "exact_accuracy": evaluation.get("exact_accuracy"),
+                "rounds": trial.get("rounds"),
+                "experiments": trial.get("num_experiments"),
+                "total_tokens": trial.get("total_tokens"),
+                "trial_success": (
+                    not trial_file.name.endswith("_fail.json")
+                    and trial.get("error") in (None, "")
+                    and evaluation.get("error") in (None, "")
+                ),
+            }
+            rows.append(row)
+    return rows
 
 
-def detect_outliers_modified_zscore_column(df, column_name, threshold=3.5):
-    """
-    Detect outliers in a DataFrame column using Modified Z-Score method and mask them as NaN.
-    Args:
-        df: pandas DataFrame
-        column_name: name of the column to process
-        threshold: Modified Z-Score threshold (default 3.5)
-    Returns:
-        df: DataFrame with outliers in the specified column masked as NaN
-    """
-    data = df[column_name].values
+def build_config_summary(trials_df: pd.DataFrame) -> pd.DataFrame:
+    if trials_df.empty:
+        return pd.DataFrame()
 
-    if len(data) == 0:
-        return df
+    group_cols = [
+        "run_tag",
+        "model_name",
+        "module",
+        "agent_backend",
+        "equation_difficulty",
+        "model_system",
+        "law_version",
+        "noise_level",
+        "prompt_set",
+        "consistency",
+    ]
 
-    # Replace inf with nan for median calculation
-    data_for_stats = np.where(np.isinf(data), np.nan, data)
+    summary = (
+        trials_df.groupby(group_cols, dropna=False)
+        .agg(
+            num_trials=("trial_uid", "count"),
+            num_successful_trials=("trial_success", "sum"),
+            success_rate=("trial_success", "mean"),
+            mean_exact_accuracy=("exact_accuracy", "mean"),
+            std_exact_accuracy=("exact_accuracy", "std"),
+            mean_rmsle=("rmsle", "mean"),
+            std_rmsle=("rmsle", "std"),
+            avg_rounds=("rounds", "mean"),
+            avg_experiments=("experiments", "mean"),
+            avg_total_tokens=("total_tokens", "mean"),
+            source_experiment_count=("experiment_uid", pd.Series.nunique),
+        )
+        .reset_index()
+    )
 
-    median = np.nanmedian(data_for_stats)
-    mad = np.nanmedian(np.abs(data_for_stats - median))
-
-    if mad == 0:
-        outlier_mask = ~np.isfinite(data)
-    else:
-        modified_z_scores = 0.6745 * (data - median) / mad
-        outlier_mask = np.abs(modified_z_scores) > threshold
-        outlier_mask |= ~np.isfinite(modified_z_scores)
-
-    # Mask outliers as NaN in the original DataFrame
-    df.loc[outlier_mask, column_name] = np.nan
-
-    return df
-
-def calculate_trial_stats(df):
-    """
-    Calculates statistics based on trial performance.
-    1. Groups by trial_id and calculates the mean accuracy/rmsle for each trial.
-    2. Calculates the mean and std of those per-trial means.
-    """
-    if df.empty:
-        return np.nan, np.nan, np.nan, np.nan
-    
-    # Step 1: Group by trial and calculate mean for each trial
-    trial_means = df.groupby('trial_id').agg(
-        mean_accuracy=('exact_accuracy', 'mean'),
-        mean_rmsle=('rmsle', 'mean')
-    ).dropna()
-
-    if trial_means.empty:
-        return np.nan, np.nan, np.nan, np.nan
-
-    # Step 2: Calculate mean and std of the per-trial means
-    final_mean_acc = trial_means['mean_accuracy'].mean()
-    final_std_acc = trial_means['mean_accuracy'].std()
-    final_mean_rmsle = trial_means['mean_rmsle'].mean()
-    final_std_rmsle = trial_means['mean_rmsle'].std()
-    
-    return final_mean_acc, final_std_acc if not np.isnan(final_std_acc) else 0, final_mean_rmsle, final_std_rmsle if not np.isnan(final_std_rmsle) else 0
+    for col in ["std_exact_accuracy", "std_rmsle"]:
+        summary[col] = summary[col].fillna(0.0)
+    return summary
 
 
-def aggregate_results(output_csv, model_name=None):
-    """
-    Main function to generate the aggregated results summary.
-    """
-    print("Loading all trial results into DataFrame...")
-    csv_path = 'result_analysis/results_by_trial.csv'
-    if not os.path.exists(csv_path):
-        print(f"{csv_path} not found.")
-        return
-    df = pd.read_csv(csv_path)
-    if df.empty:
-        print("No valid results found to process.")
-        return
-    df = df.replace([np.inf, -np.inf], np.nan)
-    print(f"Loaded {len(df)} records.")
+def _format_metric(mean_value: float, std_value: float, multiplier: float = 1.0, decimals: int = 1) -> str:
+    if pd.isna(mean_value):
+        return "N/A"
+    mean_fmt = mean_value * multiplier
+    std_fmt = std_value * multiplier
+    return f"{mean_fmt:.{decimals}f} (±{std_fmt:.3f})"
 
-    if model_name:
-        df = df[df['model_name'] == model_name]
-        print(f"Filtered for model: {model_name}")
 
-    print("Applying outlier detection per module, equation_difficulty, model_system combination and agent backend for RMSLE...")
-    
-    # Get unique groups
-    groups = df.groupby(['module', 'equation_difficulty', 'model_system', 'agent_backend'])
-    
-    # Create a new dataframe with outliers removed
-    cleaned_df_list = []
-    count = 0
-    for name, group in groups:
-        cleaned_group = detect_outliers_modified_zscore_column(group.copy(), 'rmsle')
-        cleaned_df_list.append(cleaned_group)
-        count+=1
-    
-    if cleaned_df_list:
-        df = pd.concat(cleaned_df_list).reset_index(drop=True)
+def build_leaderboard(config_summary_df: pd.DataFrame) -> pd.DataFrame:
+    if config_summary_df.empty:
+        return pd.DataFrame()
 
     difficulties = ["easy", "medium", "hard"]
     systems = ["vanilla_equation", "simple_system", "complex_system"]
+    group_cols = ["run_tag", "model_name", "agent_backend", "prompt_set", "consistency"]
+    leaderboard_rows: List[Dict[str, object]] = []
 
-    aggregated_data = []
-    
-    backends = sorted(df['agent_backend'].unique(), key=lambda x: (x != 'llm_explore', x))
-    models = sorted(df['model_name'].unique())
+    for keys, group in config_summary_df.groupby(group_cols, dropna=False):
+        row = dict(zip(group_cols, keys))
+        for system in systems:
+            for difficulty in difficulties:
+                mask = (
+                    (group["model_system"] == system)
+                    & (group["equation_difficulty"] == difficulty)
+                )
+                subset = group[mask]
+                col_name = f"acc_{difficulty}_{system}"
+                if subset.empty:
+                    row[col_name] = "N/A"
+                else:
+                    row[col_name] = _format_metric(
+                        subset["mean_exact_accuracy"].mean(),
+                        subset["mean_exact_accuracy"].std(ddof=0) if len(subset) > 1 else 0.0,
+                        multiplier=100.0,
+                        decimals=1,
+                    )
 
-    for model in models:
-        for backend in backends:
-            row = {'model_name': model, 'agent_backend': backend}
-            
-            model_backend_df = df[(df['model_name'] == model) & (df['agent_backend'] == backend)]
-            if model_backend_df.empty:
-                continue
+        row["overall_acc"] = _format_metric(
+            group["mean_exact_accuracy"].mean(),
+            group["mean_exact_accuracy"].std(ddof=0) if len(group) > 1 else 0.0,
+            multiplier=100.0,
+            decimals=1,
+        )
+        row["overall_rmsle"] = _format_metric(
+            group["mean_rmsle"].mean(),
+            group["mean_rmsle"].std(ddof=0) if len(group) > 1 else 0.0,
+            multiplier=1.0,
+            decimals=4,
+        )
+        row["overall_success_rate"] = _format_metric(
+            group["success_rate"].mean(),
+            group["success_rate"].std(ddof=0) if len(group) > 1 else 0.0,
+            multiplier=100.0,
+            decimals=1,
+        )
+        row["avg_total_tokens"] = f"{group['avg_total_tokens'].mean():.0f}" if group["avg_total_tokens"].notna().any() else "N/A"
+        leaderboard_rows.append(row)
 
-            for system in systems:
-                for difficulty in difficulties:
-                    col_name = f"acc_{difficulty}_{system}"
-                    
-                    filtered_df = model_backend_df[
-                        (model_backend_df['equation_difficulty'] == difficulty) & 
-                        (model_backend_df['model_system'] == system)
-                    ]
-                    
-                    mean_acc, std_acc, _, _ = calculate_trial_stats(filtered_df)
-                    
-                    if pd.notna(mean_acc):
-                        row[col_name] = f"{(mean_acc*100):.1f} (±{(std_acc*100):.3f})"
-                    else:
-                        row[col_name] = "N/A"
-
-            overall_mean_acc, overall_std_acc, overall_mean_rmsle, overall_std_rmsle = calculate_trial_stats(model_backend_df)
-            
-            if pd.notna(overall_mean_acc):
-                row['overall_acc'] = f"{(overall_mean_acc*100):.1f} (±{(overall_std_acc*100):.3f})"
-            else:
-                row['overall_acc'] = "N/A"
-            
-            if pd.notna(overall_mean_rmsle):
-                row['overall_rmsle'] = f"{overall_mean_rmsle:.4f} (±{overall_std_rmsle:.4f})"
-            else:
-                row['overall_rmsle'] = "N/A"
-
-            avg_total_tokens = model_backend_df['total_tokens'].mean()
-
-            if pd.notna(avg_total_tokens):
-                row['avg_total_tokens'] = f"{avg_total_tokens:.0f}"
-            else:
-                row['avg_total_tokens'] = "N/A"
-            
-            aggregated_data.append(row)
-
-    summary_df = pd.DataFrame(aggregated_data)
-
-    column_order = ['model_name', 'agent_backend'] + [
-        f"acc_{diff}_{system}" 
+    column_order = group_cols + [
+        f"acc_{difficulty}_{system}"
         for system in systems
-        for diff in difficulties
-    ] + ['overall_acc', 'overall_rmsle', 'avg_total_tokens']
-    
-    summary_df = summary_df.reindex(columns=column_order)
+        for difficulty in difficulties
+    ] + ["overall_acc", "overall_rmsle", "overall_success_rate", "avg_total_tokens"]
 
-    if os.path.exists(output_csv):
-        existing_df = pd.read_csv(output_csv, encoding='utf-8')
-        # Use a temporary key for merging to avoid issues with multi-index
-        summary_df['__key'] = summary_df['model_name'] + '_' + summary_df['agent_backend']
-        existing_df['__key'] = existing_df['model_name'] + '_' + existing_df['agent_backend']
-        
-        # Filter out rows from existing_df that will be updated
-        rows_to_keep = existing_df[~existing_df['__key'].isin(summary_df['__key'])]
-        
-        # Combine the rows to keep with the new data
-        final_df = pd.concat([rows_to_keep, summary_df], ignore_index=True)
-        
-        # Clean up the temporary key
-        final_df.drop(columns=['__key'], inplace=True)
-        print(f"Successfully updated aggregated summary at: {output_csv}")
-    else:
-        final_df = summary_df
-        print(f"Successfully generated aggregated summary at: {output_csv}")
+    leaderboard_df = pd.DataFrame(leaderboard_rows)
+    return leaderboard_df.reindex(columns=column_order)
 
-    final_df.to_csv(output_csv, index=False, encoding='utf-8')
+
+def dataframe_to_markdown(df: pd.DataFrame) -> str:
+    if df.empty:
+        return "_No data available._"
+    try:
+        return df.to_markdown(index=False)
+    except Exception:
+        return df.to_string(index=False)
+
+
+def write_markdown_report(
+    output_path: Path,
+    trials_df: pd.DataFrame,
+    config_summary_df: pd.DataFrame,
+    leaderboard_df: pd.DataFrame,
+    run_tag: Optional[str],
+) -> None:
+    lines = [
+        "# NewtonBench Summary",
+        "",
+        f"- Run tag: `{run_tag}`" if run_tag else "- Run tag: `all-runs`",
+        f"- Trial rows: `{len(trials_df)}`",
+        f"- Logical configurations: `{len(config_summary_df)}`",
+        "",
+        "## Leaderboard",
+        "",
+        dataframe_to_markdown(leaderboard_df),
+        "",
+        "## Configuration Summary",
+        "",
+        dataframe_to_markdown(config_summary_df.head(30)),
+        "",
+    ]
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def generate_reports(
+    result_dir: Path,
+    output_dir: Path,
+    model_name: Optional[str] = None,
+    run_tag: Optional[str] = None,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    rows = collect_trial_rows(result_dir=result_dir, model_name=model_name, run_tag=run_tag)
+    trials_df = pd.DataFrame(rows)
+    if not trials_df.empty:
+        numeric_cols = ["noise_level", "rmsle", "exact_accuracy", "rounds", "experiments", "total_tokens"]
+        for col in numeric_cols:
+            trials_df[col] = pd.to_numeric(trials_df[col], errors="coerce")
+        trials_df["trial_success"] = trials_df["trial_success"].astype(bool)
+        trials_df = trials_df.sort_values(["model_name", "module", "agent_backend", "equation_difficulty", "model_system", "law_version", "trial_uid"])
+
+    config_summary_df = build_config_summary(trials_df)
+    leaderboard_df = build_leaderboard(config_summary_df)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    trials_df.to_csv(output_dir / "results_by_trial.csv", index=False, encoding="utf-8")
+    config_summary_df.to_csv(output_dir / "config_summary.csv", index=False, encoding="utf-8")
+    leaderboard_df.to_csv(output_dir / "aggregated_trial_summary.csv", index=False, encoding="utf-8")
+    write_markdown_report(output_dir / "summary_report.md", trials_df, config_summary_df, leaderboard_df, run_tag)
+    return trials_df, config_summary_df, leaderboard_df
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Process and aggregate all trial results into a summary CSV.")
-    parser.add_argument("-m", "--model_name", default="all", help="LLMs to be processed")
+    parser = argparse.ArgumentParser(description="Summarize NewtonBench experiment outputs into trial, config, and leaderboard reports.")
+    parser.add_argument("-m", "--model_name", default="all", help="Optional model filter.")
     parser.add_argument("-d", "--result_dir", default="evaluation_results", help="Directory containing the evaluation results.")
-    parser.add_argument("-o", "--output_csv", default="result_analysis/aggregated_trial_summary.csv", help="Path to save the final aggregated CSV file.")
-    parser.add_argument("--models_file", type=str, default="configs/models.txt", help="Path to newline-delimited models list when --model_name is not given.")
-    
+    parser.add_argument("-o", "--output_dir", default="result_analysis", help="Directory where the generated report files should be written.")
+    parser.add_argument("--models_file", type=str, default="configs/models.txt", help="Path to newline-delimited models list when --model_name=all.")
+    parser.add_argument("--run_tag", default=None, help="Only include results that were written with this run tag.")
     args = parser.parse_args()
-    
-    output_dir = Path(args.output_csv).parent
-    output_dir.mkdir(parents=True, exist_ok=True)
+
+    result_dir = Path(args.result_dir)
+    output_dir = Path(args.output_dir)
 
     if args.model_name == "all":
-        all_models = read_models_from_file(Path(args.models_file))
-        for model in all_models:
-            print(f"--- Processing model: {model} ---")
-            update_results(model, args.result_dir)
-            aggregate_results(args.output_csv, model)
-        print("--- Finished processing all models. ---")
+        generate_reports(result_dir=result_dir, output_dir=output_dir, run_tag=args.run_tag)
     else:
-        print(f"--- Processing model: {args.model_name} ---")
-        update_results(args.model_name, args.result_dir)
-        aggregate_results(args.output_csv, args.model_name)
-        print(f"--- Finished processing model: {args.model_name} ---")
+        generate_reports(result_dir=result_dir, output_dir=output_dir, model_name=args.model_name, run_tag=args.run_tag)

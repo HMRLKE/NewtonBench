@@ -323,24 +323,6 @@ def evaluate_law(
 
                 if sympy.simplify(expr_llm - expr_gt) == 0:
                     symbolic_equivalent = True
-                else:
-                    nums_in_gt = [n for n in expr_gt.atoms(sympy.Number)]
-                    # Try substituting ANY free symbol that isn't directly in gt_formula
-                    # with any number from the GT equation to see if they align structurally.
-                    symbols_in_llm = list(expr_llm.free_symbols)
-                    symbols_in_gt = list(expr_gt.free_symbols)
-                    
-                    candidate_c_vars = [s for s in symbols_in_llm if s not in symbols_in_gt]
-                    
-                    matched = False
-                    for c_var in candidate_c_vars:
-                        for num in nums_in_gt:
-                            if sympy.simplify(expr_llm.subs(c_var, num) - expr_gt) == 0:
-                                symbolic_equivalent = True
-                                matched = True
-                                break
-                        if matched:
-                            break
             except Exception as e:
                 pass
 

@@ -53,8 +53,8 @@ Answer: (YES/NO)
 
 **Reminder:**
 - Equations may be expressed in standard mathematical notation or as Python code. If the Python implementation implies the same mathematical relationship, the equations are considered equivalent.
-- Constants may differ in form or value. As long as they serve the same functional role (e.g., both scale the output proportionally), they are considered interchangeable.
-   - For example, a constant expressed as sqrt(k) in one equation and as c in another may be equivalent if both affect the output in the same way and can be interchangeable by selecting suitable value for the constant
+ - Constants are part of the discovered law. Different names are acceptable, but missing constants or materially different constant values are NOT an exact match.
+    - For example, replacing a named constant `C` with another named constant `G` is acceptable only if they represent the same numeric quantity in the submitted formula.
 - Variable names may differ, but the index and structure of variables must match exactly for the equations to be considered equivalent.
    - For example, index of 4 and 4.03 are considered different
 - YES/NO must be on the same line as "Answer:"
@@ -97,18 +97,18 @@ Equation 2: def discovered_law(x1, x2, x3):
 Reasoning: Variable naming differs but structure and operations are equivalent. G serves the same role as C ......
 Answer: YES
 
-Equation 1: C * ln(x ** 2)
-Equation 2: def discovered_law(x1, x2, x3):
-   G = 2.02
-   return G * ln(x)
-Reasoning: C * ln(x**2) is the same as 2C * ln(x) and the constant (2C) servers the same role as G ......
-Answer: YES
+ Equation 1: C * ln(x ** 2)
+ Equation 2: def discovered_law(x1, x2, x3):
+    G = 2.02
+    return G * ln(x)
+ Reasoning: C * ln(x**2) equals 2C * ln(x), so Equation 2 would only match if G equals 2C numerically. Without that equality, they are not exact matches.
+ Answer: NO
 
-Equation 1: (C * x1 * x2) / x3 ** 2
-Equation 2: def discovered_law(x1, x2, x3):
-   return (x1 * x2) / x3 ** 2
-Reasoning: Equation 1 has a constant variable while Equation 2 has a numerical constant of 1 ......
-Answer: YES
+ Equation 1: (C * x1 * x2) / x3 ** 2
+ Equation 2: def discovered_law(x1, x2, x3):
+    return (x1 * x2) / x3 ** 2
+ Reasoning: Equation 2 removes the multiplicative constant entirely, so it is not an exact match.
+ Answer: NO
 
 **Your Task:**
 Compare these two equations and determine if they are equivalent:

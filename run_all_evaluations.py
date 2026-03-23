@@ -6,6 +6,7 @@ import json
 import glob
 import time
 import signal
+import re
 from datetime import datetime
 from typing import Tuple, List, Dict, Optional
 from collections import defaultdict
@@ -33,90 +34,120 @@ def get_law_versions_for_difficulty(module_name, difficulty):
         print(f"Could not get law versions for {module_name} ({difficulty}): {e}")
         return []
 
-def get_experiment_path(model_name: str, module: str, agent_backend: str, difficulty: str, 
-                       law_version: str, system: str, noise_level: float) -> str:
-    """Generate standardized experiment directory path."""
+def filter_law_versions(law_versions: List[str], include_unchanged: bool) -> List[str]:
+    """Optionally exclude control-law variants from the benchmark sweep."""
+    if include_unchanged:
+        return list(law_versions)
+    return [version for version in law_versions if version != "v_unchanged"]
+
+def parse_experiment_name_metadata(experiment_name: str) -> Dict[str, Optional[object]]:
+    """Recover prompt/consistency/version metadata from legacy and current directory names."""
+    metadata = {
+        "prompt_set": "original",
+        "consistency": False,
+        "version_number": None,
+    }
+    if "_prompt_modified_" in experiment_name:
+        metadata["prompt_set"] = "modified"
+    if "_inconsistent_" in experiment_name:
+        metadata["consistency"] = False
+    elif "_consistent_" in experiment_name:
+        metadata["consistency"] = True
+
+    version_match = re.search(r'_v(\d+)$', experiment_name)
+    if version_match:
+        metadata["version_number"] = int(version_match.group(1))
+    return metadata
+
+def get_matching_experiment_dirs(
+    model_name: str,
+    module: str,
+    agent_backend: str,
+    difficulty: str,
+    law_version: str,
+    system: str,
+    noise_level: float,
+    prompt_set: str,
+    consistency: bool,
+    run_tag: Optional[str],
+) -> List[str]:
+    """Return all experiment directories matching the logical configuration."""
     noise_str = str(noise_level).replace('.', '_')
     law_version_str = law_version if law_version is not None else "random"
-         
-    # Standard behavior: Find the latest version number for this configuration
-    base_pattern = os.path.join(
-        "evaluation_results", model_name, module, agent_backend, difficulty, law_version_str, 
-        f"{system}_noise{noise_str}_v*"
-    )
-    
-    existing_dirs = glob.glob(base_pattern)
-    if existing_dirs:
-        # Find the highest version number
-        version_nums = []
-        for path in existing_dirs:
+    base_dir = os.path.join("evaluation_results", model_name, module, agent_backend, difficulty, law_version_str)
+    if not os.path.isdir(base_dir):
+        return []
+
+    candidate_dirs = [
+        path for path in glob.glob(os.path.join(base_dir, f"{system}_noise{noise_str}*"))
+        if os.path.isdir(path)
+    ]
+
+    matched_dirs = []
+    for path in candidate_dirs:
+        experiment_name = os.path.basename(path)
+        metadata = parse_experiment_name_metadata(experiment_name)
+        aggregated_path = os.path.join(path, "aggregated_results.json")
+
+        if os.path.exists(aggregated_path):
             try:
-                version_part = path.split('_v')[-1]
-                version_nums.append(int(version_part))
-            except (ValueError, IndexError):
-                continue
-        latest_version = max(version_nums) if version_nums else 0
-        return os.path.join(
-            "evaluation_results", model_name, module, agent_backend, difficulty, law_version_str,
-            f"{system}_noise{noise_str}_v{latest_version}"
-        )
-    else:
-        # No existing directory, will be created as v1
-        return os.path.join(
-            "evaluation_results", model_name, module, agent_backend, difficulty, law_version_str,
-            f"{system}_noise{noise_str}_v1"
-        )
+                with open(aggregated_path, 'r', encoding='utf-8') as f:
+                    config = json.load(f).get("config", {})
+                metadata["prompt_set"] = config.get("prompt_set", metadata["prompt_set"])
+                metadata["consistency"] = config.get("consistency", metadata["consistency"])
+                metadata["run_tag"] = config.get("run_tag")
+            except (json.JSONDecodeError, OSError):
+                metadata["run_tag"] = None
+        else:
+            metadata["run_tag"] = None
 
-def check_experiment_completion(experiment_path: str, expected_trials: int = 4, model_name: str = None, agent_backend: str = None) -> Tuple[bool, int, int]:
-    """Check if an experiment configuration is complete.
-    
-    Args:
-        experiment_path: Path to experiment directory
-        expected_trials: Expected number of trials (default: 4)
-        model_name: Model name for special handling (e.g., gpt5mini)
-        agent_backend: Agent backend type for special handling (e.g., code_assisted_agent)
-    
-    Returns:
-        tuple: (is_complete: bool, completed_trials: int, total_expected: int)
-    """
-    if not os.path.exists(experiment_path):
-        return False, 0, expected_trials
+        if metadata["prompt_set"] != prompt_set:
+            continue
+        if bool(metadata["consistency"]) != bool(consistency):
+            continue
+        if run_tag is not None and metadata.get("run_tag") != run_tag:
+            continue
+        matched_dirs.append(path)
 
-    # Check for aggregated results
-    aggregated_path = os.path.join(experiment_path, "aggregated_results.json")
+    def _version_key(path: str) -> int:
+        experiment_name = os.path.basename(path)
+        match = re.search(r'_v(\d+)$', experiment_name)
+        return int(match.group(1)) if match else 0
+
+    matched_dirs.sort(key=_version_key)
+    return matched_dirs
+
+def count_valid_trials_in_dir(experiment_path: str) -> int:
     trials_dir = os.path.join(experiment_path, "trials")
-    
-    if not os.path.exists(aggregated_path) or not os.path.exists(trials_dir):
-        return False, 0, expected_trials
-    
-    # Read expected trials from aggregated results
-    try:
-        with open(aggregated_path, 'r') as f:
-            config = json.load(f)
-            expected_from_config = config.get('config', {}).get('trials', expected_trials)
-    except (json.JSONDecodeError, FileNotFoundError):
-        expected_from_config = expected_trials
-    
-    # Count actual trial files
-    trial_json_files = glob.glob(os.path.join(trials_dir, "trial*.json"))
-    # Filter out fail files
-    valid_trial_files = [f for f in trial_json_files if not f.endswith('_fail.json')]
-    completed_trials = len(valid_trial_files)
-    
-    # Validate trial files are not corrupted
+    if not os.path.isdir(trials_dir):
+        return 0
+
+    valid_trial_files = [
+        path for path in glob.glob(os.path.join(trials_dir, "trial*.json"))
+        if not path.endswith("_fail.json")
+    ]
     valid_trials = 0
     for trial_file in valid_trial_files:
         try:
-            with open(trial_file, 'r') as f:
+            with open(trial_file, 'r', encoding='utf-8') as f:
                 trial_data = json.load(f)
-                # Check if trial has essential fields
-                if 'trial_id' in trial_data and 'evaluation' in trial_data:
-                    valid_trials += 1
-        except (json.JSONDecodeError, FileNotFoundError):
+            if 'trial_id' in trial_data and 'evaluation' in trial_data:
+                valid_trials += 1
+        except (json.JSONDecodeError, FileNotFoundError, OSError):
             continue
-    
-    is_complete = valid_trials >= expected_from_config
-    return is_complete, valid_trials, expected_from_config
+    return valid_trials
+
+def check_experiment_completion(
+    experiment_dirs: List[str],
+    expected_trials: int = 4,
+) -> Tuple[bool, int, int]:
+    """Treat multiple rerun directories as one logical configuration."""
+    if not experiment_dirs:
+        return False, 0, expected_trials
+
+    completed_trials = sum(count_valid_trials_in_dir(path) for path in experiment_dirs)
+    is_complete = completed_trials >= expected_trials
+    return is_complete, completed_trials, expected_trials
 
 def count_total_configurations(modules: List[str], difficulties: List[str], systems: List[str], 
                              law_versions_map: Dict[str, Dict[str, List[str]]], 
@@ -182,6 +213,10 @@ def main():
                       help="Agent backend to use for exploration. Default is vanilla_agent. When code_assisted_agent is selected, LLM is equipped with <python> tool use.")
     parser.add_argument("--dashboard", action="store_true", help="Enable real-time dashboard updates.")
     parser.add_argument("--reset_dashboard", action="store_true", help="Clear existing dashboard data before running.")
+    parser.add_argument("-p", "--prompt_set", type=str, default="original", choices=["original", "modified"], help="Prompt set to use for all launched runs.")
+    parser.add_argument("-c", "--consistency", action="store_true", help="Apply consistent-law variants when supported by the module.")
+    parser.add_argument("--run_tag", type=str, default=None, help="Optional logical run identifier stored with each launched experiment.")
+    parser.add_argument("--include_unchanged", action="store_true", help="Include v_unchanged control laws in the sweep. By default they are excluded from the main benchmark count.")
     
     # Resume and control options
     parser.add_argument("--force_rerun", action="store_true", 
@@ -210,6 +245,7 @@ def main():
     for module_name in modules:
         for difficulty in difficulties:
             law_versions = get_law_versions_for_difficulty(module_name, difficulty)
+            law_versions = filter_law_versions(law_versions, args.include_unchanged)
             if law_versions:
                 law_versions_map[module_name][difficulty] = law_versions
     
@@ -273,11 +309,21 @@ def main():
                 for system in filtered_systems:   
                     for law_version in law_versions:
                         config_name = get_configuration_name(module_name, difficulty, system, law_version, noise_level)
-                        experiment_path = get_experiment_path(args.model_name, module_name, args.agent_backend, 
-                                                           difficulty, law_version, system, noise_level)
-                        
+                        experiment_dirs = get_matching_experiment_dirs(
+                            args.model_name,
+                            module_name,
+                            args.agent_backend,
+                            difficulty,
+                            law_version,
+                            system,
+                            noise_level,
+                            args.prompt_set,
+                            args.consistency,
+                            args.run_tag,
+                        )
+
                         is_complete, completed_trials, expected_trials = check_experiment_completion(
-                            experiment_path, args.trials_per_law, args.model_name, args.agent_backend)
+                            experiment_dirs, args.trials_per_law)
                         
                         if is_complete and not args.force_rerun:
                             completed_count += 1
@@ -367,11 +413,16 @@ def main():
                 "--trials", str(config['trials_needed']),
                 "--model_name", args.model_name,
                 "--agent_backend", args.agent_backend,
-                "--noise", str(config['noise_level'])
+                "--noise", str(config['noise_level']),
+                "--prompt_set", args.prompt_set
             ]
-            
+
             if args.dashboard:
                 command.append("--dashboard")
+            if args.consistency:
+                command.append("--consistency")
+            if args.run_tag:
+                command.extend(["--run_tag", args.run_tag])
     
             print(f"Command: {' '.join(command)}")
             
@@ -389,7 +440,8 @@ def main():
                 })
                 print(f"✗ FAILED: {config['config_name']}")
                 print(f"  Return code: {e.returncode}")
-                print(f"  Error: {e.stderr[:200]}{'...' if len(e.stderr) > 200 else ''}")
+                stderr_text = e.stderr if isinstance(e.stderr, str) else str(e)
+                print(f"  Error: {stderr_text[:200]}{'...' if len(stderr_text) > 200 else ''}")
                 print("  Continuing with next configuration...")
             except KeyboardInterrupt:
                 print(f"\n\n⚠ INTERRUPTED: Execution stopped by user")

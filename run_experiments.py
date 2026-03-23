@@ -13,6 +13,7 @@ import time
 import os
 import subprocess
 import signal
+import re
 from utils.vanilla_agent import conduct_exploration
 from utils.kg_utils import update_global_dashboard
 import warnings
@@ -24,6 +25,12 @@ try:
 except Exception:
 	_WITH_CODE_ASSISTANCE = False
 
+def safe_mean(values, default=float("nan")):
+    arr = np.asarray(values)
+    if arr.size == 0:
+        return float(default)
+    return float(np.nanmean(arr))
+
 def format_chat_history(chat_history):
     """Format chat history as a readable log file."""
     lines = []
@@ -34,7 +41,7 @@ def format_chat_history(chat_history):
     return '\n'.join(lines)
 
 def write_fail_result_with_retries(args, final_error, retry_history, func_sig):
-    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend, dashboard, prompt_set, consistency = args
+    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend, dashboard, prompt_set, consistency, run_tag = args
     fail_result = {
         "trial_id": trial_id,
         "module_name": module_name,
@@ -46,6 +53,9 @@ def write_fail_result_with_retries(args, final_error, retry_history, func_sig):
         "retry_attempts": max_retries,
         "LLM judge": judge_model_name,
         "agent_backend": agent_backend,
+        "prompt_set": prompt_set,
+        "consistency": consistency,
+        "run_tag": run_tag,
         "retry_history": retry_history,
         "error": final_error,
         "status": "failed",
@@ -79,6 +89,13 @@ def extract_version_from_path(results_dir):
     else:
         return "v0"  # fallback
 
+def sanitize_run_tag(run_tag: str) -> str:
+    """Normalize run tags so they are safe to store and compare."""
+    if run_tag is None:
+        return None
+    sanitized = re.sub(r'[^A-Za-z0-9._-]+', '-', run_tag.strip())
+    return sanitized or None
+
 def run_trial(args):
     """
     A single worker function for one trial with retry logic. It is module-agnostic.
@@ -87,8 +104,8 @@ def run_trial(args):
     - A `run_experiment_for_module(...)` function.
     - An `evaluate_law(str)` function.
     """
-    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend, dashboard, prompt_set, consistency = args
-    print(f"Starting trial {trial_id} for module '{module_name}' with {model_name}, noise {noise_level} (equation difficulty: {difficulty}, model system: {system}, law version: {law_version}, backend: {agent_backend}, consistency: {consistency})")
+    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend, dashboard, prompt_set, consistency, run_tag = args
+    print(f"Starting trial {trial_id} for module '{module_name}' with {model_name}, noise {noise_level} (equation difficulty: {difficulty}, model system: {system}, law version: {law_version}, backend: {agent_backend}, consistency: {consistency}, run_tag: {run_tag})")
     
     retry_history = []
     final_error = None
@@ -156,6 +173,9 @@ def run_trial(args):
                 "retry_attempts": attempt,
                 "LLM judge": judge_model_name,
                 "agent_backend": agent_backend,
+                "prompt_set": prompt_set,
+                "consistency": consistency,
+                "run_tag": run_tag,
                 "retry_history": retry_history,
                 **exploration_result,
                 "evaluation": evaluation_metrics
@@ -185,7 +205,8 @@ def run_trial(args):
                         difficulty=difficulty,
                         law_version=law_version,
                         metrics=evaluation_metrics,
-                        chat_history=exploration_result.get("chat_history", [])
+                        chat_history=exploration_result.get("chat_history", []),
+                        consistency=consistency
                     )
                 except Exception as e:
                     print(f"[Trial {trial_id} DASHBOARD ERROR] {e}")
@@ -249,9 +270,10 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
     
     max_retries = 3
     judge_model_name = "gpt41"
+    run_tag = sanitize_run_tag(cli_args.run_tag)
     
     pool_args = [
-        (i, cli_args.noise, cli_args.model_name, cli_args.module, cli_args.equation_difficulty, cli_args.model_system, law_version, trials_dir, max_retries, judge_model_name, cli_args.agent_backend, cli_args.dashboard, cli_args.prompt_set, cli_args.consistency)
+        (i, cli_args.noise, cli_args.model_name, cli_args.module, cli_args.equation_difficulty, cli_args.model_system, law_version, trials_dir, max_retries, judge_model_name, cli_args.agent_backend, cli_args.dashboard, cli_args.prompt_set, cli_args.consistency, run_tag)
         for i in range(num_trials)
     ]
     
@@ -279,10 +301,19 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
         actual_batch_size = len(batch_args)
         
         print(f"Processing batch {batch_num + 1}/{num_batches} (trials {start_idx + 1}-{end_idx}) with {actual_batch_size} processes")
-        
-        with Pool(processes=actual_batch_size) as pool:
-            batch_results = pool.map(run_trial, batch_args)
+
+        if actual_batch_size <= 1:
+            batch_results = [run_trial(batch_args[0])] if batch_args else []
             results.extend(batch_results)
+        else:
+            try:
+                with Pool(processes=actual_batch_size) as pool:
+                    batch_results = pool.map(run_trial, batch_args)
+                    results.extend(batch_results)
+            except (PermissionError, OSError) as exc:
+                print(f"[WARN] Multiprocessing unavailable ({exc}). Falling back to sequential execution for this batch.")
+                batch_results = [run_trial(batch_arg) for batch_arg in batch_args]
+                results.extend(batch_results)
         
         print(f"Completed batch {batch_num + 1}/{num_batches}")
 
@@ -294,10 +325,6 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
     failed_results = [r for r in results if "error" in r]
     all_results = valid_results + failed_results
     
-    if not valid_results:
-        print(f"\nAll trials for law_version '{law_version}' failed. Please check the logs in '{results_dir}'.")
-        return
-
     # Calculate metrics for all trials (including failed ones)
     all_rmsle_scores = np.array([r['evaluation']['rmsle'] for r in all_results])
     all_accuracies = np.array([r['evaluation']['exact_accuracy'] for r in all_results])
@@ -330,18 +357,21 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
     print(f"  - Backend: {cli_args.agent_backend}")
     print("-"*50)
     print("Aggregated Results (All Trials):")
-    print(f"  - Average Raw RMSLE: {np.nanmean(finite_all_rmsle):.4f}")
-    print(f"  - Average Exact Accuracy: {np.mean(all_accuracies):.2%}")
-    print(f"  - Average Rounds to Completion: {np.mean(all_turns):.2f}")
-    print(f"  - Average Experiments Used per Trial: {np.mean(all_experiments_used):.2f}")
-    print(f"  - Average Total Tokens Used per Trial: {np.mean(all_tokens_used):.2f}") 
+    print(f"  - Average Raw RMSLE: {safe_mean(finite_all_rmsle):.4f}")
+    print(f"  - Average Exact Accuracy: {safe_mean(all_accuracies, default=0.0):.2%}")
+    print(f"  - Average Rounds to Completion: {safe_mean(all_turns):.2f}")
+    print(f"  - Average Experiments Used per Trial: {safe_mean(all_experiments_used):.2f}")
+    print(f"  - Average Total Tokens Used per Trial: {safe_mean(all_tokens_used):.2f}") 
     print("-"*50)      
     print(f"  - Retry Statistics:")
     print(f"    * Total Retry Attempts: {total_retries}")
     print(f"    * Trials with Retries: {trials_with_retries}/{len(all_results)} ({trials_with_retries/len(all_results)*100:.1f}%)")
-    print(f"    * Average Retries per Trial: {np.mean(all_retry_attempts):.2f}")
+    print(f"    * Average Retries per Trial: {safe_mean(all_retry_attempts, default=0.0):.2f}")
     print(f"    * Failed Trials (after all retries): {len(failed_results)}")
     print("="*50)
+
+    if not valid_results:
+        print(f"\nAll trials for law_version '{law_version}' failed. Aggregated metadata was still written to '{results_dir}'.")
 
     # Write aggregate results and config
     overall_result = {
@@ -356,23 +386,30 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
             "max_retries": max_retries,
             "LLM judge": judge_model_name,
             "Agent backend": cli_args.agent_backend,
-            "runtime_seconds": end_time - start_time
+            "runtime_seconds": end_time - start_time,
+            "prompt_set": cli_args.prompt_set,
+            "consistency": cli_args.consistency,
+            "run_tag": run_tag,
+            "results_dir": results_dir,
+            "experiment_name": experiment_name
         },
         "aggregate": {
             # Metrics for all trials
             "all_trials": {
-                "average_rmsle": float(np.nanmean(finite_all_rmsle)),
-                "average_exact_accuracy": float(np.mean(all_accuracies)),
-                "average_rounds": float(np.mean(all_turns)),
-                "average_experiments": float(np.mean(all_experiments_used)),
-                "average_total_tokens": float(np.mean(all_tokens_used)),
-                "num_total_trials": len(all_results)
+                "average_rmsle": safe_mean(finite_all_rmsle),
+                "average_exact_accuracy": safe_mean(all_accuracies, default=0.0),
+                "average_rounds": safe_mean(all_turns),
+                "average_experiments": safe_mean(all_experiments_used),
+                "average_total_tokens": safe_mean(all_tokens_used),
+                "num_total_trials": len(all_results),
+                "num_successful_trials": len(valid_results),
+                "success_rate": float(len(valid_results) / len(all_results)) if all_results else 0.0
             },
             "retry_statistics": {
                 "total_retry_attempts": total_retries,
                 "trials_with_retries": trials_with_retries,
                 "trials_with_retries_percentage": float(trials_with_retries/len(all_results)*100),
-                "average_retries_per_trial": float(np.mean(all_retry_attempts)),
+                "average_retries_per_trial": safe_mean(all_retry_attempts, default=0.0),
                 "failed_trials_after_retries": len(failed_results)
             }
         },
@@ -404,6 +441,8 @@ if __name__ == "__main__":
     parser.add_argument("--easiest", action="store_true", help="Run easiest experiments (zero noise/settings).")
     parser.add_argument("-p", "--prompt_set", type=str, default="original", choices=["original", "modified"], help="Select the prompt set to use.")
     parser.add_argument("-c", "--consistency", action="store_true", help="Apply consistent law modifications across related laws.")
+    parser.add_argument("--include_unchanged", action="store_true", help="Include v_unchanged control laws when --law_version=all. By default they are excluded from the main benchmark sweep.")
+    parser.add_argument("--run_tag", type=str, default=None, help="Optional logical run identifier stored in result metadata for downstream reporting.")
     cli_args = parser.parse_args()
 
     if cli_args.easiest:
@@ -433,6 +472,8 @@ if __name__ == "__main__":
     if cli_args.law_version == "all":
         if hasattr(module, 'get_available_law_versions'):
             versions_to_run = module.get_available_law_versions(cli_args.equation_difficulty)
+            if not cli_args.include_unchanged:
+                versions_to_run = [version for version in versions_to_run if version != "v_unchanged"]
             if not versions_to_run:
                 print(f"FATAL: No available law versions found for equation difficulty '{cli_args.equation_difficulty}'.")
                 sys.exit(1)

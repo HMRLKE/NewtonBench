@@ -4,6 +4,10 @@ import json
 import os
 import random
 import time
+import ast
+import importlib
+import inspect
+import re
 import networkx as nx
 from networkx.readwrite import json_graph
 
@@ -28,104 +32,100 @@ SYMPY_LOCALS = {
     'atan': sympy.atan
 }
 
-def get_gt_equation_string(difficulty, law_version, task_name='m0_gravity'):
-    """
-    Returns the ground truth equation string for a given task and difficulty.
-    Ported from mini_scientist/visualize.py
-    """
-    C = "6.674e-5"
-    if 'coulomb' in task_name:
-        C = "2.0"
-        if difficulty == 'easy':
-             if law_version == 'v0': return f"({C} * q1 * q2) / (distance**3)"
-             if law_version == 'v1': return f"({C} * (q1 * q2)**3) / (distance**2)"
-             if law_version == 'v2': return f"({C} * q1**3 * q2) / (distance**2)"
-        return f"({C} * q1 * q2) / (distance**2)"
-    if 'hooke' in task_name:
-        K = "231.14"
-        if difficulty == 'easy':
-            if law_version == 'v1': return f"2 * {K} * x**0.5"
-            if law_version == 'v2': return f"2 * {K} * x**3.4"
-            return f"2 * {K} * x**2"
-        return f"2 * {K} * x**2"
-    if 'decay' in task_name:
-        if difficulty == 'easy':
-            if law_version == 'v1': return "N0 * exp(-lambda_constant**1.5 * t)"
-            if law_version == 'v2': return "N0 * exp(-(lambda_constant * t)**1.5)"
-            return "N0 * exp(-lambda_constant * t**1.5)"
-        return "N0 * exp(-lambda_constant * t**1.5)"
-    if 'fourier' in task_name:
-        if difficulty == 'easy':
-            if law_version == 'v1': return "(k * A**0.5 * delta_T) / d"
-            if law_version == 'v2': return "(k * A * delta_T**2) / d"
-            return "(k * A * delta_T) / d**2"
-        return "(k * A * delta_T) / d**2"
-    if 'snell' in task_name:
-        if difficulty == 'easy':
-            if law_version == 'v1': return "asin(n2 * sin(angle1) / n1)"
-            if law_version == 'v2': return "atan(n1 * sin(angle1) / n2)"
-            return "acos(n1 * sin(angle1) / n2)"
-        return "acos(n1 * sin(angle1) / n2)"
-    if 'underdamped' in task_name:
-        if difficulty == 'easy':
-            if law_version == 'v1': return "(k/m - (b/(2*m))**2)**2"
-            if law_version == 'v2': return "k/m - (b/(2*m))**2"
-            return "sqrt(k/m - b/(2*m))"
-        return "sqrt(k/m - b/(2*m))"
-    if 'sound' in task_name:
-        C = "351.6"
-        if difficulty == 'easy':
-            if law_version == 'v1': return f"{C} * gamma * T / M"
-            if law_version == 'v2': return f"sqrt({C} * T / M)"
-            return f"sqrt({C} * gamma * T**2 / M)"
-        return f"sqrt({C} * gamma * T**2 / M)"
-    if 'be_distribution' in task_name:
-        C = "1.0513e-14"
-        if difficulty == 'easy':
-            if law_version == 'v0': return f"1 / (exp({C} * omega / T) + 1)"
-            if law_version == 'v1': return f"1 / (exp({C} * omega**0.5 / T) - 1)"
-            if law_version == 'v2': return f"1 / (exp({C} * omega / T**3) - 1)"
-        return f"1 / (exp({C} * omega / T) + 1)"
-    if 'heat_transfer' in task_name:
-        if difficulty == 'easy':
-            if law_version == 'v0': return "m * c * (delta_T**2.5)"
-            if law_version == 'v1': return "m**2.5 * c * delta_T"
-            if law_version == 'v2': return "(m * delta_T)**2.5 * c"
-        return "m * c * delta_T"
-    if 'magnetic' in task_name:
-        C = "2.0"
-        return f"({C} * current1 * current2) / distance"
-    if 'malus_law' in task_name:
-        if difficulty == 'easy':
-            if law_version == 'v1': return "I_0 * (sin(theta) / cos(theta))**2"
-            if law_version == 'v2': return "I_0 * (cos(theta) / sin(theta))**2"
-            return "I_0 * (sin(theta) + cos(theta))**2"
-        elif difficulty == 'medium':
-            if law_version == 'v1': return "I_0 * (sin(theta)**2) / (cos(theta)**3)"
-            if law_version == 'v2': return "I_0 * (cos(theta) / sin(theta))**exp(1)"
-            return "I_0 * (2 * sin(theta) + cos(theta))**2"
-        elif difficulty == 'hard':
-            if law_version == 'v1': return "I_0 * ((sin(theta)**2) / (cos(theta)**3))**exp(1)"
-            if law_version == 'v2': return "I_0 * ((sin(theta)**2) / cos(theta))**exp(1)"
-            return "I_0 * (2 * sin(theta) + 1.5 * cos(theta))**2"
-        return "I_0 * (sin(theta) + cos(theta))**2"
-    if 'harmonic' in task_name and 'underdamped' not in task_name:
-         return "sqrt(k/m)"
-    elif 'gravity' in task_name or task_name == 'm0':
-        if difficulty == 'easy':
-            if law_version == 'v0': return f"({C} * mass1 * mass2) / (distance**1.5)"
-            if law_version == 'v1': return f"({C} * mass1) / (distance**2)"
-            if law_version == 'v2': return f"({C} * (mass1**2 * mass2**2)) / (distance**2)"
-        elif difficulty == 'medium':
-            if law_version == 'v0': return f"({C} * mass1 * mass2) / (distance**2.5)"
-            if law_version == 'v1': return f"({C} * mass1**0.5 * mass2) / (distance**2)"
-            if law_version == 'v2': return f"({C} * (mass1 * mass2)**0.5) / (distance**3)"
-        elif difficulty == 'hard':
-            if law_version == 'v0': return f"({C} * mass1 * mass2) / (distance**3.5)"
-            if law_version == 'v1': return f"({C} * mass1**1.5 * mass2**1.5) / (distance**2)"
-            if law_version == 'v2': return f"({C} * log(mass1 * mass2 + 1)) / (distance**2)"
-        return f"({C} * mass1 * mass2) / (distance**2)"
-    return "unknown"
+def is_nan_literal(e: ast.AST) -> bool:
+    return (
+        isinstance(e, ast.Call)
+        and getattr(e.func, 'id', None) == 'float'
+        and len(e.args) == 1
+        and isinstance(e.args[0], ast.Constant)
+        and isinstance(e.args[0].value, str)
+        and e.args[0].value.lower() == 'nan'
+    )
+
+def _resolve_wrapped_expression(expr: ast.AST, func_def: ast.FunctionDef, return_lineno: int) -> ast.AST:
+    if isinstance(expr, ast.Call) and isinstance(expr.func, ast.Name) and expr.func.id == 'float' and len(expr.args) == 1:
+        return _resolve_wrapped_expression(expr.args[0], func_def, return_lineno)
+
+    if isinstance(expr, ast.Call) and len(expr.args) == 1:
+        func_name = ""
+        if isinstance(expr.func, ast.Attribute) and expr.func.attr == 'degrees':
+            func_name = 'degrees'
+        elif isinstance(expr.func, ast.Name) and expr.func.id == 'degrees':
+            func_name = 'degrees'
+
+        if func_name == 'degrees':
+            return _resolve_wrapped_expression(expr.args[0], func_def, return_lineno)
+
+    if isinstance(expr, ast.Name):
+        var_name = expr.id
+        last_assigned_expr = None
+        last_assigned_lineno = -1
+        for node in ast.walk(func_def):
+            node_lineno = getattr(node, 'lineno', 0)
+            if node_lineno and node_lineno < return_lineno:
+                if isinstance(node, ast.Assign):
+                    if (
+                        len(node.targets) == 1
+                        and isinstance(node.targets[0], ast.Name)
+                        and node.targets[0].id == var_name
+                        and node_lineno > last_assigned_lineno
+                    ):
+                        last_assigned_expr = node.value
+                        last_assigned_lineno = node_lineno
+                elif isinstance(node, ast.AnnAssign):
+                    if (
+                        isinstance(node.target, ast.Name)
+                        and node.target.id == var_name
+                        and node.value is not None
+                        and node_lineno > last_assigned_lineno
+                    ):
+                        last_assigned_expr = node.value
+                        last_assigned_lineno = node_lineno
+        if last_assigned_expr is not None:
+            return _resolve_wrapped_expression(last_assigned_expr, func_def, return_lineno)
+        return expr
+
+    if isinstance(expr, ast.IfExp):
+        if not is_nan_literal(expr.body):
+            return _resolve_wrapped_expression(expr.body, func_def, return_lineno)
+        return _resolve_wrapped_expression(expr.orelse, func_def, return_lineno)
+    return expr
+
+def extract_formula_from_function(func) -> str:
+    src = inspect.getsource(func)
+    tree = ast.parse(src)
+    func_def = next((n for n in tree.body if isinstance(n, ast.FunctionDef)), None)
+    if func_def is None:
+        raise ValueError("No function definition found in source.")
+
+    candidates = []
+    for return_node in [n for n in ast.walk(func_def) if isinstance(n, ast.Return)]:
+        if is_nan_literal(return_node.value):
+            continue
+        try:
+            resolved = _resolve_wrapped_expression(return_node.value, func_def, getattr(return_node, 'lineno', 0))
+            if not isinstance(resolved, ast.Constant):
+                candidates.append(resolved)
+        except Exception:
+            continue
+
+    if not candidates:
+        raise ValueError("No valid mathematical return expression found.")
+
+    candidates.sort(key=lambda node: len(list(ast.walk(node))), reverse=True)
+    formula = ast.unparse(candidates[0])
+    formula = formula.replace('math.', '').replace('np.', '')
+    formula = re.sub(r'^degrees\((.*)\)$', r'\1', formula)
+    return formula
+
+def get_gt_equation_string(difficulty, law_version, task_name='m0_gravity', consistency=False):
+    """Dynamically extract the ground-truth equation directly from each module."""
+    try:
+        laws_module = importlib.import_module(f"modules.{task_name}.laws")
+        gt_law, _ = laws_module.get_ground_truth_law(difficulty, law_version, consistency)
+        return extract_formula_from_function(gt_law)
+    except Exception as exc:
+        return f"unknown ({exc})"
 
 def extract_expression(equation_str: str) -> str:
     """
@@ -335,7 +335,7 @@ def calculate_kg_similarity(g1: dict, g2: dict) -> float:
     s_edges = multiset_jaccard(get_edge_counts(g1), get_edge_counts(g2))
     return (s_ops * 0.15 + s_vars * 0.35 + s_nums * 0.05 + s_edges * 0.45)
 
-def update_global_dashboard(trial_id, module_name, equation, difficulty, law_version, metrics, chat_history=None, accumulation_dir="accumulation"):
+def update_global_dashboard(trial_id, module_name, equation, difficulty, law_version, metrics, chat_history=None, accumulation_dir="accumulation", consistency=False):
     """
     Updates global_kg.json with results from the latest trial.
     Only updates if the new result is "better" (lower RMSLE or higher Accuracy) than existing.
@@ -390,7 +390,12 @@ def update_global_dashboard(trial_id, module_name, equation, difficulty, law_ver
             # Check if we should update this task
             existing_law_idx = -1
             for i, law in enumerate(global_kg["laws"]):
-                if law["task"] == module_name and law["difficulty"] == difficulty and law["version"] == law_version:
+                if (
+                    law["task"] == module_name
+                    and law["difficulty"] == difficulty
+                    and law["version"] == law_version
+                    and law.get("consistency", False) == consistency
+                ):
                     existing_law_idx = i
                     break
             
@@ -415,7 +420,7 @@ def update_global_dashboard(trial_id, module_name, equation, difficulty, law_ver
                 print(f"[Dashboard] Skipping update for {module_name} (New RMSLE: {new_rmsle:.4f} not better than existing)")
                 return
 
-            gt_eqn_str = get_gt_equation_string(difficulty=difficulty, law_version=law_version, task_name=module_name)
+            gt_eqn_str = get_gt_equation_string(difficulty=difficulty, law_version=law_version, task_name=module_name, consistency=consistency)
 
             try:
                 trial_kg = equation_to_kg(clean_eq)
@@ -433,6 +438,7 @@ def update_global_dashboard(trial_id, module_name, equation, difficulty, law_ver
                 "task": module_name,
                 "difficulty": difficulty,
                 "version": law_version,
+                "consistency": consistency,
                 "equation": clean_eq, # Cleaned for display
                 "raw_equation": equation, # Keep raw just in case
                 "gt_equation": gt_eqn_str, 
