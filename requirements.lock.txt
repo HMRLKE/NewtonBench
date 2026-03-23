@@ -1,0 +1,21 @@
+# NewtonBench reproducible dependency snapshot.
+# Preferred when you want a setup closer to the maintainer's local environment.
+#
+# Note:
+# - most pins below were read from the local `.venv` on 2026-03-23
+# - `networkx` and `PyYAML` were missing from that `.venv`, but are required by the codebase,
+#   so they are pinned here explicitly as curated compatibility choices
+
+numpy==2.4.1
+scipy==1.17.0
+scikit-learn==1.8.0
+requests==2.32.5
+openai==2.15.0
+python-dotenv==1.2.1
+sympy==1.14.0
+fix-busted-json==0.0.19
+pandas==3.0.0
+matplotlib==3.10.8
+seaborn==0.13.2
+networkx==3.4.2
+PyYAML==6.0.2

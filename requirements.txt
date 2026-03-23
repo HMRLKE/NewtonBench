@@ -1,11 +1,26 @@
-numpy>=1.24.0
-scipy>=1.7
-scikit-learn>=1.0
-requests>=2.25
-openai>=1.68.2
-python-dotenv>=0.19  
-sympy>=1.10
-fix-busted-json>=0.0.18
-pandas>=1.5.3
-matplotlib>=3.0.0
-seaborn>=0.12.0
+# NewtonBench runtime dependencies.
+# This file intentionally uses bounded version ranges:
+# - lower bounds prevent accidentally installing versions that are too old
+# - upper bounds reduce the chance of future major-version breakage
+#
+# For the most reproducible setup, prefer:
+#   pip install -r requirements.lock.txt
+
+numpy>=1.24,<3
+scipy>=1.10,<2
+scikit-learn>=1.3,<2
+requests>=2.31,<3
+openai>=1.68,<3
+python-dotenv>=1.0,<2
+sympy>=1.12,<2
+fix-busted-json>=0.0.18,<0.1
+pandas>=2.1,<4
+matplotlib>=3.8,<4
+seaborn>=0.13,<1
+networkx>=3.2,<4
+PyYAML>=6.0,<7
+
+# Optional heavy dependency:
+# PySR is only needed for the mini_scientist symbolic-regression flow.
+# It often requires extra system setup (Julia), so it is not installed by default.
+# pysr>=0.19,<2

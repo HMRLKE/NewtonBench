@@ -94,6 +94,19 @@ conda activate newtonbench
 pip install -r requirements.txt
 ```
 
+If you want a more reproducible environment that is closer to the maintainer's local setup, use:
+
+```
+pip install -r requirements.lock.txt
+```
+
+Dependency policy in this repo:
+
+- `requirements.txt` uses bounded version ranges to avoid both very old and future-breaking major versions
+- `requirements.lock.txt` pins a concrete snapshot for more reproducible reruns
+- `networkx` and `PyYAML` are required by the current codebase and are included explicitly
+- `pysr` is intentionally not part of the default install because it is only needed for the `mini_scientist` symbolic-regression path and usually requires extra system setup
+
 ### 4. Set Up API Keys
 
 1.  In the root of the project, make a copy of the `.env.example` file and rename it `.env`.
