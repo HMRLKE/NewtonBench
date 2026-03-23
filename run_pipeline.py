@@ -118,6 +118,8 @@ def build_benchmark_commands(args, repo_root: Path, run_tag: str) -> List[List[s
                     command.extend(["--equation_difficulty", args.equation_difficulty])
                 if args.model_system:
                     command.extend(["--model_system", args.model_system])
+                if args.law_version:
+                    command.extend(["--law_version", args.law_version])
                 if args.consistency:
                     command.append("--consistency")
                 if args.include_unchanged:
@@ -158,7 +160,7 @@ def main() -> int:
     parser.add_argument("--agent_backend", default=None, help="Optional backend filter. Default: quick uses vanilla_agent, benchmark uses both backends.")
     parser.add_argument("--equation_difficulty", default=None, choices=["easy", "medium", "hard"], help="Optional difficulty filter.")
     parser.add_argument("--model_system", default=None, choices=["vanilla_equation", "simple_system", "complex_system"], help="Optional system filter.")
-    parser.add_argument("--law_version", default=None, help="Quick mode only. Default: v0.")
+    parser.add_argument("--law_version", default=None, help="Optional law version filter. Quick mode defaults to v0; benchmark mode can also restrict the sweep (e.g. v0).")
     parser.add_argument("--trials", type=int, default=None, help="Trials per configuration. Default: quick=1, benchmark=4.")
     parser.add_argument("--noise", type=float, default=0.0, help="Noise level.")
     parser.add_argument("--prompt_set", default="original", choices=["original", "modified"], help="Prompt set.")

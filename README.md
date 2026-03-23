@@ -153,6 +153,7 @@ Primary scripts:
 - `run_all_evaluations.py`: runs one logical benchmark sweep with resume/check support
 - `run_experiments.py`: runs one concrete experiment configuration
 - `result_analysis/summarize_results.py`: builds the law/config/leaderboard reports from finished runs
+- `result_analysis/compare_consistency.py`: builds side-by-side consistent vs inconsistent comparison tables from two completed run tags
 
 Prompt-set behavior:
 
@@ -261,6 +262,12 @@ To call the lower-level sweep runner directly:
 python run_all_evaluations.py --model_name gpt41mini --agent_backend vanilla_agent --no_prompt
 ```
 
+You can also restrict a benchmark sweep to a single law version, for example `v0`:
+
+```
+python run_pipeline.py --preset benchmark --model_name gpt41mini --law_version v0
+```
+
 By default the main benchmark excludes the `v_unchanged` control laws, so the base task count remains 324. To include them explicitly:
 
 ```
@@ -288,6 +295,12 @@ You can also regenerate reports manually from `evaluation_results`:
 
 ```
 python result_analysis/summarize_results.py --result_dir evaluation_results --output_dir result_analysis
+```
+
+For consistency-vs-inconsistency studies, run two matching sweeps with different `--consistency` settings and then build a side-by-side comparison:
+
+```
+python result_analysis/compare_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/<compare_tag>/report --inconsistent_run_tag <run_tag_a> --consistent_run_tag <run_tag_b>
 ```
 
 Or filter to one logical run:

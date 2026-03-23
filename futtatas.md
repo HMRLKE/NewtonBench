@@ -42,6 +42,35 @@ Ha ismert a `run_tag`, a riport külön is újraépíthető:
 python result_analysis/summarize_results.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/MY_RUN_TAG/report --run_tag MY_RUN_TAG
 ```
 
+## 6. Konzisztens vs. nem konzisztens összehasonlítás
+
+Példa egy `v0`-ra szűrt benchmark-szeletre, ugyanazzal a modell-, task- és promptbeállítással.
+
+Először az inkonzisztens futás:
+
+```bash
+python run_pipeline.py --preset benchmark --model_name gpt41mini --module m0_gravity --equation_difficulty easy --model_system vanilla_equation --law_version v0 --agent_backend vanilla_agent --prompt_set modified --run_tag v0-compare-inconsistent
+```
+
+Utána a konzisztens futás:
+
+```bash
+python run_pipeline.py --preset benchmark --model_name gpt41mini --module m0_gravity --equation_difficulty easy --model_system vanilla_equation --law_version v0 --agent_backend vanilla_agent --prompt_set modified --consistency --run_tag v0-compare-consistent
+```
+
+Végül az összehasonlító táblák elkészítése:
+
+```bash
+python result_analysis/compare_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/v0-consistency-compare/report --inconsistent_run_tag v0-compare-inconsistent --consistent_run_tag v0-compare-consistent
+```
+
+Az összehasonlító kimenetek:
+
+- `outputs/pipeline_runs/v0-consistency-compare/report/consistency_comparison.csv`
+- `outputs/pipeline_runs/v0-consistency-compare/report/consistency_comparison.md`
+- `outputs/pipeline_runs/v0-consistency-compare/report/consistency_model_summary.csv`
+- `outputs/pipeline_runs/v0-consistency-compare/report/consistency_report.md`
+
 ## Kimenetek
 
 Minden `run_pipeline.py` futás egy saját könyvtárat kap itt:

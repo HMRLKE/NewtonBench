@@ -40,6 +40,12 @@ def filter_law_versions(law_versions: List[str], include_unchanged: bool) -> Lis
         return list(law_versions)
     return [version for version in law_versions if version != "v_unchanged"]
 
+def filter_requested_law_version(law_versions: List[str], requested_law_version: str) -> List[str]:
+    """Optionally restrict the sweep to a single requested law version."""
+    if requested_law_version in (None, "", "all", "none"):
+        return list(law_versions)
+    return [version for version in law_versions if version == requested_law_version]
+
 def parse_experiment_name_metadata(experiment_name: str) -> Dict[str, Optional[object]]:
     """Recover prompt/consistency/version metadata from legacy and current directory names."""
     metadata = {
@@ -211,6 +217,8 @@ def main():
                       help="Model system selected to test the agent: vanilla_equation, simple_system, complex_system")
     parser.add_argument("-b", "--agent_backend", type=str, default="vanilla_agent", choices=["vanilla_agent", "code_assisted_agent"],
                       help="Agent backend to use for exploration. Default is vanilla_agent. When code_assisted_agent is selected, LLM is equipped with <python> tool use.")
+    parser.add_argument("-l", "--law_version", type=str, default="all",
+                      help="Optional law version filter for the sweep (e.g., v0, v1, v2, v_unchanged, or all).")
     parser.add_argument("--dashboard", action="store_true", help="Enable real-time dashboard updates.")
     parser.add_argument("--reset_dashboard", action="store_true", help="Clear existing dashboard data before running.")
     parser.add_argument("-p", "--prompt_set", type=str, default="original", choices=["original", "modified"], help="Prompt set to use for all launched runs.")
@@ -263,6 +271,7 @@ def main():
         for difficulty in difficulties:
             law_versions = get_law_versions_for_difficulty(module_name, difficulty)
             law_versions = filter_law_versions(law_versions, args.include_unchanged)
+            law_versions = filter_requested_law_version(law_versions, args.law_version)
             if law_versions:
                 law_versions_map[module_name][difficulty] = law_versions
     
@@ -294,6 +303,11 @@ def main():
         print(f"Model Systems: {systems}")
     else:
         print(f"Model System: {args.model_system}")
+
+    if args.law_version in (None, "", "all", "none"):
+        print("Law Versions: all available versions in scope")
+    else:
+        print(f"Law Version Filter: {args.law_version}")
     
     print(f"Total Configurations: {total_configs}")
     print(f"Total Expected Trials: {total_configs * args.trials_per_law}")
