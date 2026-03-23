@@ -1,6 +1,6 @@
 import yaml
 import os
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, List, Optional
 
 _CONSISTENCY_CONFIG = None
 
@@ -18,6 +18,18 @@ def get_module_group(module_name: str) -> str:
         if module_name in group_data.get('modules', []):
             return group_name
     return None
+
+def get_group_data(module_name: str) -> Dict[str, Any]:
+    group_name = get_module_group(module_name)
+    if not group_name:
+        return {}
+    config = get_consistency_config()
+    return config.get(group_name, {})
+
+def get_related_modules(module_name: str) -> List[str]:
+    group_data = get_group_data(module_name)
+    modules = group_data.get('modules', [])
+    return [candidate for candidate in modules if candidate != module_name]
 
 def override_law_if_consistent(
     module_name: str, 

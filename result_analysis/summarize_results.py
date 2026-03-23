@@ -264,11 +264,60 @@ def dataframe_to_markdown(df: pd.DataFrame) -> str:
         return df.to_string(index=False)
 
 
+def build_law_accuracy_table(config_summary_df: pd.DataFrame) -> pd.DataFrame:
+    if config_summary_df.empty:
+        return pd.DataFrame()
+
+    table = config_summary_df.copy()
+    table["law_id"] = (
+        table["module"].astype(str)
+        + "/"
+        + table["equation_difficulty"].astype(str)
+        + "/"
+        + table["model_system"].astype(str)
+        + "/"
+        + table["law_version"].astype(str)
+    )
+    table["accuracy_pct"] = table["mean_exact_accuracy"] * 100.0
+    table["success_rate_pct"] = table["success_rate"] * 100.0
+    ordered = table[
+        [
+            "run_tag",
+            "model_name",
+            "agent_backend",
+            "prompt_set",
+            "consistency",
+            "law_id",
+            "module",
+            "equation_difficulty",
+            "model_system",
+            "law_version",
+            "accuracy_pct",
+            "success_rate_pct",
+            "num_trials",
+            "num_successful_trials",
+            "mean_rmsle",
+            "avg_total_tokens",
+        ]
+    ].sort_values(
+        [
+            "model_name",
+            "agent_backend",
+            "module",
+            "equation_difficulty",
+            "model_system",
+            "law_version",
+        ]
+    )
+    return ordered.reset_index(drop=True)
+
+
 def write_markdown_report(
     output_path: Path,
     trials_df: pd.DataFrame,
     config_summary_df: pd.DataFrame,
     leaderboard_df: pd.DataFrame,
+    law_accuracy_df: pd.DataFrame,
     run_tag: Optional[str],
 ) -> None:
     lines = [
@@ -285,6 +334,10 @@ def write_markdown_report(
         "## Configuration Summary",
         "",
         dataframe_to_markdown(config_summary_df.head(30)),
+        "",
+        "## Law Accuracy Table",
+        "",
+        dataframe_to_markdown(law_accuracy_df.head(50)),
         "",
     ]
     output_path.write_text("\n".join(lines), encoding="utf-8")
@@ -307,12 +360,15 @@ def generate_reports(
 
     config_summary_df = build_config_summary(trials_df)
     leaderboard_df = build_leaderboard(config_summary_df)
+    law_accuracy_df = build_law_accuracy_table(config_summary_df)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     trials_df.to_csv(output_dir / "results_by_trial.csv", index=False, encoding="utf-8")
     config_summary_df.to_csv(output_dir / "config_summary.csv", index=False, encoding="utf-8")
     leaderboard_df.to_csv(output_dir / "aggregated_trial_summary.csv", index=False, encoding="utf-8")
-    write_markdown_report(output_dir / "summary_report.md", trials_df, config_summary_df, leaderboard_df, run_tag)
+    law_accuracy_df.to_csv(output_dir / "law_accuracy_summary.csv", index=False, encoding="utf-8")
+    (output_dir / "law_accuracy_summary.md").write_text(dataframe_to_markdown(law_accuracy_df), encoding="utf-8")
+    write_markdown_report(output_dir / "summary_report.md", trials_df, config_summary_df, leaderboard_df, law_accuracy_df, run_tag)
     return trials_df, config_summary_df, leaderboard_df
 
 

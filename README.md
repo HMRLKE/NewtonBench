@@ -60,12 +60,10 @@ NewtonBench reveals that while LLMs are beginning to develop scientific reasonin
   - [3. Install Dependencies](#3-install-dependencies)
   - [4. Set Up API Keys](#4-set-up-api-keys)
   - [5. Run the Quick Start](#5-run-the-quick-start)
+- [🧭 Script Guide](#-script-guide)
 - [🏗️ Project Structure](#️-project-structure)
 - [🔬 Key Components](#-key-components)
 - [🧪 Running Full Experiments](#-running-full-experiments)
-  - [Method 1: Using `models.txt`](#method-1-using-modelstxt)
-  - [Method 2: Specifying a Single Model](#method-2-specifying-a-single-model)
-  - [Controlling Parallelism](#controlling-parallelism)
 - [📈 Analyzing Results](#analyzing-results)
 - [🌟 Citation](#-citation)
 
@@ -120,10 +118,56 @@ Dependency policy in this repo:
 You are now ready to run a quick test to ensure everything is set up correctly.
 
 ```
-python quick_start.py
+python run_pipeline.py --preset quick --model_name gpt41mini
 ```
 
-The `quick_start.py` script will run two simple experiments using the `gpt41mini` model under "vanilla agent" and "code-assisted agent" modes for "Gravitation" domain, equation difficulty as "easy" and model system as "vanilla equation"
+This generates a bounded smoke test, plus logs and report files under:
+
+```text
+outputs/pipeline_runs/<run_tag>/
+```
+
+If you want to find the most recent pipeline run quickly, open:
+
+```text
+outputs/pipeline_runs/LATEST_RUN.txt
+```
+
+The easiest file for law-level results such as "law1 = 77%, law2 = 99%" is:
+
+```text
+outputs/pipeline_runs/<run_tag>/report/law_accuracy_summary.csv
+```
+
+There is also a Markdown rendering:
+
+```text
+outputs/pipeline_runs/<run_tag>/report/law_accuracy_summary.md
+```
+
+## 🧭 Script Guide
+
+Primary scripts:
+
+- `run_pipeline.py`: preferred top-level entrypoint; runs the experiment chain and writes logs plus report files automatically
+- `run_all_evaluations.py`: runs one logical benchmark sweep with resume/check support
+- `run_experiments.py`: runs one concrete experiment configuration
+- `result_analysis/summarize_results.py`: builds the law/config/leaderboard reports from finished runs
+
+Prompt-set behavior:
+
+- `original`: clean baseline prompt with only the task description
+- `modified`: prepends a relevance-filtered subset of previously discovered laws from the same conceptual family, using `consistency_groups.yml`
+- when `prompt_set=modified`, the sweep now auto-enables dashboard accumulation and resets `accumulation/global_kg.json` once at sweep start, so prompt context is built from the current run instead of stale leftovers
+
+Deprecated compatibility wrappers:
+
+- `quick_start.py`
+- `run_master.py`
+- `run_benchmark.py`
+- `comprehensive_benchmark.py`
+
+These wrappers remain only to redirect old habits; new usage should go through `run_pipeline.py`.
 
 ## 🏗️ Project Structure
 
@@ -180,10 +224,9 @@ NewtonBench/
 │   ├── results_by_trial.csv      # Intermediate CSV with raw trial data
 │   └── aggregated_trial_summary.csv    # Final aggregated summary
 │
-├── quick_start.py                # Quick start demo script
-├── run_master.py                 # Main experiment runner
-├── run_experiments.py            # Batch experiment executor
-├── run_all_evaluations.py        # Comprehensive evaluation script
+├── run_pipeline.py               # Preferred top-level runner + auto reporting
+├── run_experiments.py            # Single configuration runner
+├── run_all_evaluations.py        # Sweep runner with resume/check support
 ├── requirements.txt              # Python dependencies
 └── README.md                   
 ```
@@ -200,63 +243,57 @@ NewtonBench/
 
 ## 🧪 Running Full Experiments
 
-To replicate more comprehensive evaluations as described in the paper, the `run_master.py` script allows you to run the full benchmark across all physics modules and a variety of LLM models.
-
-### Method 1: Using `models.txt`
-
-You can specify a list of LLM models to test by editing the `configs/models.txt` file. The default file includes all 11 LLMs evaluated in our paper
-
-**Example `configs/models.txt`:**
+Preferred full-run entrypoint:
 
 ```
-# List of models to be evaluated
-gpt41
-o4mini
-gpt5
-```
-**Remark**: The model names in the `models.txt` file must match exactly with those specified in `utils/call_llm_api.py`.
-
-Once you have configured the `models.txt` file, you can run the benchmark with the following command. The `--parallel` argument specifies how many experiments to run in parallel.
-
-```
-python run_master.py --parallel 5
+python run_pipeline.py --preset benchmark --model_name gpt41mini
 ```
 
-### Method 2: Specifying a Single Model
-
-If you want to run the benchmark for a single model, you can use the `--model_name` command-line argument.
+To use the models listed in `configs/models.txt`:
 
 ```
-python run_master.py --model_name gpt41mini --parallel 5
+python run_pipeline.py --preset benchmark
 ```
 
-### Controlling Parallelism
-
-The `--parallel` argument controls the number of concurrent processes. A higher number will run more experiments and open more terminals at the same time, which can be faster but will also consume more system resources.
+To call the lower-level sweep runner directly:
 
 ```
-# Run 8 experiments in parallel
-python run_master.py --parallel 8
+python run_all_evaluations.py --model_name gpt41mini --agent_backend vanilla_agent --no_prompt
+```
+
+By default the main benchmark excludes the `v_unchanged` control laws, so the base task count remains 324. To include them explicitly:
+
+```
+python run_pipeline.py --preset benchmark --model_name gpt41mini --include_unchanged
 ```
 
 ### 📈 Analyzing Results
 
-After running experiments, you can use the `result_analysis/summarize_results.py` script to process and aggregate the results into a summary CSV file.
+After running `run_pipeline.py`, start here:
 
-The script performs two main functions in a single run:
-1.  **Consolidation**: It finds all individual trial `.json` files in the `evaluation_results` directory and compiles them into a single raw data file: `result_analysis/results_by_trial.csv`.
-2.  **Aggregation**: It then processes `results_by_trial.csv`, performs statistical analysis (including outlier detection) and generates a final summary csv file named `aggregated_trial_summary.csv`.
+- `outputs/pipeline_runs/<run_tag>/RESULTS_INDEX.md`
+- `outputs/pipeline_runs/<run_tag>/report/law_accuracy_summary.csv`
+- `outputs/pipeline_runs/<run_tag>/report/config_summary.csv`
+- `outputs/pipeline_runs/<run_tag>/report/aggregated_trial_summary.csv`
+- `outputs/pipeline_runs/<run_tag>/report/summary_report.md`
 
-To generate the summary for all models listed in `configs/models.txt`, run:
+What the main files mean:
+
+1. `law_accuracy_summary.csv`: one row per law configuration; this is the easiest place to inspect law-level accuracy.
+2. `config_summary.csv`: richer per-configuration metrics including accuracy, success rate, RMSLE, trial counts, and token usage.
+3. `aggregated_trial_summary.csv`: higher-level leaderboard aggregated by model/backend.
+4. `results_by_trial.csv`: raw trial-level rows.
+
+You can also regenerate reports manually from `evaluation_results`:
 
 ```
-python result_analysis/summarize_results.py
+python result_analysis/summarize_results.py --result_dir evaluation_results --output_dir result_analysis
 ```
 
-You can also generate the summary for a single model by specifying its name. For example:
+Or filter to one logical run:
 
 ```
-python result_analysis/summarize_results.py --model_name gpt41mini
+python result_analysis/summarize_results.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/MY_RUN/report --run_tag MY_RUN
 ```
 
 ## 🌟 Citation

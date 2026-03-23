@@ -5,6 +5,20 @@ interaction_laws:
     - m2_magnetic_force
   shared_axes:
     - distance_exponent
+    - radial_decay_profile
+  consistency_shared_axes:
+    - distance_exponent
+    - radial_decay_profile
+  prompt_relevance_axes:
+    - pairwise_source_coupling
+    - inverse_distance_dependence
+    - central_interaction_structure
+  prompt_relation_rationale: >-
+    These laws are the clearest structural family in the benchmark: pairwise
+    interactions between two sources whose magnitude depends strongly on
+    separation. Even when the coupling constants or source variables differ,
+    distance-scaling patterns and multiplicative source structure are often the
+    most informative transferable cues.
   axes_mapping:
     easy:
       v0: {distance_exponent: 1.5}
@@ -20,11 +34,23 @@ interaction_laws:
       v2: {distance_exponent: 3.8}
   shared_constants: []
 
-thermal_laws:
+continuum_transport_laws:
   modules:
     - m3_fourier_law
+    - m8_sound_speed
     - m11_heat_transfer
   shared_axes: []
+  consistency_shared_axes: []
+  prompt_relevance_axes:
+    - medium_response_to_state_gradient
+    - transport_in_continuum_media
+    - constitutive_law_structure
+  prompt_relation_rationale: >-
+    These laws all describe how a material medium responds to gradients or
+    state variables. They are not synchronized automatically under the strict
+    consistency mechanism, but previously discovered constitutive patterns can
+    still provide relevant hints about which quantities act as driving factors
+    and how material parameters enter the law.
   shared_constants: []
 
 oscillation_laws:
@@ -32,6 +58,15 @@ oscillation_laws:
     - m6_underdamped_harmonic
     - m9_hooke_law
   shared_axes: []
+  consistency_shared_axes: []
+  prompt_relevance_axes:
+    - restoring_response
+    - energy_storage_and_release
+    - linear_response_regime
+  prompt_relation_rationale: >-
+    These laws are linked by oscillatory or restoring behavior. Even without a
+    shared strict transformation axis, previously discovered restoring-force or
+    damping structure can still be a useful prompt-level analogue.
   shared_constants: []
 
 optical_laws:
@@ -39,11 +74,32 @@ optical_laws:
     - m4_snell_law
     - m7_malus_law
   shared_axes: []
+  consistency_shared_axes: []
+  prompt_relevance_axes:
+    - angle_dependent_response
+    - projection_or_refraction_geometry
+    - variational_optics_analogy
+  prompt_relation_rationale: >-
+    These optical laws are not algebraically synchronized by default, but they
+    both depend on geometric angle structure and can be interpreted through
+    higher-level optical principles. For prompting, they are related enough to
+    surface as soft contextual hints, but not strong enough to justify strict
+    cross-law rewriting.
   shared_constants: []
 
-modern_physics_laws:
+statistical_quantum_laws:
   modules:
     - m5_radioactive_decay
     - m10_be_distribution
   shared_axes: []
+  consistency_shared_axes: []
+  prompt_relevance_axes:
+    - population_level_behavior
+    - nonclassical_scale_setting
+    - exponential_or_distributional_dependence
+  prompt_relation_rationale: >-
+    These laws sit in the broader modern-physics regime, where macroscopic
+    observables are tied to hidden microscopic statistics or quantum structure.
+    They should only act as weak prompt analogies, not as strict consistency
+    partners.
   shared_constants: []

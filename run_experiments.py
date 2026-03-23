@@ -25,6 +25,9 @@ try:
 except Exception:
 	_WITH_CODE_ASSISTANCE = False
 
+def log(message: str) -> None:
+    print(message, flush=True)
+
 def safe_mean(values, default=float("nan")):
     arr = np.asarray(values)
     if arr.size == 0:
@@ -105,7 +108,7 @@ def run_trial(args):
     - An `evaluate_law(str)` function.
     """
     trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend, dashboard, prompt_set, consistency, run_tag = args
-    print(f"Starting trial {trial_id} for module '{module_name}' with {model_name}, noise {noise_level} (equation difficulty: {difficulty}, model system: {system}, law version: {law_version}, backend: {agent_backend}, consistency: {consistency}, run_tag: {run_tag})")
+    log(f"Starting trial {trial_id} for module '{module_name}' with {model_name}, noise {noise_level} (equation difficulty: {difficulty}, model system: {system}, law version: {law_version}, backend: {agent_backend}, consistency: {consistency}, run_tag: {run_tag})")
     
     retry_history = []
     final_error = None
@@ -113,7 +116,7 @@ def run_trial(args):
     for attempt in range(max_retries + 1):  # +1 because first attempt is not a retry
         try:
             if attempt > 0:
-                print(f"[Trial {trial_id} RETRY] Attempt {attempt + 1}/{max_retries + 1}")
+                log(f"[Trial {trial_id} RETRY] Attempt {attempt + 1}/{max_retries + 1}")
                 # Add small delay between retries to avoid overwhelming APIs
                 time.sleep(2)
             
@@ -183,9 +186,9 @@ def run_trial(args):
 
             acc = evaluation_metrics.get('exact_accuracy', 0)
             if attempt > 0:
-                print(f"[Trial {trial_id} SUCCESS] Retry attempt {attempt + 1} succeeded. Exact Accuracy: {'Yes' if acc == 1.0 else 'No'}")
+                log(f"[Trial {trial_id} SUCCESS] Retry attempt {attempt + 1} succeeded. Exact Accuracy: {'Yes' if acc == 1.0 else 'No'}")
             else:
-                print(f"Finished trial {trial_id}. Exact Accuracy: {'Yes' if acc == 1.0 else 'No'}")
+                log(f"Finished trial {trial_id}. Exact Accuracy: {'Yes' if acc == 1.0 else 'No'}")
             
             # Write trial result and chat history to files
             trial_json_path = os.path.join(trial_dir, f"trial{trial_id}.json")
@@ -209,7 +212,7 @@ def run_trial(args):
                         consistency=consistency
                     )
                 except Exception as e:
-                    print(f"[Trial {trial_id} DASHBOARD ERROR] {e}")
+                    log(f"[Trial {trial_id} DASHBOARD ERROR] {e}")
 
             # Return full result for aggregation
             return final_result
@@ -229,16 +232,16 @@ def run_trial(args):
             }
             retry_history.append(retry_record)
             
-            print(f"[Trial {trial_id} ATTEMPT {attempt + 1}] {error_msg}")
+            log(f"[Trial {trial_id} ATTEMPT {attempt + 1}] {error_msg}")
             traceback.print_exc()
             
             # If this was the last attempt, return fail result
             if attempt == max_retries:
-                print(f"[Trial {trial_id} FAILED] All {max_retries + 1} attempts exhausted")
+                log(f"[Trial {trial_id} FAILED] All {max_retries + 1} attempts exhausted")
                 final_error = error_msg
                 break
             else:
-                print(f"[Trial {trial_id} RETRYING] Attempt {attempt + 1} failed, will retry...")
+                log(f"[Trial {trial_id} RETRYING] Attempt {attempt + 1} failed, will retry...")
     
     # If we get here, all retries were exhausted
     return write_fail_result_with_retries(args, final_error, retry_history, module.FUNCTION_SIGNATURE)
@@ -246,7 +249,14 @@ def run_trial(args):
 def run_experiment_for_version(cli_args, module, law_version, num_trials):
     """Runs a full experiment for a single law version."""
     
-    print(f"--- Running experiment for law_version: {law_version} with {num_trials} trials ---")
+    log(
+        "--- Running experiment: "
+        f"module={cli_args.module}, difficulty={cli_args.equation_difficulty}, "
+        f"system={cli_args.model_system}, law_version={law_version}, "
+        f"backend={cli_args.agent_backend}, prompt_set={cli_args.prompt_set}, "
+        f"consistency={cli_args.consistency}, run_tag={sanitize_run_tag(cli_args.run_tag)} "
+        f"with {num_trials} trials ---"
+    )
 
     # Create unique results directory with hierarchical structure
     noise_str = str(cli_args.noise).replace('.', '_')
@@ -286,10 +296,10 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
     num_batches = (num_trials + batch_size - 1) // batch_size
     
     # print(f"CPU Count: {actual_cpu_count}")
-    print(f"Batch Size: {batch_size}")
-    print(f"Number of Processes: {batch_size}")
-    print(f"Number of Batches: {num_batches}")
-    print(f"Total Trials: {num_trials}")
+    log(f"Batch Size: {batch_size}")
+    log(f"Number of Processes: {batch_size}")
+    log(f"Number of Batches: {num_batches}")
+    log(f"Total Trials: {num_trials}")
     
     results = []
     
@@ -300,7 +310,7 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
         
         actual_batch_size = len(batch_args)
         
-        print(f"Processing batch {batch_num + 1}/{num_batches} (trials {start_idx + 1}-{end_idx}) with {actual_batch_size} processes")
+        log(f"Processing batch {batch_num + 1}/{num_batches} (trials {start_idx + 1}-{end_idx}) with {actual_batch_size} processes")
 
         if actual_batch_size <= 1:
             batch_results = [run_trial(batch_args[0])] if batch_args else []
@@ -311,11 +321,11 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
                     batch_results = pool.map(run_trial, batch_args)
                     results.extend(batch_results)
             except (PermissionError, OSError) as exc:
-                print(f"[WARN] Multiprocessing unavailable ({exc}). Falling back to sequential execution for this batch.")
+                log(f"[WARN] Multiprocessing unavailable ({exc}). Falling back to sequential execution for this batch.")
                 batch_results = [run_trial(batch_arg) for batch_arg in batch_args]
                 results.extend(batch_results)
         
-        print(f"Completed batch {batch_num + 1}/{num_batches}")
+        log(f"Completed batch {batch_num + 1}/{num_batches}")
 
     end_time = time.time()
 
@@ -418,8 +428,17 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
     with open(agg_path, 'w', encoding='utf-8') as f:
         json.dump(overall_result, f, indent=2)
         
-    print(f"All results and logs for law_version '{law_version}' written to {results_dir}")
-    print(f"--- Finished experiment for law_version: {law_version} ---")
+    log(
+        f"All results and logs written to {results_dir} "
+        f"(module={cli_args.module}, difficulty={cli_args.equation_difficulty}, "
+        f"system={cli_args.model_system}, law_version={law_version}, backend={cli_args.agent_backend})"
+    )
+    log(
+        "--- Finished experiment: "
+        f"module={cli_args.module}, difficulty={cli_args.equation_difficulty}, "
+        f"system={cli_args.model_system}, law_version={law_version}, "
+        f"backend={cli_args.agent_backend} ---"
+    )
 
 
 if __name__ == "__main__":
@@ -447,6 +466,10 @@ if __name__ == "__main__":
 
     if cli_args.easiest:
         cli_args.noise = 0.0
+
+    if cli_args.prompt_set == "modified" and not cli_args.dashboard:
+        print("[WARN] prompt_set=modified reads accumulation/global_kg.json, but dashboard updates are disabled.")
+        print("[WARN] The discovered-law context may therefore be empty or stale unless you intentionally prepared accumulation/global_kg.json beforehand.")
 
     # --- Dashboard Reset (Default behavior unless --keep_history) ---
     if cli_args.dashboard and not cli_args.keep_history:

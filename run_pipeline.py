@@ -79,7 +79,7 @@ def build_quick_command(args, run_tag: str) -> List[str]:
     ]
     if args.consistency:
         command.append("--consistency")
-    if args.dashboard:
+    if args.dashboard or args.prompt_set == "modified":
         command.append("--dashboard")
     return command
 
@@ -122,7 +122,7 @@ def build_benchmark_commands(args, repo_root: Path, run_tag: str) -> List[List[s
                     command.append("--consistency")
                 if args.include_unchanged:
                     command.append("--include_unchanged")
-                if args.dashboard:
+                if args.dashboard or args.prompt_set == "modified":
                     command.append("--dashboard")
                 commands.append(command)
     return commands
@@ -130,6 +130,23 @@ def build_benchmark_commands(args, repo_root: Path, run_tag: str) -> List[List[s
 
 def write_manifest(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def write_results_index(run_dir: Path, report_dir: Path, run_tag: str) -> None:
+    content = f"""# Results Index
+
+Run tag: {run_tag}
+
+Most useful files:
+- Law-by-law accuracy table: {report_dir / 'law_accuracy_summary.csv'}
+- Law-by-law accuracy table (Markdown): {report_dir / 'law_accuracy_summary.md'}
+- Configuration summary: {report_dir / 'config_summary.csv'}
+- Leaderboard summary: {report_dir / 'aggregated_trial_summary.csv'}
+- Human-readable report: {report_dir / 'summary_report.md'}
+- Raw trial rows: {report_dir / 'results_by_trial.csv'}
+- Full console log: {run_dir / 'pipeline.log'}
+"""
+    (run_dir / "RESULTS_INDEX.md").write_text(content, encoding="utf-8")
 
 
 def main() -> int:
@@ -163,6 +180,7 @@ def main() -> int:
     run_dir = repo_root / "outputs" / "pipeline_runs" / run_tag
     report_dir = run_dir / "report"
     run_dir.mkdir(parents=True, exist_ok=True)
+    (repo_root / "outputs" / "pipeline_runs").mkdir(parents=True, exist_ok=True)
     log_path = run_dir / "pipeline.log"
     manifest_path = run_dir / "manifest.json"
 
@@ -224,8 +242,13 @@ def main() -> int:
     manifest["finished_at"] = datetime.now().isoformat()
     manifest["return_code"] = 0
     write_manifest(manifest_path, manifest)
-    print(f"\nRun completed. Log: {log_path}")
-    print(f"Reports: {report_dir}")
+    write_results_index(run_dir, report_dir, run_tag)
+    (repo_root / "outputs" / "pipeline_runs" / "LATEST_RUN.txt").write_text(run_tag + "\n", encoding="utf-8")
+    print(f"\nRun completed.")
+    print(f"Run folder: {run_dir}")
+    print(f"Law-by-law results: {report_dir / 'law_accuracy_summary.csv'}")
+    print(f"Readable summary: {report_dir / 'summary_report.md'}")
+    print(f"Full log: {log_path}")
     return 0
 
 

@@ -57,7 +57,10 @@ def conduct_code_assisted_exploration(
     task_prompt = module.get_task_prompt(system, is_code_assisted=True, noise_level=noise_level, prompt_set=prompt_set)
     
     if prompt_set == 'modified':
-        discovered_context = get_discovered_laws_context()
+        discovered_context = get_discovered_laws_context(
+            target_module=module.__name__.split('.')[-1],
+            consistency=consistency
+        )
         if discovered_context:
             task_prompt = discovered_context + "\n\n" + task_prompt
 
@@ -190,7 +193,15 @@ def conduct_code_assisted_exploration(
                         print(f"[Code Assisted Trial {trial_id}] Running experiment {num_experiments} in turn {turn + 1}")
                         
                         # Extract experiment parameters and run experiment
-                        experiment_result = run_experiment_from_response(module, response, system, noise_level, difficulty, law_version)
+                        experiment_result = run_experiment_from_response(
+                            module,
+                            response,
+                            system,
+                            noise_level,
+                            difficulty,
+                            law_version,
+                            consistency
+                        )
                         
                         if experiment_result:
                             # Add experiment results to conversation
@@ -346,7 +357,7 @@ You can perform experiments to gather data but you must follow the protocol stri
 
     return code_assisted_system_prompt
 
-def run_experiment_from_response(module, response: str, system: str, noise_level: float, difficulty: str, law_version: str = None) -> Optional[Dict[str, Any]]:
+def run_experiment_from_response(module, response: str, system: str, noise_level: float, difficulty: str, law_version: str = None, consistency: bool = False) -> Optional[Dict[str, Any]]:
     """
     Extract experiment parameters from LLM response and run experiment.
     

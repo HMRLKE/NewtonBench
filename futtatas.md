@@ -52,9 +52,18 @@ outputs/pipeline_runs/<run_tag>/
 
 Ide kerülnek:
 
+- `RESULTS_INDEX.md`: rövid térkép a legfontosabb eredményfájlokhoz
 - `pipeline.log`: a teljes konzol-log fájlba mentve
 - `manifest.json`: a futás metaadatai és a végrehajtott parancsok
+- `report/law_accuracy_summary.csv`: a legfontosabb law-szintű pontossági tábla
+- `report/law_accuracy_summary.md`: a fenti markdown nézetben
 - `report/results_by_trial.csv`: trial-szintű részletes eredmények
 - `report/config_summary.csv`: logikai konfigurációk szerinti aggregátum
 - `report/aggregated_trial_summary.csv`: leaderboard / eredménytábla
 - `report/summary_report.md`: rövid markdown összefoglaló
+
+A legutóbbi pipeline futás run tagje itt olvasható:
+
+```text
+outputs/pipeline_runs/LATEST_RUN.txt
+```

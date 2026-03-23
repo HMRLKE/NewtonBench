@@ -1,0 +1,70 @@
+\section{Consistency-Preserving Modifications of NewtonBench Laws}
+\label{sec:consistent_modifications}
+
+To support controlled experiments on cross-task transfer, we extended NewtonBench with an explicit notion of \emph{consistency-preserving} law modification. The underlying motivation is that physically meaningful perturbations should not be treated as arbitrary symbolic edits. Many benchmark laws instantiate broader structural families, and some of these families admit defensible shared transformation axes. The objective is therefore not to construct a fully alternative and self-contained microphysical universe, but to preserve structural coherence whenever multiple benchmark tasks plausibly realize the same conceptual modification.
+
+Our design follows four principles. First, consistency is \emph{concept-based rather than symbol-based}: repeated variable names or constants across equations are not interpreted as evidence of a shared physical parameter. Second, cross-law synchronization is allowed only when a common transformation axis can be justified independently of notation. Third, membership in a broad domain is not by itself sufficient to warrant synchronized rewrites. Fourth, the consistency policy is externalized in a declarative YAML file, which serves as the single source of truth for grouping decisions, shared axes, and prompt-time relevance relations.
+
+This design is motivated by standard physical considerations. In realistic theory change, isolated algebraic edits rarely define a coherent alternative physics. Fundamental quantities such as the Planck length,
+\[
+\ell_P = \sqrt{\frac{\hbar G}{c^3}},
+\]
+illustrate that deep modifications of microphysics would generally require coordinated changes across families of constants and laws. Accordingly, the present mechanism should not be interpreted as a full alternative-universe generator. Instead, it enforces only those cross-law couplings that remain defensible at the level of structural law families while deliberately avoiding unjustified synchronization of unrelated formulas.
+
+\paragraph{Operational consequence.}
+The resulting policy distinguishes between \emph{strict consistency axes} and \emph{prompt-level relevance axes}. Strict consistency axes are allowed to support synchronized modifications across tasks. Prompt-level relevance axes are weaker relations used only to retrieve a small number of previously discovered laws as contextual hints in the modified prompt setting. They do not license automatic cross-law rewriting.
+
+\subsection{Resulting YAML-Level Rules}
+
+Table~\ref{tab:consistency-groups} summarizes the current specification encoded in \texttt{consistency\_groups.yml}. The table should be read conservatively: only the entries listed under ``Strict consistency axes'' are intended to support synchronized law modifications. All other axes are prompt-time retrieval cues only.
+
+\begin{table*}[t]
+\centering
+\small
+\begin{tabular}{p{3.0cm} p{4.7cm} p{3.9cm} p{4.8cm}}
+\hline
+\textbf{Conceptual group} & \textbf{Modules} & \textbf{Strict consistency axes} & \textbf{Prompt-level relevance axes} \\
+\hline
+Interaction laws &
+\texttt{m0\_gravity}, \texttt{m1\_coulomb\_force}, \texttt{m2\_magnetic\_force} &
+\texttt{distance\_exponent}, \texttt{radial\_decay\_profile} &
+\texttt{pairwise\_source\_coupling}, \texttt{inverse\_distance\_dependence}, \texttt{central\_interaction\_structure} \\
+
+Continuum transport laws &
+\texttt{m3\_fourier\_law}, \texttt{m8\_sound\_speed}, \texttt{m11\_heat\_transfer} &
+none &
+\texttt{medium\_response\_to\_state\_gradient}, \texttt{transport\_in\_continuum\_media}, \texttt{constitutive\_law\_structure} \\
+
+Oscillation laws &
+\texttt{m6\_underdamped\_harmonic}, \texttt{m9\_hooke\_law} &
+none &
+\texttt{restoring\_response}, \texttt{energy\_storage\_and\_release}, \texttt{linear\_response\_regime} \\
+
+Optical laws &
+\texttt{m4\_snell\_law}, \texttt{m7\_malus\_law} &
+none &
+\texttt{angle\_dependent\_response}, \texttt{projection\_or\_refraction\_geometry}, \texttt{variational\_optics\_analogy} \\
+
+Statistical/quantum laws &
+\texttt{m5\_radioactive\_decay}, \texttt{m10\_be\_distribution} &
+none &
+\texttt{population\_level\_behavior}, \texttt{nonclassical\_scale\_setting}, \texttt{exponential\_or\_distributional\_dependence} \\
+\hline
+\end{tabular}
+\caption{Current consistency policy encoded in \texttt{consistency\_groups.yml}. Only the ``Strict consistency axes'' column authorizes synchronized modifications across benchmark laws. The prompt-level axes are used exclusively for relevance-filtered contextual prompting.}
+\label{tab:consistency-groups}
+\end{table*}
+
+\subsection{Why These Rules Follow from the Physical Motivation}
+
+The strongest synchronization case is the family of pairwise interaction laws. Gravity, Coulomb-type interaction, and magnetic force between parallel currents all instantiate a common high-level pattern: a magnitude determined by two source terms and a separation-dependent radial decay. For this family, synchronizing the distance-scaling transformation is defensible independently of notation. This directly motivates the strict axes \texttt{distance\_exponent} and \texttt{radial\_decay\_profile}. In the current benchmark, the corresponding per-version mappings remain encoded through the distance-exponent schedule already associated with the \texttt{v0}/\texttt{v1}/\texttt{v2} variants.
+
+By contrast, the remaining conceptual groups do not presently support an equally strong, notation-independent case for synchronized rewriting. Thermal and transport laws, oscillatory laws, optical laws, and statistical/quantum laws each exhibit interpretable family resemblance, but the evidence is weaker and more heterogeneous. Consequently, these groups are retained only as prompt-level relevance structures. Their role is to expose the model to a bounded number of conceptually related prior discoveries without asserting that those laws must transform in lockstep.
+
+This separation is intentional. It implements the conservative claim that broad conceptual relatedness may justify contextual comparison, but not necessarily synchronized modification. In particular, no group currently declares shared constants. This reflects the view that common symbols across tasks do not, by themselves, establish a common physical constant. Any future addition of shared constants would require an independent physical argument rather than notational coincidence.
+
+\subsection{Prompt-Time Behavior Implied by the Policy}
+
+The YAML specification now induces two different behaviors. When strict consistency is enabled, only laws belonging to a conceptual group with declared strict axes are eligible for synchronized modifications. Under the current specification, this effectively privileges the interaction-law family. When the modified prompt setting is used, the same YAML file is consulted more broadly to retrieve only a small number of conceptually related prior discoveries. These retrieved laws are explicitly framed as \emph{soft structural hints} rather than templates, and the prompt additionally states when no prior law has yet been discovered in the relevant family.
+
+This distinction is important for interpretation. Prompt-level family structure should be understood as an information-selection mechanism, not as a commitment to a unified alternative physics. The present policy therefore remains deliberately asymmetric: it is permissive at the level of contextual analogy, but conservative at the level of synchronized law transformation.

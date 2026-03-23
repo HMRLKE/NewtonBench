@@ -230,6 +230,23 @@ def main():
     
     args = parser.parse_args()
 
+    if args.prompt_set == "modified" and not args.dashboard:
+        args.dashboard = True
+        print("[INFO] Enabling dashboard automatically because prompt_set=modified needs discovered-law accumulation.")
+
+    if args.prompt_set == "modified" and not args.reset_dashboard:
+        args.reset_dashboard = True
+        print("[INFO] Resetting accumulation/global_kg.json at the start of this modified-prompt sweep for a clean context.")
+
+    if args.dashboard and args.reset_dashboard and not args.check_only and not args.dry_run:
+        acc_path = os.path.join("accumulation", "global_kg.json")
+        if os.path.exists(acc_path):
+            try:
+                os.remove(acc_path)
+                print(f"[INFO] Dashboard data reset: Deleted {acc_path}")
+            except Exception as e:
+                print(f"[WARN] Could not reset dashboard data: {e}")
+
     modules = get_module_folders()
     if not modules:
         print("No modules found. Exiting.")
@@ -259,6 +276,9 @@ def main():
     print(f"Agent Backend: {args.agent_backend}")
     print(f"Noise Levels: {noise_levels}")
     print(f"Trials per Configuration: {args.trials_per_law}")
+    print(f"Prompt Set: {args.prompt_set}")
+    print(f"Consistency Mode: {args.consistency}")
+    print(f"Run Tag: {args.run_tag if args.run_tag else '<none>'}")
     
     if args.module == "none":
         print(f"Modules: {len(modules)} modules ({', '.join(modules[:3])}{'...' if len(modules) > 3 else ''})")
@@ -403,6 +423,13 @@ def main():
         for i, config in enumerate(execution_plan):
             print(f"\n[{i+1}/{len(execution_plan)}] Executing: {config['config_name']}")
             print(f"Status: {config['status'].upper()}, Trials needed: {config['trials_needed']}")
+            print(
+                f"Resolved config -> module={config['module']}, "
+                f"difficulty={config['equation_difficulty']}, "
+                f"system={config['model_system']}, law_version={config['law_version']}, "
+                f"backend={args.agent_backend}, prompt_set={args.prompt_set}, "
+                f"consistency={args.consistency}, run_tag={args.run_tag if args.run_tag else '<none>'}"
+            )
             
             command = [
                 "python", "run_experiments.py",
@@ -419,6 +446,7 @@ def main():
 
             if args.dashboard:
                 command.append("--dashboard")
+                command.append("--keep_history")
             if args.consistency:
                 command.append("--consistency")
             if args.run_tag:

@@ -118,7 +118,10 @@ def conduct_exploration(module: Any, model_name: str, noise_level: float, diffic
     messages = [{"role": "system", "content": base_prompt}]
     prompt = module.get_task_prompt(system, noise_level=noise_level, prompt_set=prompt_set)
     if prompt_set == 'modified':
-        discovered_context = get_discovered_laws_context()
+        discovered_context = get_discovered_laws_context(
+            target_module=module.__name__.split('.')[-1],
+            consistency=consistency
+        )
         if discovered_context:
             prompt = discovered_context + "\n\n" + prompt
 
