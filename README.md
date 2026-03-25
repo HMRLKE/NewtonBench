@@ -154,6 +154,7 @@ Primary scripts:
 - `run_experiments.py`: runs one concrete experiment configuration
 - `result_analysis/summarize_results.py`: builds the law/config/leaderboard reports from finished runs
 - `result_analysis/compare_consistency.py`: builds side-by-side consistent vs inconsistent comparison tables from two completed run tags
+- `result_analysis/compare_prompt_consistency.py`: builds a single four-way table across original/modified and inconsistent/consistent run pairs
 
 Prompt-set behavior:
 
@@ -301,6 +302,12 @@ For consistency-vs-inconsistency studies, run two matching sweeps with different
 
 ```
 python result_analysis/compare_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/<compare_tag>/report --inconsistent_run_tag <run_tag_a> --consistent_run_tag <run_tag_b>
+```
+
+If you also want to compare the effect of `prompt_set` in the same diagram-friendly table, run four matching sweeps (`original/modified` x `inconsistent/consistent`) and then build the combined report:
+
+```
+python result_analysis/compare_prompt_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/<compare_tag>/report --original_inconsistent_run_tag <run_tag_a> --original_consistent_run_tag <run_tag_b> --modified_inconsistent_run_tag <run_tag_c> --modified_consistent_run_tag <run_tag_d>
 ```
 
 Or filter to one logical run:

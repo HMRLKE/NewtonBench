@@ -71,6 +71,43 @@ Az összehasonlító kimenetek:
 - `outputs/pipeline_runs/v0-consistency-compare/report/consistency_model_summary.csv`
 - `outputs/pipeline_runs/v0-consistency-compare/report/consistency_report.md`
 
+## 7. Original vs. Modified prompt szett + consistency egyetlen táblában
+
+Ha ugyanazt a benchmarkot mind a négy kombinációban akarod összehasonlítani:
+
+- `original` + `inconsistent`
+- `original` + `consistent`
+- `modified` + `inconsistent`
+- `modified` + `consistent`
+
+akkor futtasd ugyanazzal a sweep-konfigurációval a négy runt, eltérő `run_tag`-ekkel.
+
+Az `original` párosra példa:
+
+```bash
+python run_pipeline.py --preset benchmark --model_name gpt41mini --include_unchanged --prompt_set original --run_tag all-laws-inconsistent
+python run_pipeline.py --preset benchmark --model_name gpt41mini --include_unchanged --prompt_set original --consistency --run_tag all-laws-consistent
+```
+
+Az ehhez illeszkedő `modified` páros:
+
+```bash
+python run_pipeline.py --preset benchmark --model_name gpt41mini --include_unchanged --prompt_set modified --run_tag all-laws-modified-inconsistent
+python run_pipeline.py --preset benchmark --model_name gpt41mini --include_unchanged --prompt_set modified --consistency --run_tag all-laws-modified-consistent
+```
+
+Végül az egyetlen, négydimenziós összesítő tábla:
+
+```bash
+python result_analysis/compare_prompt_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/all-laws-prompt-consistency-compare/report --original_inconsistent_run_tag all-laws-inconsistent --original_consistent_run_tag all-laws-consistent --modified_inconsistent_run_tag all-laws-modified-inconsistent --modified_consistent_run_tag all-laws-modified-consistent
+```
+
+A fő kimenetek:
+
+- `outputs/pipeline_runs/all-laws-prompt-consistency-compare/report/prompt_consistency_comparison.csv`
+- `outputs/pipeline_runs/all-laws-prompt-consistency-compare/report/prompt_consistency_model_summary.csv`
+- `outputs/pipeline_runs/all-laws-prompt-consistency-compare/report/prompt_consistency_report.md`
+
 ## Kimenetek
 
 Minden `run_pipeline.py` futás egy saját könyvtárat kap itt:
