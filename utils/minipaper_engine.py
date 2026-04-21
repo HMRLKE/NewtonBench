@@ -79,6 +79,7 @@ class RunSuiteConfig:
     noise_level: float = 0.0
     max_scientist_turns: int = 8
     max_reviewer_turns: int = 4
+    max_review_rounds: int = 2
     output_root: str = "outputs/hypothesis_runs"
     judge_model_name: Optional[str] = None
     judge_api_source: Optional[str] = None
@@ -203,7 +204,7 @@ def choose_judge(
         return explicit_judge_model_name, normalize_api_source(explicit_judge_api_source) or scientist.api_source
 
     if os.getenv("OPENAI_API_KEY"):
-        return "gpt41", "oa"
+        return "gpt5mini", "oa"
 
     return scientist.model_name, scientist.api_source
 
@@ -218,6 +219,7 @@ def run_scientist_session(
     max_turns: int,
     artifact_dir: Path,
     episode_id: str,
+    revision_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     system_prompt = SCIENTIST_SYSTEM_PROMPT
     user_prompt = build_scientist_prompt(
@@ -225,6 +227,7 @@ def run_scientist_session(
         system=task.model_system,
         noise_level=noise_level,
         knowledge_base=knowledge_base,
+        revision_context=revision_context,
     )
     messages: List[Dict[str, str]] = [
         {"role": "system", "content": system_prompt},
@@ -404,6 +407,16 @@ def _episode_artifact_dir(run_dir: Path, scenario: ScenarioSpec, task: TaskSpec,
     return _scenario_output_dir(run_dir, scenario) / "artifacts" / task_id / f"episode_{episode_index:03d}"
 
 
+def _round_artifact_dir(
+    run_dir: Path,
+    scenario: ScenarioSpec,
+    task: TaskSpec,
+    episode_index: int,
+    review_round: int,
+) -> Path:
+    return _episode_artifact_dir(run_dir, scenario, task, episode_index) / f"review_round_{review_round:02d}"
+
+
 def _append_to_kb(
     *,
     knowledge_base: Dict[str, Any],
@@ -454,6 +467,7 @@ def run_minipaper_suite(config: RunSuiteConfig) -> Dict[str, Any]:
         "noise_level": config.noise_level,
         "max_scientist_turns": config.max_scientist_turns,
         "max_reviewer_turns": config.max_reviewer_turns,
+        "max_review_rounds": config.max_review_rounds,
         "started_at": datetime.now().isoformat(),
     }
     _write_json(run_dir / "manifest.json", manifest)
@@ -462,6 +476,7 @@ def run_minipaper_suite(config: RunSuiteConfig) -> Dict[str, Any]:
         return {"run_dir": str(run_dir), "manifest": manifest, "paper_results": [], "scenario_summary": []}
 
     rows: List[Dict[str, Any]] = []
+    round_rows: List[Dict[str, Any]] = []
 
     for scenario in normalized_scenarios:
         scenario_dir = _scenario_output_dir(run_dir, scenario)
@@ -478,148 +493,264 @@ def run_minipaper_suite(config: RunSuiteConfig) -> Dict[str, Any]:
 
             for scientist_index in range(config.scientist_population):
                 episode_index = len(rows) + 1
-                artifact_dir = _episode_artifact_dir(run_dir, scenario, task, episode_index)
-                artifact_dir.mkdir(parents=True, exist_ok=True)
-
-                scientist_error: Optional[Dict[str, str]] = None
-                reviewer_error: Optional[Dict[str, str]] = None
-                evaluation_error: Optional[Dict[str, str]] = None
                 fallback_equation = f"{module.FUNCTION_SIGNATURE} return float('nan')"
+                episode_dir = _episode_artifact_dir(run_dir, scenario, task, episode_index)
+                episode_dir.mkdir(parents=True, exist_ok=True)
 
-                try:
-                    scientist_result = run_scientist_session(
-                        module=module,
-                        agent=scenario.scientist,
-                        task=task,
-                        knowledge_base=knowledge_base,
-                        noise_level=config.noise_level,
-                        max_turns=config.max_scientist_turns,
-                        artifact_dir=artifact_dir,
-                        episode_id=f"{scenario.scenario_id}-{episode_index}",
-                    )
-                except Exception as error:
-                    scientist_error = _error_dict(error)
-                    scientist_result = {
-                        "status": "error",
-                        "minipaper": None,
-                        "rounds": 0,
-                        "total_tokens": 0,
-                        "num_experiments": 0,
-                        "chat_history": [],
-                    }
+                revision_context: Optional[Dict[str, Any]] = None
+                round_history: List[Dict[str, Any]] = []
+                final_scientist_result: Dict[str, Any] = {}
+                final_reviewer_result: Dict[str, Any] = {}
+                final_scientist_paper: Optional[MiniPaper] = None
+                final_review: Optional[ReviewDecision] = None
+                final_evaluation: Dict[str, Any] = {}
+                final_scientist_error: Optional[Dict[str, str]] = None
+                final_reviewer_error: Optional[Dict[str, str]] = None
+                final_evaluation_error: Optional[Dict[str, str]] = None
 
-                scientist_paper = scientist_result.get("minipaper")
-                if scientist_paper is None:
-                    rationale = "Scientist agent failed to produce a valid minipaper."
-                    if scientist_error:
-                        rationale += f" Provider/runtime error: {scientist_error['error_type']}: {scientist_error['error_message']}"
-                    scientist_paper = MiniPaper(
-                        equation=fallback_equation,
-                        justification=rationale,
+                total_scientist_tokens = 0
+                total_reviewer_tokens = 0
+                total_scientist_experiments = 0
+                total_reviewer_experiments = 0
+
+                for review_round in range(1, config.max_review_rounds + 1):
+                    artifact_dir = _round_artifact_dir(run_dir, scenario, task, episode_index, review_round)
+                    artifact_dir.mkdir(parents=True, exist_ok=True)
+
+                    scientist_error: Optional[Dict[str, str]] = None
+                    reviewer_error: Optional[Dict[str, str]] = None
+                    evaluation_error: Optional[Dict[str, str]] = None
+
+                    try:
+                        scientist_result = run_scientist_session(
+                            module=module,
+                            agent=scenario.scientist,
+                            task=task,
+                            knowledge_base=knowledge_base,
+                            noise_level=config.noise_level,
+                            max_turns=config.max_scientist_turns,
+                            artifact_dir=artifact_dir,
+                            episode_id=f"{scenario.scenario_id}-{episode_index}-r{review_round}",
+                            revision_context=revision_context,
+                        )
+                    except Exception as error:
+                        scientist_error = _error_dict(error)
+                        scientist_result = {
+                            "status": "error",
+                            "minipaper": None,
+                            "rounds": 0,
+                            "total_tokens": 0,
+                            "num_experiments": 0,
+                            "chat_history": [],
+                        }
+
+                    scientist_paper = scientist_result.get("minipaper")
+                    if scientist_paper is None:
+                        rationale = "Scientist agent failed to produce a valid minipaper."
+                        if scientist_error:
+                            rationale += f" Provider/runtime error: {scientist_error['error_type']}: {scientist_error['error_message']}"
+                        scientist_paper = MiniPaper(
+                            equation=fallback_equation,
+                            justification=rationale,
+                            raw_content="",
+                        )
+
+                    try:
+                        evaluation = module.evaluate_law(
+                            scientist_paper.equation,
+                            param_description=module.PARAM_DESCRIPTION,
+                            difficulty=task.equation_difficulty,
+                            law_version=task.law_version,
+                            judge_model_name=judge_model_name,
+                            trial_info={
+                                "trial_id": f"{scenario.scenario_id}-{episode_index}-evaluation-r{review_round}",
+                                "trial_dir": str(artifact_dir),
+                                "api_source_override": judge_api_source,
+                                "judge_api_source": judge_api_source,
+                            },
+                            consistency=True,
+                        )
+                    except Exception as error:
+                        evaluation_error = _error_dict(error)
+                        evaluation = {
+                            "rmsle": float("nan"),
+                            "exact_accuracy": 0.0,
+                            "symbolic_equivalent": False,
+                            "symbolic_msg": "Evaluation failed due to infrastructure/runtime error.",
+                            "error": evaluation_error["error_message"],
+                        }
+
+                    try:
+                        reviewer_result = run_reviewer_session(
+                            module=module,
+                            agent=scenario.reviewer,
+                            task=task,
+                            knowledge_base=knowledge_base,
+                            scientist_paper=scientist_paper,
+                            reviewer_can_run_experiments=scenario.reviewer_can_run_experiments,
+                            noise_level=config.noise_level,
+                            max_turns=config.max_reviewer_turns,
+                            artifact_dir=artifact_dir,
+                            episode_id=f"{scenario.scenario_id}-{episode_index}-r{review_round}",
+                        )
+                    except Exception as error:
+                        reviewer_error = _error_dict(error)
+                        reviewer_result = {
+                            "status": "error",
+                            "review": None,
+                            "rounds": 0,
+                            "total_tokens": 0,
+                            "num_experiments": 0,
+                            "chat_history": [],
+                        }
+
+                    review = reviewer_result.get("review") or ReviewDecision(
+                        decision="reject",
+                        rationale=(
+                            "Reviewer agent failed to produce a valid review decision."
+                            if not reviewer_error
+                            else f"Reviewer failed due to {reviewer_error['error_type']}: {reviewer_error['error_message']}"
+                        ),
+                        confidence="low",
                         raw_content="",
                     )
 
-                try:
-                    evaluation = module.evaluate_law(
-                        scientist_paper.equation,
-                        param_description=module.PARAM_DESCRIPTION,
-                        difficulty=task.equation_difficulty,
-                        law_version=task.law_version,
-                        judge_model_name=judge_model_name,
-                        trial_info={
-                            "trial_id": f"{scenario.scenario_id}-{episode_index}-evaluation",
-                            "trial_dir": str(artifact_dir),
-                            "api_source_override": judge_api_source,
-                            "judge_api_source": judge_api_source,
+                    total_scientist_tokens += int(scientist_result.get("total_tokens") or 0)
+                    total_reviewer_tokens += int(reviewer_result.get("total_tokens") or 0)
+                    total_scientist_experiments += int(scientist_result.get("num_experiments") or 0)
+                    total_reviewer_experiments += int(reviewer_result.get("num_experiments") or 0)
+
+                    _write_json(
+                        artifact_dir / "scientist_minipaper.json",
+                        {
+                            "paper": scientist_paper.to_dict(),
+                            "status": scientist_result.get("status"),
+                            "rounds": scientist_result.get("rounds"),
+                            "total_tokens": scientist_result.get("total_tokens"),
+                            "num_experiments": scientist_result.get("num_experiments"),
+                            "error": scientist_error,
                         },
-                        consistency=True,
                     )
-                except Exception as error:
-                    evaluation_error = _error_dict(error)
-                    evaluation = {
-                        "rmsle": float("nan"),
-                        "exact_accuracy": 0.0,
-                        "symbolic_equivalent": False,
-                        "symbolic_msg": "Evaluation failed due to infrastructure/runtime error.",
-                        "error": evaluation_error["error_message"],
-                    }
-
-                try:
-                    reviewer_result = run_reviewer_session(
-                        module=module,
-                        agent=scenario.reviewer,
-                        task=task,
-                        knowledge_base=knowledge_base,
-                        scientist_paper=scientist_paper,
-                        reviewer_can_run_experiments=scenario.reviewer_can_run_experiments,
-                        noise_level=config.noise_level,
-                        max_turns=config.max_reviewer_turns,
-                        artifact_dir=artifact_dir,
-                        episode_id=f"{scenario.scenario_id}-{episode_index}",
+                    _write_json(
+                        artifact_dir / "review_decision.json",
+                        {
+                            "review": review.to_dict(),
+                            "status": reviewer_result.get("status"),
+                            "rounds": reviewer_result.get("rounds"),
+                            "total_tokens": reviewer_result.get("total_tokens"),
+                            "num_experiments": reviewer_result.get("num_experiments"),
+                            "error": reviewer_error,
+                        },
                     )
-                except Exception as error:
-                    reviewer_error = _error_dict(error)
-                    reviewer_result = {
-                        "status": "error",
-                        "review": None,
-                        "rounds": 0,
-                        "total_tokens": 0,
-                        "num_experiments": 0,
-                        "chat_history": [],
-                    }
+                    _write_json(
+                        artifact_dir / "evaluation.json",
+                        {
+                            "metrics": evaluation,
+                            "error": evaluation_error,
+                        },
+                    )
+                    _write_text(artifact_dir / "scientist_chat_history.log", _format_chat_history(scientist_result.get("chat_history", [])))
+                    _write_text(artifact_dir / "reviewer_chat_history.log", _format_chat_history(reviewer_result.get("chat_history", [])))
 
-                review = reviewer_result.get("review") or ReviewDecision(
-                    decision="reject",
-                    rationale=(
-                        "Reviewer agent failed to produce a valid review decision."
-                        if not reviewer_error
-                        else f"Reviewer failed due to {reviewer_error['error_type']}: {reviewer_error['error_message']}"
-                    ),
-                    confidence="low",
-                    raw_content="",
-                )
+                    round_record = {
+                        "review_round": review_round,
+                        "accepted": review.is_accept(),
+                        "review_decision": review.decision,
+                        "review_confidence": review.confidence,
+                        "scientist_status": scientist_result.get("status"),
+                        "reviewer_status": reviewer_result.get("status"),
+                        "scientist_error_type": scientist_error["error_type"] if scientist_error else "",
+                        "scientist_error_message": scientist_error["error_message"] if scientist_error else "",
+                        "reviewer_error_type": reviewer_error["error_type"] if reviewer_error else "",
+                        "reviewer_error_message": reviewer_error["error_message"] if reviewer_error else "",
+                        "evaluation_error_type": evaluation_error["error_type"] if evaluation_error else "",
+                        "evaluation_error_message": evaluation_error["error_message"] if evaluation_error else "",
+                        "exact_accuracy": evaluation.get("exact_accuracy"),
+                        "symbolic_equivalent": evaluation.get("symbolic_equivalent"),
+                        "rmsle": evaluation.get("rmsle"),
+                        "scientist_total_tokens": scientist_result.get("total_tokens"),
+                        "reviewer_total_tokens": reviewer_result.get("total_tokens"),
+                        "scientist_num_experiments": scientist_result.get("num_experiments"),
+                        "reviewer_num_experiments": reviewer_result.get("num_experiments"),
+                        "artifact_dir": str(artifact_dir),
+                    }
+                    round_history.append(round_record)
+                    round_rows.append(
+                        {
+                            "run_tag": run_tag,
+                            "hypothesis_name": scenario.hypothesis_name,
+                            "scenario_id": scenario.scenario_id,
+                            "scenario_description": scenario.description,
+                            "reviewer_relation": scenario.reviewer_relation,
+                            "module": task.module_name,
+                            "equation_difficulty": task.equation_difficulty,
+                            "model_system": task.model_system,
+                            "law_version": task.law_version,
+                            "scientist_index": scientist_index,
+                            "scientist_model_name": scenario.scientist.model_name,
+                            "scientist_api_source": scenario.scientist.api_source,
+                            "reviewer_model_name": scenario.reviewer.model_name,
+                            "reviewer_api_source": scenario.reviewer.api_source,
+                            "reviewer_can_run_experiments": scenario.reviewer_can_run_experiments,
+                            "review_round": review_round,
+                            **round_record,
+                        }
+                    )
+
+                    final_scientist_result = scientist_result
+                    final_reviewer_result = reviewer_result
+                    final_scientist_paper = scientist_paper
+                    final_review = review
+                    final_evaluation = evaluation
+                    final_scientist_error = scientist_error
+                    final_reviewer_error = reviewer_error
+                    final_evaluation_error = evaluation_error
+
+                    if review.is_accept():
+                        break
+
+                    if review_round < config.max_review_rounds:
+                        revision_context = {
+                            "current_round": review_round + 1,
+                            "max_rounds": config.max_review_rounds,
+                            "previous_paper": scientist_paper,
+                            "previous_review": review,
+                        }
+
+                assert final_scientist_paper is not None
+                assert final_review is not None
 
                 _append_to_kb(
                     knowledge_base=knowledge_base,
                     scenario=scenario,
                     task=task,
-                    paper=scientist_paper,
-                    review=review,
-                    evaluation=evaluation,
+                    paper=final_scientist_paper,
+                    review=final_review,
+                    evaluation=final_evaluation,
                 )
                 save_minipaper_kb(kb_path, knowledge_base)
 
                 _write_json(
-                    artifact_dir / "scientist_minipaper.json",
+                    episode_dir / "episode_summary.json",
                     {
-                        "paper": scientist_paper.to_dict(),
-                        "status": scientist_result.get("status"),
-                        "rounds": scientist_result.get("rounds"),
-                        "total_tokens": scientist_result.get("total_tokens"),
-                        "num_experiments": scientist_result.get("num_experiments"),
-                        "error": scientist_error,
+                        "scenario_id": scenario.scenario_id,
+                        "module": task.module_name,
+                        "equation_difficulty": task.equation_difficulty,
+                        "model_system": task.model_system,
+                        "law_version": task.law_version,
+                        "scientist_index": scientist_index,
+                        "max_review_rounds": config.max_review_rounds,
+                        "executed_review_rounds": len(round_history),
+                        "accepted_on_round": next((entry["review_round"] for entry in round_history if entry["accepted"]), 0),
+                        "final_review_decision": final_review.decision,
+                        "final_exact_accuracy": final_evaluation.get("exact_accuracy"),
+                        "total_scientist_tokens": total_scientist_tokens,
+                        "total_reviewer_tokens": total_reviewer_tokens,
+                        "total_scientist_experiments": total_scientist_experiments,
+                        "total_reviewer_experiments": total_reviewer_experiments,
+                        "round_history": round_history,
                     },
                 )
-                _write_json(
-                    artifact_dir / "review_decision.json",
-                    {
-                        "review": review.to_dict(),
-                        "status": reviewer_result.get("status"),
-                        "rounds": reviewer_result.get("rounds"),
-                        "total_tokens": reviewer_result.get("total_tokens"),
-                        "num_experiments": reviewer_result.get("num_experiments"),
-                        "error": reviewer_error,
-                    },
-                )
-                _write_json(
-                    artifact_dir / "evaluation.json",
-                    {
-                        "metrics": evaluation,
-                        "error": evaluation_error,
-                    },
-                )
-                _write_text(artifact_dir / "scientist_chat_history.log", _format_chat_history(scientist_result.get("chat_history", [])))
-                _write_text(artifact_dir / "reviewer_chat_history.log", _format_chat_history(reviewer_result.get("chat_history", [])))
 
                 rows.append(
                     {
@@ -638,31 +769,38 @@ def run_minipaper_suite(config: RunSuiteConfig) -> Dict[str, Any]:
                         "reviewer_model_name": scenario.reviewer.model_name,
                         "reviewer_api_source": scenario.reviewer.api_source,
                         "reviewer_can_run_experiments": scenario.reviewer_can_run_experiments,
-                        "scientist_status": scientist_result.get("status"),
-                        "reviewer_status": reviewer_result.get("status"),
-                        "scientist_error_type": scientist_error["error_type"] if scientist_error else "",
-                        "scientist_error_message": scientist_error["error_message"] if scientist_error else "",
-                        "reviewer_error_type": reviewer_error["error_type"] if reviewer_error else "",
-                        "reviewer_error_message": reviewer_error["error_message"] if reviewer_error else "",
-                        "evaluation_error_type": evaluation_error["error_type"] if evaluation_error else "",
-                        "evaluation_error_message": evaluation_error["error_message"] if evaluation_error else "",
-                        "review_decision": review.decision,
-                        "review_confidence": review.confidence,
-                        "accepted": review.is_accept(),
-                        "equation": scientist_paper.equation,
-                        "justification": scientist_paper.justification,
-                        "exact_accuracy": evaluation.get("exact_accuracy"),
-                        "symbolic_equivalent": evaluation.get("symbolic_equivalent"),
-                        "rmsle": evaluation.get("rmsle"),
-                        "scientist_total_tokens": scientist_result.get("total_tokens"),
-                        "reviewer_total_tokens": reviewer_result.get("total_tokens"),
-                        "scientist_num_experiments": scientist_result.get("num_experiments"),
-                        "reviewer_num_experiments": reviewer_result.get("num_experiments"),
+                        "max_review_rounds": config.max_review_rounds,
+                        "executed_review_rounds": len(round_history),
+                        "accepted_on_round": next((entry["review_round"] for entry in round_history if entry["accepted"]), 0),
+                        "was_revised": len(round_history) > 1,
+                        "scientist_status": final_scientist_result.get("status"),
+                        "reviewer_status": final_reviewer_result.get("status"),
+                        "scientist_error_type": final_scientist_error["error_type"] if final_scientist_error else "",
+                        "scientist_error_message": final_scientist_error["error_message"] if final_scientist_error else "",
+                        "reviewer_error_type": final_reviewer_error["error_type"] if final_reviewer_error else "",
+                        "reviewer_error_message": final_reviewer_error["error_message"] if final_reviewer_error else "",
+                        "evaluation_error_type": final_evaluation_error["error_type"] if final_evaluation_error else "",
+                        "evaluation_error_message": final_evaluation_error["error_message"] if final_evaluation_error else "",
+                        "review_decision": final_review.decision,
+                        "review_confidence": final_review.confidence,
+                        "accepted": final_review.is_accept(),
+                        "equation": final_scientist_paper.equation,
+                        "justification": final_scientist_paper.justification,
+                        "exact_accuracy": final_evaluation.get("exact_accuracy"),
+                        "symbolic_equivalent": final_evaluation.get("symbolic_equivalent"),
+                        "rmsle": final_evaluation.get("rmsle"),
+                        "scientist_total_tokens": total_scientist_tokens,
+                        "reviewer_total_tokens": total_reviewer_tokens,
+                        "scientist_num_experiments": total_scientist_experiments,
+                        "reviewer_num_experiments": total_reviewer_experiments,
                         "judge_model_name": judge_model_name,
                         "judge_api_source": judge_api_source,
-                        "artifact_dir": str(artifact_dir),
+                        "artifact_dir": str(episode_dir),
                     }
                 )
+
+    round_results_df = pd.DataFrame(round_rows)
+    round_results_df.to_csv(run_dir / "paper_rounds.csv", index=False, encoding="utf-8")
 
     paper_results_df = pd.DataFrame(rows)
     paper_results_path = run_dir / "paper_results.csv"
@@ -677,6 +815,7 @@ def run_minipaper_suite(config: RunSuiteConfig) -> Dict[str, Any]:
     return {
         "run_dir": str(run_dir),
         "manifest": manifest,
+        "paper_rounds": round_results_df,
         "paper_results": paper_results_df,
         "scenario_summary": scenario_summary_df,
     }
@@ -720,6 +859,7 @@ def build_scenario_summary(paper_results_df: pd.DataFrame) -> pd.DataFrame:
                 "false_accept_rate_pct": 100.0 * false_accepts / accepted if accepted else 0.0,
                 "mean_rmsle_all": group["rmsle"].mean(),
                 "mean_rmsle_accepted": accepted_group["rmsle"].mean() if not accepted_group.empty else float("nan"),
+                "avg_executed_review_rounds": group["executed_review_rounds"].mean(),
                 "avg_scientist_tokens": group["scientist_total_tokens"].mean(),
                 "avg_reviewer_tokens": group["reviewer_total_tokens"].mean(),
                 "avg_scientist_experiments": group["scientist_num_experiments"].mean(),

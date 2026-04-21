@@ -49,7 +49,8 @@ Rules:
    - a <justification> block of at most one paragraph
 5. The justification should state why you believe the proposed law is correct and, when relevant, which already accepted regularities informed the proposal.
 6. Use experiments to validate exponents, constants, and variable dependence before writing the minipaper.
-7. The final minipaper format must be:
+7. Your minipaper may be rejected by a reviewer. If reviewer feedback is provided, revise the proposal directly and address the objections explicitly in the next draft.
+8. The final minipaper format must be:
 
 <mini_paper>
 <equation>
@@ -233,6 +234,7 @@ def build_scientist_prompt(
     system: str,
     noise_level: float,
     knowledge_base: Dict[str, Any],
+    revision_context: Optional[Dict[str, Any]] = None,
 ) -> str:
     base_task_prompt = module.get_task_prompt(system, noise_level=noise_level, prompt_set="original")
     apparatus_prompt = strip_final_submission_section(base_task_prompt)
@@ -257,7 +259,40 @@ One paragraph explaining why the proposed law is plausible, and when relevant wh
 </justification>
 </mini_paper>
 """
-    return "\n\n".join([context, apparatus_prompt, minipaper_instructions]).strip()
+    sections = [context]
+
+    if revision_context:
+        previous_paper = revision_context.get("previous_paper")
+        previous_review = revision_context.get("previous_review")
+        current_round = revision_context.get("current_round")
+        max_rounds = revision_context.get("max_rounds")
+        if previous_paper and previous_review:
+            sections.append(
+                f"""**Revision Context:**
+You are now preparing a revised minipaper draft.
+Current review round: {current_round} / {max_rounds}
+
+Previous draft:
+<mini_paper>
+<equation>
+{previous_paper.equation}
+</equation>
+<justification>
+{previous_paper.justification}
+</justification>
+</mini_paper>
+
+Reviewer feedback:
+- decision: {previous_review.decision}
+- confidence: {previous_review.confidence}
+- rationale: {previous_review.rationale}
+
+Revise the law and/or justification so that the new draft directly addresses the reviewer criticism.
+If you keep the same law, the justification still has to respond to the reviewer's objections explicitly."""
+            )
+
+    sections.extend([apparatus_prompt, minipaper_instructions])
+    return "\n\n".join(sections).strip()
 
 
 def build_reviewer_prompt(
@@ -295,4 +330,3 @@ Decide whether this minipaper should enter the shared knowledge base.
 {reviewer_mode}
 Only accepted minipapers become part of the shared memory used by future scientist agents."""
     return "\n\n".join([context, apparatus_prompt, paper_block, reviewer_instruction]).strip()
-

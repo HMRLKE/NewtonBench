@@ -62,6 +62,7 @@ def main() -> int:
     parser.add_argument("--noise", type=float, default=0.0)
     parser.add_argument("--max_scientist_turns", type=int, default=8)
     parser.add_argument("--max_reviewer_turns", type=int, default=4)
+    parser.add_argument("--max_review_rounds", type=int, default=2)
     parser.add_argument("--judge_model_name", default=None)
     parser.add_argument("--judge_api_source", default=None, choices=["oa", "or", "g4s"])
     parser.add_argument("--dry_run", action="store_true")
@@ -108,6 +109,7 @@ def main() -> int:
         noise_level=args.noise,
         max_scientist_turns=args.max_scientist_turns,
         max_reviewer_turns=args.max_reviewer_turns,
+        max_review_rounds=args.max_review_rounds,
         judge_model_name=args.judge_model_name,
         judge_api_source=args.judge_api_source,
         dry_run=args.dry_run,

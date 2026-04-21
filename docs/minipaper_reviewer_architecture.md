@@ -70,7 +70,8 @@ For a given task, the engine runs a small population of scientist-reviewer episo
 3. the discovered law is evaluated with the existing module-specific evaluator
 4. the reviewer inspects the minipaper and optionally runs experiments
 5. the reviewer accepts or rejects the proposal
-6. only accepted papers are inserted into the shared knowledge base
+6. if the proposal is rejected and review rounds remain, the scientist receives the rejected draft plus reviewer feedback and submits a revised minipaper
+7. only the final accepted paper, if any, is inserted into the shared knowledge base
 
 This preserves the implicit-memory design while keeping the evaluation path anchored in the existing module interface.
 
@@ -121,6 +122,23 @@ The primary reported signals are:
 - false acceptance rate
 
 This makes it possible to test whether heterogeneous review pairs filter erroneous proposals more aggressively than homogeneous pairs.
+
+## Revision fallback
+
+The current implementation supports bounded fallback through a `max_review_rounds` parameter. With `max_review_rounds=2`, an episode may proceed as:
+
+1. scientist draft 1
+2. reviewer decision 1
+3. revised scientist draft 2
+4. reviewer decision 2
+
+If the first review is a rejection, the next scientist draft receives:
+
+- the previous minipaper
+- the reviewer rationale
+- the reviewer confidence
+
+This keeps the protocol iterative without allowing unbounded re-submission loops.
 
 ## Why this is a separate subsystem
 

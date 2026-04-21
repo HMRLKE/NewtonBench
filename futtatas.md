@@ -5,13 +5,13 @@
 Egyetlen, korlátozott konfiguráció fut le, majd automatikusan elkészül a log és a riport.
 
 ```bash
-python run_pipeline.py --preset quick --model_name gpt41mini
+python run_pipeline.py --preset quick --model_name gpt5mini
 ```
 
 Példa szűkített, explicit gyors tesztre:
 
 ```bash
-python run_pipeline.py --preset quick --model_name gpt41mini --module m0_gravity --equation_difficulty easy --model_system vanilla_equation --law_version v0 --agent_backend vanilla_agent --trials 1 --noise 0.0
+python run_pipeline.py --preset quick --model_name gpt5mini --module m0_gravity --equation_difficulty easy --model_system vanilla_equation --law_version v0 --agent_backend vanilla_agent --trials 1 --noise 0.0
 ```
 
 ## 2. Teljes benchmark egy modellel
@@ -19,7 +19,7 @@ python run_pipeline.py --preset quick --model_name gpt41mini --module m0_gravity
 Az összes modul, difficulty, system és mindkét backend lefut; a `v_unchanged` kontrollverzió alapból ki van zárva, hogy a fő benchmark a 324-es tasktérhez igazodjon.
 
 ```bash
-python run_pipeline.py --preset benchmark --model_name gpt41mini
+python run_pipeline.py --preset benchmark --model_name gpt5mini
 ```
 
 ## 3. Teljes benchmark a `configs/models.txt` modelleivel
@@ -54,7 +54,7 @@ gpt-oss:120b
 ## 4. Kontrollverziók (`v_unchanged`) bevonása
 
 ```bash
-python run_pipeline.py --preset benchmark --model_name gpt41mini --include_unchanged
+python run_pipeline.py --preset benchmark --model_name gpt5mini --include_unchanged
 ```
 
 ## 5. Riport újragenerálása egy korábbi run alapján
@@ -72,13 +72,13 @@ Példa egy `v0`-ra szűrt benchmark-szeletre, ugyanazzal a modell-, task- és pr
 Először az inkonzisztens futás:
 
 ```bash
-python run_pipeline.py --preset benchmark --model_name gpt41mini --module m0_gravity --equation_difficulty easy --model_system vanilla_equation --law_version v0 --agent_backend vanilla_agent --prompt_set modified --run_tag v0-compare-inconsistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --module m0_gravity --equation_difficulty easy --model_system vanilla_equation --law_version v0 --agent_backend vanilla_agent --prompt_set modified --run_tag v0-compare-inconsistent
 ```
 
 Utána a konzisztens futás:
 
 ```bash
-python run_pipeline.py --preset benchmark --model_name gpt41mini --module m0_gravity --equation_difficulty easy --model_system vanilla_equation --law_version v0 --agent_backend vanilla_agent --prompt_set modified --consistency --run_tag v0-compare-consistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --module m0_gravity --equation_difficulty easy --model_system vanilla_equation --law_version v0 --agent_backend vanilla_agent --prompt_set modified --consistency --run_tag v0-compare-consistent
 ```
 
 Végül az összehasonlító táblák elkészítése:
@@ -108,15 +108,15 @@ akkor futtasd ugyanazzal a sweep-konfigurációval a négy runt, eltérő `run_t
 Az `original` párosra példa:
 
 ```bash
-python run_pipeline.py --preset benchmark --model_name gpt41mini --include_unchanged --prompt_set original --run_tag all-laws-inconsistent
-python run_pipeline.py --preset benchmark --model_name gpt41mini --include_unchanged --prompt_set original --consistency --run_tag all-laws-consistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --include_unchanged --prompt_set original --run_tag all-laws-inconsistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --include_unchanged --prompt_set original --consistency --run_tag all-laws-consistent
 ```
 
 Az ehhez illeszkedő `modified` páros:
 
 ```bash
-python run_pipeline.py --preset benchmark --model_name gpt41mini --include_unchanged --prompt_set modified --run_tag all-laws-modified-inconsistent
-python run_pipeline.py --preset benchmark --model_name gpt41mini --include_unchanged --prompt_set modified --consistency --run_tag all-laws-modified-consistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --include_unchanged --prompt_set modified --run_tag all-laws-modified-inconsistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --include_unchanged --prompt_set modified --consistency --run_tag all-laws-modified-consistent
 ```
 
 Végül az egyetlen, négydimenziós összesítő tábla:
@@ -136,16 +136,16 @@ A fő kimenetek:
 ### 8.1. Egyetlen OpenAI modell, minden prompt- és consistency-kombináció
 
 ```bash
-python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --include_unchanged --prompt_set original --run_tag oa-gpt41mini-original-inconsistent
-python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --include_unchanged --prompt_set original --consistency --run_tag oa-gpt41mini-original-consistent
-python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --include_unchanged --prompt_set modified --run_tag oa-gpt41mini-modified-inconsistent
-python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --include_unchanged --prompt_set modified --consistency --run_tag oa-gpt41mini-modified-consistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged --prompt_set original --run_tag oa-gpt5mini-original-inconsistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged --prompt_set original --consistency --run_tag oa-gpt5mini-original-consistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged --prompt_set modified --run_tag oa-gpt5mini-modified-inconsistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged --prompt_set modified --consistency --run_tag oa-gpt5mini-modified-consistent
 ```
 
 Összesítés:
 
 ```bash
-python result_analysis/compare_prompt_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/oa-gpt41mini-prompt-consistency/report --original_inconsistent_run_tag oa-gpt41mini-original-inconsistent --original_consistent_run_tag oa-gpt41mini-original-consistent --modified_inconsistent_run_tag oa-gpt41mini-modified-inconsistent --modified_consistent_run_tag oa-gpt41mini-modified-consistent
+python result_analysis/compare_prompt_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/oa-gpt5mini-prompt-consistency/report --original_inconsistent_run_tag oa-gpt5mini-original-inconsistent --original_consistent_run_tag oa-gpt5mini-original-consistent --modified_inconsistent_run_tag oa-gpt5mini-modified-inconsistent --modified_consistent_run_tag oa-gpt5mini-modified-consistent
 ```
 
 ### 8.2. Több G4S modell külön modellfájlból
@@ -190,7 +190,7 @@ python result_analysis/compare_consistency.py --result_dir evaluation_results --
 Ugyanez OpenAI-ra:
 
 ```bash
-python result_analysis/compare_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/oa-gpt41mini-modified-consistency-only/report --inconsistent_run_tag oa-gpt41mini-modified-inconsistent --consistent_run_tag oa-gpt41mini-modified-consistent
+python result_analysis/compare_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/oa-gpt5mini-modified-consistency-only/report --inconsistent_run_tag oa-gpt5mini-modified-inconsistent --consistent_run_tag oa-gpt5mini-modified-consistent
 ```
 
 Megjegyzés:
@@ -244,13 +244,14 @@ docs/minipaper_reviewer_architecture.md
 ### 9.1. Egyetlen custom scenario
 
 ```bash
-python scripts/internal/run_minipaper_experiment.py --run_tag minipaper-demo --scientist_model_name gpt5mini --scientist_api_source oa --reviewer_model_name gemma4:31b --reviewer_api_source g4s --modules m0_gravity,m1_coulomb_force --equation_difficulties easy --model_systems vanilla_equation --law_versions v0,v1 --reviewer_can_run_experiments
+python scripts/internal/run_minipaper_experiment.py --run_tag minipaper-demo --scientist_model_name gpt5mini --scientist_api_source oa --reviewer_model_name gemma4:31b --reviewer_api_source g4s --modules m0_gravity,m1_coulomb_force --equation_difficulties easy --model_systems vanilla_equation --law_versions v0,v1 --reviewer_can_run_experiments --max_review_rounds 2
 ```
 
 Ez:
 
 - scientist minipapereket gyártat
 - reviewerrel elfogadtatja vagy elutasíttatja őket
+- reject esetén maximum `--max_review_rounds` erejéig revise-and-resubmit kört futtat
 - és csak az elfogadott papereket teszi a scenario-specifikus knowledge base-be
 
 Kimenet:
@@ -262,7 +263,7 @@ outputs/hypothesis_runs/<run_tag>/
 ### 9.2. H1: reviewer tud-e kísérletet futtatni
 
 ```bash
-python scripts/hypotheses/run_h1_reviewer_experiments.py --scientist_model_name gpt5mini --scientist_api_source oa
+python scripts/hypotheses/run_h1_reviewer_experiments.py --scientist_model_name gpt5mini --scientist_api_source oa --max_review_rounds 2
 ```
 
 Ez két scenariót futtat:
@@ -272,6 +273,7 @@ Ez két scenariót futtat:
 
 és a végén előállítja:
 
+- `paper_rounds.csv`
 - `paper_results.csv`
 - `scenario_summary.csv`
 - `h1_summary.csv`
@@ -280,7 +282,7 @@ Ez két scenariót futtat:
 ### 9.3. H2: same-provider vs cross-provider review
 
 ```bash
-python scripts/hypotheses/run_h2_cross_provider_review.py --openai_model_name gpt5mini --g4s_model_name gemma4:31b
+python scripts/hypotheses/run_h2_cross_provider_review.py --openai_model_name gpt5mini --g4s_model_name gemma4:31b --max_review_rounds 2
 ```
 
 Ez négy scenariót futtat:
@@ -292,6 +294,7 @@ Ez négy scenariót futtat:
 
 és a végén előállítja:
 
+- `paper_rounds.csv`
 - `paper_results.csv`
 - `scenario_summary.csv`
 - `h2_summary.csv`

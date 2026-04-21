@@ -184,7 +184,7 @@ Two presets exist:
 OpenAI example:
 
 ```bash
-python run_pipeline.py --preset quick --model_name gpt41mini --api_source oa
+python run_pipeline.py --preset quick --model_name gpt5mini --api_source oa
 ```
 
 GenAI4Science example:
@@ -198,25 +198,25 @@ python run_pipeline.py --preset quick --model_name llama3.1:8b --api_source g4s
 Single provider:
 
 ```bash
-python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa
 ```
 
 Multiple providers in one orchestrated run:
 
 ```bash
-python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa,or
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa,or
 ```
 
 Single law version only:
 
 ```bash
-python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --law_version v0
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --law_version v0
 ```
 
 Include `v_unchanged` control tasks:
 
 ```bash
-python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --include_unchanged
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged
 ```
 
 Use all models from:
@@ -423,10 +423,16 @@ The full design is documented in:
 
 - `docs/minipaper_reviewer_architecture.md`
 
+The current implementation also supports bounded revision fallback:
+
+- if a minipaper is rejected, the scientist can revise and resubmit it
+- the fallback depth is controlled by `--max_review_rounds`
+- the default is `2`, meaning at most one revision after the first rejection
+
 ### Generic single-scenario run
 
 ```bash
-python scripts/internal/run_minipaper_experiment.py --run_tag minipaper-demo --scientist_model_name gpt5mini --scientist_api_source oa --reviewer_model_name gemma4:31b --reviewer_api_source g4s --modules m0_gravity,m1_coulomb_force --equation_difficulties easy --model_systems vanilla_equation --law_versions v0,v1 --reviewer_can_run_experiments
+python scripts/internal/run_minipaper_experiment.py --run_tag minipaper-demo --scientist_model_name gpt5mini --scientist_api_source oa --reviewer_model_name gemma4:31b --reviewer_api_source g4s --modules m0_gravity,m1_coulomb_force --equation_difficulties easy --model_systems vanilla_equation --law_versions v0,v1 --reviewer_can_run_experiments --max_review_rounds 2
 ```
 
 ### H1 runner
@@ -450,6 +456,7 @@ outputs/hypothesis_runs/<run_tag>/
 
 including:
 
+- `paper_rounds.csv`
 - `paper_results.csv`
 - `scenario_summary.csv`
 - `h1_summary.csv`
@@ -460,7 +467,7 @@ including:
 Hypothesis H2 tests whether cross-provider review is stricter than same-provider review.
 
 ```bash
-python scripts/hypotheses/run_h2_cross_provider_review.py --openai_model_name gpt5mini --g4s_model_name gemma4:31b
+python scripts/hypotheses/run_h2_cross_provider_review.py --openai_model_name gpt5mini --g4s_model_name gemma4:31b --max_review_rounds 2
 ```
 
 This runner compares four scenarios:
@@ -472,6 +479,7 @@ This runner compares four scenarios:
 
 and writes:
 
+- `paper_rounds.csv`
 - `paper_results.csv`
 - `scenario_summary.csv`
 - `h2_summary.csv`
@@ -495,16 +503,16 @@ If you want to compare closed-source OpenAI models and open-weight GenAI4Science
 ### Example A: full four-way prompt × consistency study for one OpenAI model
 
 ```bash
-python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --include_unchanged --prompt_set original --run_tag oa-gpt41mini-original-inconsistent
-python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --include_unchanged --prompt_set original --consistency --run_tag oa-gpt41mini-original-consistent
-python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --include_unchanged --prompt_set modified --run_tag oa-gpt41mini-modified-inconsistent
-python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --include_unchanged --prompt_set modified --consistency --run_tag oa-gpt41mini-modified-consistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged --prompt_set original --run_tag oa-gpt5mini-original-inconsistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged --prompt_set original --consistency --run_tag oa-gpt5mini-original-consistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged --prompt_set modified --run_tag oa-gpt5mini-modified-inconsistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged --prompt_set modified --consistency --run_tag oa-gpt5mini-modified-consistent
 ```
 
 Then aggregate:
 
 ```bash
-python result_analysis/compare_prompt_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/oa-gpt41mini-prompt-consistency/report --original_inconsistent_run_tag oa-gpt41mini-original-inconsistent --original_consistent_run_tag oa-gpt41mini-original-consistent --modified_inconsistent_run_tag oa-gpt41mini-modified-inconsistent --modified_consistent_run_tag oa-gpt41mini-modified-consistent
+python result_analysis/compare_prompt_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/oa-gpt5mini-prompt-consistency/report --original_inconsistent_run_tag oa-gpt5mini-original-inconsistent --original_consistent_run_tag oa-gpt5mini-original-consistent --modified_inconsistent_run_tag oa-gpt5mini-modified-inconsistent --modified_consistent_run_tag oa-gpt5mini-modified-consistent
 ```
 
 ### Example B: full four-way prompt × consistency study for all GenAI4Science models in a dedicated file
@@ -549,7 +557,7 @@ python result_analysis/compare_consistency.py --result_dir evaluation_results --
 and analogously for OpenAI:
 
 ```bash
-python result_analysis/compare_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/oa-gpt41mini-original-consistency-only/report --inconsistent_run_tag oa-gpt41mini-original-inconsistent --consistent_run_tag oa-gpt41mini-original-consistent
+python result_analysis/compare_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/oa-gpt5mini-original-consistency-only/report --inconsistent_run_tag oa-gpt5mini-original-inconsistent --consistent_run_tag oa-gpt5mini-original-consistent
 ```
 
 ### Practical note
