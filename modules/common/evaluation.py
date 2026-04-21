@@ -215,7 +215,15 @@ def llm_symbolic_equivalence_judge(llm_formula_str: str, gt_formula_str: str, pa
 
             messages = [{"role": "system", 'content': "detailed thinking on"}] if "nemotron" in judge_model_name else []
             messages.append({"role": "user", "content": prompt})
-            response, reasoning_response, _ = call_llm_api(messages, model_name=judge_model_name, temperature=0.6, trial_info=trial_info)
+            judge_trial_info = dict(trial_info or {})
+            if judge_trial_info.get("judge_api_source"):
+                judge_trial_info["api_source_override"] = judge_trial_info["judge_api_source"]
+            response, reasoning_response, _ = call_llm_api(
+                messages,
+                model_name=judge_model_name,
+                temperature=0.6,
+                trial_info=judge_trial_info,
+            )
             
             if response is None:
                 print(f"[LLM Judge] Attempt {attempt}: No response received. Retrying...")

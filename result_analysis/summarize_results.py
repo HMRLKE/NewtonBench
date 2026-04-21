@@ -68,9 +68,14 @@ def load_experiment_config(experiment_dir: Path, result_dir: Path) -> Optional[D
     if len(rel_parts) < 6:
         return None
 
-    model_name, module_name, agent_backend, difficulty, law_version, experiment_name = rel_parts[:6]
+    if len(rel_parts) >= 7:
+        api_source, model_name, module_name, agent_backend, difficulty, law_version, experiment_name = rel_parts[:7]
+    else:
+        api_source = config.get("api_source", "unknown")
+        model_name, module_name, agent_backend, difficulty, law_version, experiment_name = rel_parts[:6]
     parsed_name = parse_experiment_name(experiment_name)
 
+    config.setdefault("api_source", api_source)
     config.setdefault("model_name", model_name)
     config.setdefault("module", module_name)
     config.setdefault("Agent backend", agent_backend)
@@ -118,6 +123,7 @@ def collect_trial_rows(
                 "experiment_uid": config["experiment_uid"],
                 "file_version": config["file_version"],
                 "run_tag": config.get("run_tag"),
+                "api_source": trial.get("api_source", config.get("api_source")),
                 "model_name": trial.get("model_name", config.get("model_name")),
                 "module": trial.get("module_name", config.get("module")),
                 "noise_level": trial.get("noise_level", config.get("noise_level")),
@@ -153,6 +159,7 @@ def build_config_summary(trials_df: pd.DataFrame) -> pd.DataFrame:
 
     group_cols = [
         "run_tag",
+        "api_source",
         "model_name",
         "module",
         "agent_backend",
@@ -201,7 +208,7 @@ def build_leaderboard(config_summary_df: pd.DataFrame) -> pd.DataFrame:
 
     difficulties = ["easy", "medium", "hard"]
     systems = ["vanilla_equation", "simple_system", "complex_system"]
-    group_cols = ["run_tag", "model_name", "agent_backend", "prompt_set", "consistency"]
+    group_cols = ["run_tag", "api_source", "model_name", "agent_backend", "prompt_set", "consistency"]
     leaderboard_rows: List[Dict[str, object]] = []
 
     for keys, group in config_summary_df.groupby(group_cols, dropna=False):
@@ -284,6 +291,7 @@ def build_law_accuracy_table(config_summary_df: pd.DataFrame) -> pd.DataFrame:
         [
             "run_tag",
             "model_name",
+            "api_source",
             "agent_backend",
             "prompt_set",
             "consistency",

@@ -20,10 +20,16 @@ except ImportError:
 
 # Read API keys from environment variables for better security
 # Before running, ensure you have set the following environment variables:
-# OPENROUTER_API_KEY, OPENAI_API_KEY
+# OPENROUTER_API_KEY, OPENAI_API_KEY, GENAI4SCIENCE_API_KEY
 keys = {
     'or': os.getenv("OPENROUTER_API_KEY"),
     'oa': os.getenv("OPENAI_API_KEY"),
+    'g4s': os.getenv("GENAI4SCIENCE_API_KEY"),
+}
+
+base_urls = {
+    'oa': os.getenv("OPENAI_BASE_URL"),
+    'g4s': os.getenv("GENAI4SCIENCE_BASE_URL", "https://genai.science-cloud.hu/api/"),
 }
 
 # development: economic use for development stage / final evaluation
@@ -75,6 +81,48 @@ def resolve_model_and_source(model_name, keys):
     raise ValueError(
         f"No available API key or supported mapping for model '{model_name}'. "
         f"Keys present: { {k: bool(v) for k, v in keys.items()} }; Supported sources: {list(provider_map.keys())}"
+    )
+
+
+def normalize_api_source(api_source):
+    if api_source in (None, "", "auto"):
+        return None
+
+    normalized = api_source.strip().lower()
+    aliases = {
+        "openai": "oa",
+        "oa": "oa",
+        "openrouter": "or",
+        "or": "or",
+        "genai4science": "g4s",
+        "genai": "g4s",
+        "science-cloud": "g4s",
+        "g4s": "g4s",
+    }
+    if normalized not in aliases:
+        raise ValueError(f"Unknown api_source '{api_source}'. Expected one of: oa, or, g4s.")
+    return aliases[normalized]
+
+
+def resolve_model_and_source_explicit(model_name, keys, api_source=None):
+    normalized_source = normalize_api_source(api_source)
+    if normalized_source is None:
+        return resolve_model_and_source(model_name, keys)
+
+    if not keys.get(normalized_source):
+        raise ValueError(f"API source '{normalized_source}' was requested, but its API key is missing.")
+
+    provider_map = api_source_mapping.get(model_name)
+    if provider_map is None:
+        return normalized_source, model_name
+
+    provider_specific_name = provider_map.get(normalized_source)
+    if provider_specific_name:
+        return normalized_source, provider_specific_name
+
+    raise ValueError(
+        f"Model alias '{model_name}' does not support api_source '{normalized_source}'. "
+        f"Supported sources for this alias: {list(provider_map.keys())}"
     )
 
 def custom_repair_json(json_string):
@@ -162,13 +210,16 @@ def safe_json_parse(response_text):
     return response_text, f"JSON parsing failed: {error}"
 
 
-def call_llm_api(messages, model_name, keys=keys, temperature=0.4, trial_info=None):
+def call_llm_api(messages, model_name, keys=keys, temperature=0.4, trial_info=None, api_source=None):
     """
     Calls a large language model API based on the specified model name.
     Now includes robust JSON parsing for malformed responses.
     """
     # Resolve provider and provider-specific model id based on key availability and mapping
-    api_source, full_model_name = resolve_model_and_source(model_name, keys)
+    api_source_override = api_source
+    if api_source_override is None and trial_info:
+        api_source_override = trial_info.get("api_source_override")
+    api_source, full_model_name = resolve_model_and_source_explicit(model_name, keys, api_source_override)
 
     trial_id = trial_info.get('trial_id', "unknown") if trial_info else "unknown"
     reasoning_content = None
@@ -252,9 +303,12 @@ def call_llm_api(messages, model_name, keys=keys, temperature=0.4, trial_info=No
             print(f"[Trial {trial_id}] Request error: {e}")
             raise e
     
-    elif api_source == "oa":
+    elif api_source in ("oa", "g4s"):
         try:
-            client = OpenAI(api_key=keys['oa'])
+            client_kwargs = {"api_key": keys[api_source]}
+            if base_urls.get(api_source):
+                client_kwargs["base_url"] = base_urls[api_source]
+            client = OpenAI(**client_kwargs)
             model_with_fix_temp = ["o4mini", "gpt5", "gpt5mini"] 
             if model_name in model_with_fix_temp:
                 temperature = 1.0

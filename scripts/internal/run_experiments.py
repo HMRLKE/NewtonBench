@@ -5,6 +5,7 @@ import time
 import sys
 import importlib
 import re
+from pathlib import Path
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
 import numpy as np
@@ -14,8 +15,14 @@ import os
 import subprocess
 import signal
 import re
+# Ensure repo root is importable when this script is launched via scripts/internal/...
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from utils.vanilla_agent import conduct_exploration
 from utils.kg_utils import update_global_dashboard
+from utils.call_llm_api import normalize_api_source
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -44,17 +51,19 @@ def format_chat_history(chat_history):
     return '\n'.join(lines)
 
 def write_fail_result_with_retries(args, final_error, retry_history, func_sig):
-    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend, dashboard, prompt_set, consistency, run_tag = args
+    trial_id, noise_level, model_name, api_source, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, judge_api_source, agent_backend, dashboard, prompt_set, consistency, run_tag = args
     fail_result = {
         "trial_id": trial_id,
         "module_name": module_name,
         "noise_level": noise_level,
         "model_name": model_name,
+        "api_source": api_source,
         "equation_difficulty": difficulty,
         "model_system": system,
         "law_version": law_version,
         "retry_attempts": max_retries,
         "LLM judge": judge_model_name,
+        "judge_api_source": judge_api_source,
         "agent_backend": agent_backend,
         "prompt_set": prompt_set,
         "consistency": consistency,
@@ -107,8 +116,8 @@ def run_trial(args):
     - A `run_experiment_for_module(...)` function.
     - An `evaluate_law(str)` function.
     """
-    trial_id, noise_level, model_name, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, agent_backend, dashboard, prompt_set, consistency, run_tag = args
-    log(f"Starting trial {trial_id} for module '{module_name}' with {model_name}, noise {noise_level} (equation difficulty: {difficulty}, model system: {system}, law version: {law_version}, backend: {agent_backend}, consistency: {consistency}, run_tag: {run_tag})")
+    trial_id, noise_level, model_name, api_source, module_name, difficulty, system, law_version, trial_dir, max_retries, judge_model_name, judge_api_source, agent_backend, dashboard, prompt_set, consistency, run_tag = args
+    log(f"Starting trial {trial_id} for module '{module_name}' with {model_name} via {api_source}, noise {noise_level} (equation difficulty: {difficulty}, model system: {system}, law version: {law_version}, backend: {agent_backend}, consistency: {consistency}, run_tag: {run_tag})")
     
     retry_history = []
     final_error = None
@@ -126,7 +135,9 @@ def run_trial(args):
             # 1. Let the LLM explore and discover the law for the given module
             trial_info = {
                 'trial_id': trial_id,
-                'trial_dir': trial_dir
+                'trial_dir': trial_dir,
+                'api_source_override': api_source,
+                'judge_api_source': judge_api_source,
             }
             if agent_backend == "code_assisted_agent" and _WITH_CODE_ASSISTANCE:
                 exploration_result = conduct_code_assisted_exploration(
@@ -170,11 +181,13 @@ def run_trial(args):
                 "module_name": module_name,
                 "noise_level": noise_level,
                 "model_name": model_name,
+                "api_source": api_source,
                 "equation_difficulty": difficulty,
                 "model_system": system,
                 "law_version": law_version,
                 "retry_attempts": attempt,
                 "LLM judge": judge_model_name,
+                "judge_api_source": judge_api_source,
                 "agent_backend": agent_backend,
                 "prompt_set": prompt_set,
                 "consistency": consistency,
@@ -262,7 +275,7 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
     noise_str = str(cli_args.noise).replace('.', '_')
     law_version_str = law_version if law_version is not None else "random"
        
-    base_dir = os.path.join("evaluation_results", cli_args.model_name, cli_args.module, cli_args.agent_backend, cli_args.equation_difficulty, law_version_str)
+    base_dir = os.path.join("evaluation_results", cli_args.api_source, cli_args.model_name, cli_args.module, cli_args.agent_backend, cli_args.equation_difficulty, law_version_str)
     
     consistency_str = "consistent" if cli_args.consistency else "inconsistent"
     version_num = 1
@@ -279,11 +292,12 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
     start_time = time.time()
     
     max_retries = 3
-    judge_model_name = "gpt41"
+    judge_model_name = cli_args.judge_model_name or ("gpt41" if cli_args.api_source in ("oa", "or") else cli_args.model_name)
+    judge_api_source = cli_args.judge_api_source or cli_args.api_source
     run_tag = sanitize_run_tag(cli_args.run_tag)
     
     pool_args = [
-        (i, cli_args.noise, cli_args.model_name, cli_args.module, cli_args.equation_difficulty, cli_args.model_system, law_version, trials_dir, max_retries, judge_model_name, cli_args.agent_backend, cli_args.dashboard, cli_args.prompt_set, cli_args.consistency, run_tag)
+        (i, cli_args.noise, cli_args.model_name, cli_args.api_source, cli_args.module, cli_args.equation_difficulty, cli_args.model_system, law_version, trials_dir, max_retries, judge_model_name, judge_api_source, cli_args.agent_backend, cli_args.dashboard, cli_args.prompt_set, cli_args.consistency, run_tag)
         for i in range(num_trials)
     ]
     
@@ -356,12 +370,14 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
     print(f"Configuration:")
     print(f"  - Module Tested: {cli_args.module}")
     print(f"  - Model Name: {cli_args.model_name}")
+    print(f"  - API Source: {cli_args.api_source}")
     print(f"  - Noise Level: {cli_args.noise}")
     print(f"  - Equation Difficulty: {cli_args.equation_difficulty}")
     print(f"  - Law Version: {law_version}")
     print(f"  - Model System: {cli_args.model_system}")
     print(f"  - Max Retries per Trial: {max_retries}")
     print(f"  - LLM Judge: {judge_model_name}")
+    print(f"  - Judge API Source: {judge_api_source}")
     print(f"  - Total Trials: {num_trials} ({len(valid_results)} successful)")
     print(f"  - Total Runtime: {end_time - start_time:.2f} seconds")
     print(f"  - Backend: {cli_args.agent_backend}")
@@ -388,6 +404,7 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
         "config": {
             "module": cli_args.module,
             "model_name": cli_args.model_name,
+            "api_source": cli_args.api_source,
             "noise_level": cli_args.noise,
             "equation_difficulty": cli_args.equation_difficulty,
             "law_version": law_version,
@@ -395,6 +412,7 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
             "trials": num_trials,
             "max_retries": max_retries,
             "LLM judge": judge_model_name,
+            "judge_api_source": judge_api_source,
             "Agent backend": cli_args.agent_backend,
             "runtime_seconds": end_time - start_time,
             "prompt_set": cli_args.prompt_set,
@@ -431,7 +449,7 @@ def run_experiment_for_version(cli_args, module, law_version, num_trials):
     log(
         f"All results and logs written to {results_dir} "
         f"(module={cli_args.module}, difficulty={cli_args.equation_difficulty}, "
-        f"system={cli_args.model_system}, law_version={law_version}, backend={cli_args.agent_backend})"
+        f"system={cli_args.model_system}, law_version={law_version}, backend={cli_args.agent_backend}, api_source={cli_args.api_source})"
     )
     log(
         "--- Finished experiment: "
@@ -445,6 +463,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LLM Scientific Discovery Benchmark Runner")
     parser.add_argument("--module", type=str, default="m0_gravity", help="Name of the module to test (e.g., m0_gravity).")
     parser.add_argument("--model_name", type=str, default="gpt41mini", help="Name of the LLM to use.")
+    parser.add_argument("--api_source", type=str, default="oa", choices=["oa", "or", "g4s"], help="Explicit provider for the main model call.")
+    parser.add_argument("--judge_model_name", type=str, default="", help="Optional judge model name. Default: gpt41 on oa/or, or the main model on g4s.")
+    parser.add_argument("--judge_api_source", type=str, default=None, choices=["oa", "or", "g4s"], help="Optional explicit provider for the judge model. Defaults to --api_source.")
     parser.add_argument("-n", "--noise", type=float, default=0.0, help="Noise level for experiments (e.g., 0, 0.01, 0.1).")
     parser.add_argument("-t", "--trials", type=int, default=12, help="Number of parallel trials to run.")
     parser.add_argument("-d", "--equation_difficulty", type=str, default="easy", choices=["easy", "medium", "hard"],
@@ -463,6 +484,8 @@ if __name__ == "__main__":
     parser.add_argument("--include_unchanged", action="store_true", help="Include v_unchanged control laws when --law_version=all. By default they are excluded from the main benchmark sweep.")
     parser.add_argument("--run_tag", type=str, default=None, help="Optional logical run identifier stored in result metadata for downstream reporting.")
     cli_args = parser.parse_args()
+    cli_args.api_source = normalize_api_source(cli_args.api_source) or "oa"
+    cli_args.judge_api_source = normalize_api_source(cli_args.judge_api_source) if cli_args.judge_api_source else None
 
     if cli_args.easiest:
         cli_args.noise = 0.0

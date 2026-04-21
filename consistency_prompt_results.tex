@@ -1,0 +1,23 @@
+\subsection{Consistency and Prompt Effects}
+\label{sec:consistency_prompt_results}
+
+We next compared two orthogonal interventions: (i) whether the benchmark laws were modified in a consistency-preserving manner, and (ii) whether the agent was given the original task prompt or the modified prompt that explicitly summarizes previously discovered regularities of the simulated universe. We report exact accuracy aggregated over all benchmark tasks and over the altered-law subset (\texttt{v0}--\texttt{v2}), which is the regime where consistency-preserving rewrites are theoretically most relevant. At present, these measurements were obtained for a single underlying model family configuration (our \texttt{gpt41mini}-based setup), so the conclusions should be read as within-model experimental evidence rather than as a model-agnostic claim. The resulting pattern is asymmetric but interpretable. Under the original prompt, consistency already improves performance for the code-assisted agent, raising mean exact accuracy from 21.6\% to 25.8\% over the full benchmark and from 11.4\% to 18.4\% on the altered-law tasks alone. The same intervention is much weaker for the vanilla agent, where the gain is only from 14.9\% to 15.6\% overall and from 4.1\% to 4.9\% on \texttt{v0}--\texttt{v2}. Importantly, this effect does not behave like a generic performance bonus: on the \texttt{v\_unchanged} control tasks, consistency provides no meaningful benefit and slightly reduces accuracy for the code-assisted setting. This supports a narrower interpretation, namely that consistency helps primarily when the benchmark itself contains coordinated structural shifts that can in principle be exploited across related laws.
+
+The prompt intervention further sharpens this picture. For the code-assisted agent, the modified prompt improves performance in both universes, but the effect is substantially larger in the consistent regime: mean exact accuracy increases from 25.8\% to 28.5\% overall, and from 18.4\% to 20.9\% on altered-law tasks. For the vanilla agent, the modified prompt also improves average performance, but the gains are smaller and less aligned with consistency; in fact, its strongest aggregate setting is \texttt{modified + inconsistent} rather than \texttt{modified + consistent}. Taken together, these results suggest that the two interventions are complementary mainly for stronger agents: the consistency-preserving benchmark makes cross-task structure more recoverable, while the modified prompt makes that structure more salient at inference time. This is precisely the motivation for the prompt redesign analyzed in the following subsection and Appendix~\ref{app:prompt_structure}.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lcc}
+\hline
+\textbf{Setting} & \textbf{Code-assisted} & \textbf{Vanilla} \\
+\hline
+Original + Inconsistent & 21.6 & 14.9 \\
+Original + Consistent & 25.8 & 15.6 \\
+Modified + Inconsistent & 22.2 & \textbf{17.3} \\
+Modified + Consistent & \textbf{28.5} & 16.8 \\
+\hline
+\end{tabular}
+\caption{Mean exact accuracy (\%) over the full benchmark for the four prompt/consistency configurations. The strongest configuration for the code-assisted agent is \texttt{modified + consistent}, whereas the vanilla agent benefits from the modified prompt but exhibits a weaker and less stable consistency effect.}
+\label{tab:prompt-consistency-main}
+\end{table}
