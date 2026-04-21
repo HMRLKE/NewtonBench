@@ -230,3 +230,75 @@ Megjegyzés:
 - a `run_pipeline.py` a futás végén automatikusan kiír egy rövid aggregált terminál-összefoglalót is
 - ebben provider/model/backend/prompt/consistency bontásban látszik az `overall_acc`, `overall_rmsle` és a `success` arány
 - vagyis külön evaluációs parancs nélkül rögtön látod, hogy mennyit talált el a modell
+
+## 9. Minipaper + reviewer protokoll
+
+Ez az új kísérleti réteg nem a régi benchmark-futtató újabb flag-kombinációja, hanem külön foundation.
+
+Tervezési leírás:
+
+```text
+docs/minipaper_reviewer_architecture.md
+```
+
+### 9.1. Egyetlen custom scenario
+
+```bash
+python scripts/internal/run_minipaper_experiment.py --run_tag minipaper-demo --scientist_model_name gpt5mini --scientist_api_source oa --reviewer_model_name gemma4:31b --reviewer_api_source g4s --modules m0_gravity,m1_coulomb_force --equation_difficulties easy --model_systems vanilla_equation --law_versions v0,v1 --reviewer_can_run_experiments
+```
+
+Ez:
+
+- scientist minipapereket gyártat
+- reviewerrel elfogadtatja vagy elutasíttatja őket
+- és csak az elfogadott papereket teszi a scenario-specifikus knowledge base-be
+
+Kimenet:
+
+```text
+outputs/hypothesis_runs/<run_tag>/
+```
+
+### 9.2. H1: reviewer tud-e kísérletet futtatni
+
+```bash
+python scripts/hypotheses/run_h1_reviewer_experiments.py --scientist_model_name gpt5mini --scientist_api_source oa
+```
+
+Ez két scenariót futtat:
+
+- `reviewer_passive`
+- `reviewer_active`
+
+és a végén előállítja:
+
+- `paper_results.csv`
+- `scenario_summary.csv`
+- `h1_summary.csv`
+- `h1_summary.md`
+
+### 9.3. H2: same-provider vs cross-provider review
+
+```bash
+python scripts/hypotheses/run_h2_cross_provider_review.py --openai_model_name gpt5mini --g4s_model_name gemma4:31b
+```
+
+Ez négy scenariót futtat:
+
+- `oa_to_oa`
+- `g4s_to_g4s`
+- `oa_to_g4s`
+- `g4s_to_oa`
+
+és a végén előállítja:
+
+- `paper_results.csv`
+- `scenario_summary.csv`
+- `h2_summary.csv`
+- `h2_summary.md`
+
+Megjegyzés:
+
+- a minipaper protokoll mindig a konzisztens fizikai változtatásokat használja
+- a shared context csak az elfogadott minipaperekből épül
+- ez lényegesen drágább API-hívásszámú workflow, mint a sima benchmark runner

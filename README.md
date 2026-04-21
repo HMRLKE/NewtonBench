@@ -109,6 +109,15 @@ Result analysis:
 - `result_analysis/compare_consistency.py`
 - `result_analysis/compare_prompt_consistency.py`
 
+Minipaper/reviewer hypothesis layer:
+
+- `docs/minipaper_reviewer_architecture.md`
+- `scripts/internal/run_minipaper_experiment.py`
+- `scripts/hypotheses/run_h1_reviewer_experiments.py`
+- `scripts/hypotheses/run_h2_cross_provider_review.py`
+- `utils/minipaper_protocol.py`
+- `utils/minipaper_engine.py`
+
 Prompt and dashboard utilities:
 
 - `utils/prompt_utils.py`
@@ -394,6 +403,90 @@ The comparison tables now also retain:
 - `api_source`
 
 so multi-provider studies can be analyzed without ambiguity.
+
+## Minipaper + Reviewer Hypothesis Layer
+
+This fork now also contains a separate experimental foundation for a new protocol in which scientist agents no longer submit only a bare final law. Instead, each scientist produces a short **minipaper** containing:
+
+- the proposed law
+- a short justification paragraph
+
+A separate reviewer agent then decides whether that minipaper should enter the shared knowledge base. Only accepted papers become reusable context for future agents in the same scenario.
+
+This layer intentionally freezes several assumptions relative to the legacy benchmark path:
+
+- it always uses consistent law modifications
+- it always uses the new minipaper-oriented prompt logic
+- it uses accepted minipapers, rather than raw discoveries, as shared context
+
+The full design is documented in:
+
+- `docs/minipaper_reviewer_architecture.md`
+
+### Generic single-scenario run
+
+```bash
+python scripts/internal/run_minipaper_experiment.py --run_tag minipaper-demo --scientist_model_name gpt5mini --scientist_api_source oa --reviewer_model_name gemma4:31b --reviewer_api_source g4s --modules m0_gravity,m1_coulomb_force --equation_difficulties easy --model_systems vanilla_equation --law_versions v0,v1 --reviewer_can_run_experiments
+```
+
+### H1 runner
+
+Hypothesis H1 tests whether reviewer-side experimentation improves aggregate outcomes.
+
+```bash
+python scripts/hypotheses/run_h1_reviewer_experiments.py --scientist_model_name gpt5mini --scientist_api_source oa
+```
+
+This runner compares:
+
+- reviewer without experiment access
+- reviewer with experiment access
+
+and writes run-specific outputs under:
+
+```text
+outputs/hypothesis_runs/<run_tag>/
+```
+
+including:
+
+- `paper_results.csv`
+- `scenario_summary.csv`
+- `h1_summary.csv`
+- scenario-specific `knowledge_base.json`
+
+### H2 runner
+
+Hypothesis H2 tests whether cross-provider review is stricter than same-provider review.
+
+```bash
+python scripts/hypotheses/run_h2_cross_provider_review.py --openai_model_name gpt5mini --g4s_model_name gemma4:31b
+```
+
+This runner compares four scenarios:
+
+- OpenAI scientist / OpenAI reviewer
+- G4S scientist / G4S reviewer
+- OpenAI scientist / G4S reviewer
+- G4S scientist / OpenAI reviewer
+
+and writes:
+
+- `paper_results.csv`
+- `scenario_summary.csv`
+- `h2_summary.csv`
+
+### Operational note
+
+The minipaper protocol is inherently API-expensive. Each episode can include:
+
+- multiple scientist-side experiment rounds
+- a minipaper generation step
+- an optional reviewer-side experiment loop
+- a review decision
+- evaluator calls on the submitted law
+
+So the new hypothesis runners should be treated as high-call-count experimental workflows rather than as cheap benchmark sweeps.
 
 ## End-to-End Recipes for Provider Comparison
 
