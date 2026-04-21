@@ -1,4 +1,5 @@
 import argparse
+import csv
 import json
 import os
 import subprocess
@@ -171,6 +172,37 @@ Most useful files:
     (run_dir / "RESULTS_INDEX.md").write_text(content, encoding="utf-8")
 
 
+def print_terminal_summary(report_dir: Path) -> None:
+    leaderboard_path = report_dir / "aggregated_trial_summary.csv"
+    if not leaderboard_path.exists():
+        return
+
+    try:
+        with leaderboard_path.open("r", encoding="utf-8", newline="") as f:
+            rows = list(csv.DictReader(f))
+    except OSError:
+        return
+
+    if not rows:
+        return
+
+    print("\nHigh-level results:")
+    for row in rows:
+        api_source = row.get("api_source", "unknown")
+        model_name = row.get("model_name", "unknown")
+        backend = row.get("agent_backend", "unknown")
+        prompt_set = row.get("prompt_set", "unknown")
+        consistency = row.get("consistency", "unknown")
+        overall_acc = row.get("overall_acc", "N/A")
+        overall_rmsle = row.get("overall_rmsle", "N/A")
+        overall_success_rate = row.get("overall_success_rate", "N/A")
+        print(
+            f"- {api_source} | {model_name} | {backend} | prompt={prompt_set} | "
+            f"consistency={consistency} | overall_acc={overall_acc} | "
+            f"overall_rmsle={overall_rmsle} | success={overall_success_rate}"
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="One-command NewtonBench pipeline with automatic logs and report files.")
     parser.add_argument("--preset", choices=["quick", "benchmark"], required=True, help="Quick smoke test or full benchmark pipeline.")
@@ -269,6 +301,7 @@ def main() -> int:
     write_manifest(manifest_path, manifest)
     write_results_index(run_dir, report_dir, run_tag)
     (repo_root / "outputs" / "pipeline_runs" / "LATEST_RUN.txt").write_text(run_tag + "\n", encoding="utf-8")
+    print_terminal_summary(report_dir)
     print(f"\nRun completed.")
     print(f"Run folder: {run_dir}")
     print(f"Law-by-law results: {report_dir / 'law_accuracy_summary.csv'}")

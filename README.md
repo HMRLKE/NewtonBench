@@ -218,6 +218,29 @@ Use all models from:
 python run_pipeline.py --preset benchmark --api_source oa
 ```
 
+Use a provider-specific model list without touching the default model file:
+
+```bash
+python run_pipeline.py --preset benchmark --api_source g4s --models_file configs/models_g4s.txt
+```
+
+This is the recommended way to run GenAI4Science-only sweeps. In other words:
+
+- if you pass `--model_name`, you do **not** need to edit any model list
+- if you want a multi-model G4S sweep, prefer a separate file such as `configs/models_g4s.txt`
+- do **not** overwrite `configs/models.txt` unless you intentionally want to change the default benchmark model pool
+
+The repository already includes:
+
+- `configs/models_g4s.txt`
+
+with the current recommended GenAI4Science model set:
+
+- `gemma4:31b`
+- `deepseek-r1:32b`
+- `llama3.3:70b`
+- `gpt-oss:120b`
+
 ## Prompt Sets
 
 Two prompt modes exist:
@@ -336,6 +359,14 @@ The most useful files are:
 - `results_by_trial.csv`
 - `summary_report.md`
 
+In addition, `run_pipeline.py` now prints a short terminal summary automatically after report generation. For each provider/model/backend/prompt/consistency group in the run, it prints:
+
+- aggregated exact accuracy
+- aggregated RMSLE
+- aggregated trial success rate
+
+So you no longer need to call a second evaluation command just to see whether the run discovered anything correctly.
+
 Provider-aware result storage now lives under:
 
 ```text
@@ -363,6 +394,74 @@ The comparison tables now also retain:
 - `api_source`
 
 so multi-provider studies can be analyzed without ambiguity.
+
+## End-to-End Recipes for Provider Comparison
+
+If you want to compare closed-source OpenAI models and open-weight GenAI4Science models on the same benchmark protocol, use separate run tags and keep the provider explicit in every run.
+
+### Example A: full four-way prompt × consistency study for one OpenAI model
+
+```bash
+python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --include_unchanged --prompt_set original --run_tag oa-gpt41mini-original-inconsistent
+python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --include_unchanged --prompt_set original --consistency --run_tag oa-gpt41mini-original-consistent
+python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --include_unchanged --prompt_set modified --run_tag oa-gpt41mini-modified-inconsistent
+python run_pipeline.py --preset benchmark --model_name gpt41mini --api_source oa --include_unchanged --prompt_set modified --consistency --run_tag oa-gpt41mini-modified-consistent
+```
+
+Then aggregate:
+
+```bash
+python result_analysis/compare_prompt_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/oa-gpt41mini-prompt-consistency/report --original_inconsistent_run_tag oa-gpt41mini-original-inconsistent --original_consistent_run_tag oa-gpt41mini-original-consistent --modified_inconsistent_run_tag oa-gpt41mini-modified-inconsistent --modified_consistent_run_tag oa-gpt41mini-modified-consistent
+```
+
+### Example B: full four-way prompt × consistency study for all GenAI4Science models in a dedicated file
+
+First create a G4S-only model file such as:
+
+```text
+configs/models_g4s.txt
+```
+
+with entries like:
+
+```text
+llama3.1:8b
+qwen2.5:14b
+deepseek-r1:32b
+```
+
+Then run:
+
+```bash
+python run_pipeline.py --preset benchmark --api_source g4s --models_file configs/models_g4s.txt --include_unchanged --prompt_set original --run_tag g4s-original-inconsistent
+python run_pipeline.py --preset benchmark --api_source g4s --models_file configs/models_g4s.txt --include_unchanged --prompt_set original --consistency --run_tag g4s-original-consistent
+python run_pipeline.py --preset benchmark --api_source g4s --models_file configs/models_g4s.txt --include_unchanged --prompt_set modified --run_tag g4s-modified-inconsistent
+python run_pipeline.py --preset benchmark --api_source g4s --models_file configs/models_g4s.txt --include_unchanged --prompt_set modified --consistency --run_tag g4s-modified-consistent
+```
+
+Then aggregate:
+
+```bash
+python result_analysis/compare_prompt_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/g4s-prompt-consistency/report --original_inconsistent_run_tag g4s-original-inconsistent --original_consistent_run_tag g4s-original-consistent --modified_inconsistent_run_tag g4s-modified-inconsistent --modified_consistent_run_tag g4s-modified-consistent
+```
+
+### Example C: compare only consistency at fixed prompt set
+
+For a fixed prompt set such as `original`:
+
+```bash
+python result_analysis/compare_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/g4s-original-consistency-only/report --inconsistent_run_tag g4s-original-inconsistent --consistent_run_tag g4s-original-consistent
+```
+
+and analogously for OpenAI:
+
+```bash
+python result_analysis/compare_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/oa-gpt41mini-original-consistency-only/report --inconsistent_run_tag oa-gpt41mini-original-inconsistent --consistent_run_tag oa-gpt41mini-original-consistent
+```
+
+### Practical note
+
+At the moment, provider-level comparison is done by running separate studies with different `run_tag`s and then comparing the resulting CSV files side by side. The generated comparison tables already keep `api_source`, so downstream plotting and merged analysis can remain provider-aware.
 
 ## Guidance for New Collaborators
 
