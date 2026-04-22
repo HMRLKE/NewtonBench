@@ -1,353 +1,581 @@
-# NewtonBench: Benchmarking Generalizable Scientific Law Discovery in LLM Agents
-[![GitHub stars](https://img.shields.io/github/stars/HKUST-KnowComp/NewtonBench?style=for-the-badge&logo=github&logoColor=white&color=a29bfe&label=stars)](https://github.com/HKUST-KnowComp/NewtonBench)
-[![arXiv](https://img.shields.io/badge/arXiv-2510.07172-74b9ff?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2510.07172)
-[![Python](https://img.shields.io/badge/Python-3.10%2B-0984e3?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2FHKUST-KnowComp%2FNewtonBench&label=visitors&countColor=%23263759&style=for-the-badge&labelStyle=upper)](https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2FHKUST-KnowComp%2FNewtonBench)
-<div align="center">
+# NewtonBench Fork for Consistency and Open-Weight Experiments
 
-### 🔭 **Can LLMs Rediscover Newton's Laws?** 
+This repository is a research fork of the original NewtonBench benchmark. It keeps the core task family and evaluation philosophy of NewtonBench, but extends the benchmark and the experiment stack in several directions that are central to our current project:
 
-**324 Scientific Law Discovery Tasks • 12 Physics Domains • Interactive Model Systems**
+- physically modified benchmark laws beyond the upstream release
+- consistency-preserving cross-law transformations
+- support for open-weight models through OpenAI-compatible endpoints
+- a web-based dashboard that can be used either as a passive monitor or as part of the modified-prompt workflow
 
-*✨Moving beyond memorization toward true scientific discovery in complex, interactive environments✨*
+The repository is therefore best understood as a NewtonBench-derived experimental platform rather than as a clean mirror of the upstream codebase.
 
-</div>
+## What Changed Relative to Upstream NewtonBench
 
----
+### 1. Physics
 
-## 🚀 **TL;DR**
+The benchmark laws in this fork are no longer restricted to the original upstream metaphysical shifts. We added and revised law variants, including explicit `v_unchanged` control variants and additional edited law families used in our own experiments.
 
-**NewtonBench** is the first benchmark designed to rigorously evaluate LLMs' ability to discover scientific laws through **interactive experimentation** rather than static function fitting. Our benchmark resolves the fundamental trilemma between scientific relevance, scalability, and memorization resistance through **metaphysical shifts**—systematic alterations of canonical physical laws.
+Operational consequences:
 
-### 🎯 **Key Features**
-- **324 tasks** across 12 physics domains (Gravitation, Coulomb's Law, Fourier's Law, etc.)
-- **Interactive model systems** requiring active experimentation and hypothesis testing
-- **Two difficulty dimensions**: law complexity (easy/medium/hard) × system complexity (vanilla/simple/complex)
-- **Code-assisted evaluation** to isolate reasoning from computational constraints
-- **Memorization-resistant** through metaphysical shifts of canonical laws
+- the benchmark can be run on the original shifted laws (`v0`, `v1`, `v2`)
+- the control variant `v_unchanged` can be included explicitly with `--include_unchanged`
+- the exact task count depends on whether that control set is included
 
-### 🔬 **What We Discovered**
-- **Frontier models** (GPT-5, Gemini-2.5-pro) show **clear but fragile** discovery capabilities
-- **Performance degrades precipitously** with increasing system complexity and noise
-- **Paradoxical tool effect**: Code assistance helps weaker models but hinders stronger ones
-- **Extreme noise sensitivity**: Even 0.0001 noise level causes 13-15% accuracy drop
+### 2. Consistency
 
-### 🏆 **Why It Matters**
-NewtonBench reveals that while LLMs are beginning to develop scientific reasoning skills, **robust, generalizable discovery in complex environments remains the core challenge** for automated science.
+This fork adds a consistency-preserving mode controlled by `--consistency`.
 
----
-<div align="center">
-  <figure>
-    <img src="./images/main_dark.png" alt="Framework" style="max-width: 100%; height: auto;">
-    <br>
-    <figcaption><em>Quick Overview of NewtonBench.</em></figcaption>
-  </figure>
-</div>
+The conceptual relations behind consistency are externalized in:
 
+- `consistency_groups.yml`
 
+The YAML separates:
 
+- strict consistency axes
+- prompt-time relevance axes
 
+This means that some law families are synchronized structurally when `--consistency` is enabled, while broader cross-task relations are used only for prompt-time retrieval.
 
-## 🔥 News
-* **09 Oct, 2025**: The paper is released on [arXiv](https://arxiv.org/abs/2510.07172)!
+Related paper fragments in the repo:
 
-## 📋 Table of Contents
+- `consistency_policy.tex`
+- `consistency_test.tex`
+- `consistency_prompt_results.tex`
 
-- [🔥 News](#-news)
-- [🚀 Get Started](#-get-started)
-  - [1. Clone the Repository](#1-clone-the-repository)
-  - [2. Create and Activate a Conda Environment](#2-create-and-activate-a-conda-environment)
-  - [3. Install Dependencies](#3-install-dependencies)
-  - [4. Set Up API Keys](#4-set-up-api-keys)
-  - [5. Run the Quick Start](#5-run-the-quick-start)
-- [🧭 Script Guide](#-script-guide)
-- [🏗️ Project Structure](#️-project-structure)
-- [🔬 Key Components](#-key-components)
-- [🧪 Running Full Experiments](#-running-full-experiments)
-- [📈 Analyzing Results](#analyzing-results)
-- [🌟 Citation](#-citation)
+### 3. Open-Weight Models via OpenAI-Compatible APIs
 
+This fork supports three explicit API sources:
 
+- `oa`: direct OpenAI
+- `or`: OpenRouter
+- `g4s`: GenAI4Science OpenAI-compatible endpoint
 
+The OpenAI-compatible routing is handled centrally in:
 
-## 🚀 Get Started
+- `utils/call_llm_api.py`
 
-### 1. Clone the Repository
+Important design choice:
 
-```
-git clone https://github.com/HKUST-KnowComp/NewtonBench.git
-cd NewtonBench
-```
+- provider selection is explicit
+- there is no silent provider fallback once `--api_source` is specified
 
-### 2. Create and Activate a Conda Environment
+This keeps runs reproducible and prevents accidental mixing of providers inside one benchmark result set.
 
-```
+### 4. Web Interface and Dashboard
+
+This fork includes a lightweight web dashboard under:
+
+- `mini_scientist/dashboard/index.html`
+
+The local server is:
+
+- `mini_scientist/server.py`
+
+The dashboard reads and visualizes:
+
+- `accumulation/global_kg.json`
+
+The dashboard serves two distinct roles:
+
+1. Passive monitoring
+   - you may enable it simply to watch current best laws and graph updates during a run
+2. Prompt-time memory for the modified prompt
+   - when `prompt_set=modified`, the accumulated discovered laws are used as prompt context
+
+That second role matters because it changes when the dashboard should be on.
+
+## Repository Layout
+
+Public entrypoint at the repository root:
+
+- `run_pipeline.py`
+
+Internal runners:
+
+- `scripts/internal/run_experiments.py`
+- `scripts/internal/run_all_evaluations.py`
+
+Legacy wrappers moved out of the root:
+
+- `scripts/legacy/quick_start.py`
+- `scripts/legacy/run_master.py`
+- `scripts/legacy/run_benchmark.py`
+- `scripts/legacy/comprehensive_benchmark.py`
+- `scripts/legacy/run_system.py`
+
+Result analysis:
+
+- `result_analysis/summarize_results.py`
+- `result_analysis/compare_consistency.py`
+- `result_analysis/compare_prompt_consistency.py`
+
+Minipaper/reviewer hypothesis layer:
+
+- `docs/minipaper_reviewer_architecture.md`
+- `scripts/internal/run_minipaper_experiment.py`
+- `scripts/hypotheses/run_h1_reviewer_experiments.py`
+- `scripts/hypotheses/run_h2_cross_provider_review.py`
+- `utils/minipaper_protocol.py`
+- `utils/minipaper_engine.py`
+
+Prompt and dashboard utilities:
+
+- `utils/prompt_utils.py`
+- `utils/kg_utils.py`
+- `mini_scientist/server.py`
+
+## Installation
+
+### 1. Environment
+
+```bash
 conda create --name newtonbench python=3.10.18
 conda activate newtonbench
 ```
 
-### 3. Install Dependencies
+### 2. Dependencies
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
-If you want a more reproducible environment that is closer to the maintainer's local setup, use:
+For a more reproducible local environment:
 
-```
+```bash
 pip install -r requirements.lock.txt
 ```
 
-Dependency policy in this repo:
+Dependency policy in this fork:
 
-- `requirements.txt` uses bounded version ranges to avoid both very old and future-breaking major versions
-- `requirements.lock.txt` pins a concrete snapshot for more reproducible reruns
-- `networkx` and `PyYAML` are required by the current codebase and are included explicitly
-- `pysr` is intentionally not part of the default install because it is only needed for the `mini_scientist` symbolic-regression path and usually requires extra system setup
+- `requirements.txt` uses bounded version ranges
+- `requirements.lock.txt` pins a concrete snapshot
+- `networkx` and `PyYAML` are required by the current codebase
+- `pysr` is intentionally not part of the default install because it is only needed in the `mini_scientist` symbolic-regression path
 
-### 4. Set Up API Keys
+### 3. API Keys
 
-1.  In the root of the project, make a copy of the `.env.example` file and rename it `.env`.
-2.  Specify the following:
-    - `OPENAI_API_KEY`: Your OpenAI API key for using OpenAI models
-    - `OPENROUTER_API_KEY`: Your OpenRouter API key for using models provided in OpenRouter
+Copy `.env.example` to `.env`, then fill only the providers you need.
 
+Supported variables:
 
-### 5. Run the Quick Start
+- `OPENAI_API_KEY`
+- `OPENROUTER_API_KEY`
+- `GENAI4SCIENCE_API_KEY`
+- optional: `OPENAI_BASE_URL`
+- optional: `GENAI4SCIENCE_BASE_URL`
 
-You are now ready to run a quick test to ensure everything is set up correctly.
-
-```
-python run_pipeline.py --preset quick --model_name gpt41mini
-```
-
-This generates a bounded smoke test, plus logs and report files under:
+GenAI4Science currently uses:
 
 ```text
-outputs/pipeline_runs/<run_tag>/
+https://genai.science-cloud.hu/api/
 ```
 
-If you want to find the most recent pipeline run quickly, open:
+## Official Entry Point
 
-```text
-outputs/pipeline_runs/LATEST_RUN.txt
+Use `run_pipeline.py` unless you are debugging the internals.
+
+Two presets exist:
+
+- `quick`: bounded smoke test
+- `benchmark`: full sweep or filtered benchmark sweep
+
+### Quick Smoke Test
+
+OpenAI example:
+
+```bash
+python run_pipeline.py --preset quick --model_name gpt5mini --api_source oa
 ```
 
-The easiest file for law-level results such as "law1 = 77%, law2 = 99%" is:
+GenAI4Science example:
 
-```text
-outputs/pipeline_runs/<run_tag>/report/law_accuracy_summary.csv
+```bash
+python run_pipeline.py --preset quick --model_name llama3.1:8b --api_source g4s
 ```
 
-There is also a Markdown rendering:
+### Benchmark Sweep
 
-```text
-outputs/pipeline_runs/<run_tag>/report/law_accuracy_summary.md
+Single provider:
+
+```bash
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa
 ```
 
-## 🧭 Script Guide
+Multiple providers in one orchestrated run:
 
-Primary scripts:
-
-- `run_pipeline.py`: preferred top-level entrypoint; runs the experiment chain and writes logs plus report files automatically
-- `run_all_evaluations.py`: runs one logical benchmark sweep with resume/check support
-- `run_experiments.py`: runs one concrete experiment configuration
-- `result_analysis/summarize_results.py`: builds the law/config/leaderboard reports from finished runs
-- `result_analysis/compare_consistency.py`: builds side-by-side consistent vs inconsistent comparison tables from two completed run tags
-- `result_analysis/compare_prompt_consistency.py`: builds a single four-way table across original/modified and inconsistent/consistent run pairs
-
-Prompt-set behavior:
-
-- `original`: clean baseline prompt with only the task description
-- `modified`: prepends a relevance-filtered subset of previously discovered laws from the same conceptual family, using `consistency_groups.yml`
-- when `prompt_set=modified`, the sweep now auto-enables dashboard accumulation and resets `accumulation/global_kg.json` once at sweep start, so prompt context is built from the current run instead of stale leftovers
-
-Deprecated compatibility wrappers:
-
-- `quick_start.py`
-- `run_master.py`
-- `run_benchmark.py`
-- `comprehensive_benchmark.py`
-
-These wrappers remain only to redirect old habits; new usage should go through `run_pipeline.py`.
-
-## 🏗️ Project Structure
-
-```
-NewtonBench/
-├── .env                          # environment variables (API keys)
-├── configs/                      # Configuration files
-│   └── models.txt                # List of LLM models to evaluate
-│
-├── modules/                      # Physics domain modules (12 domains)
-│   ├── common/                   # Shared utilities and base classes
-│   │   ├── evaluation.py         # Evaluation metrics and logic
-│   │   ├── physics_base.py       # Base physics system definitions
-│   │   ├── prompts_base.py       # Base prompt templates
-│   │   └── types.py              # Common type definitions
-│   │
-│   ├── m0_gravity/               # Newton’s Law of Universal Gravitation
-│   ├── m1_coulomb_force/         # Coulomb’s Law
-│   ├── m2_magnetic_force/        # Ampere’s Force Law
-│   ├── m3_fourier_law/           # Fourier’s Law
-│   ├── m4_snell_law/             # Snell’s Law
-│   ├── m5_radioactive_decay/     # Law of Radioactive Decay
-│   ├── m6_underdamped_harmonic/  # Law of Damped Harmonic Motion
-│   ├── m7_malus_law/             # Malus’s Law
-│   ├── m8_sound_speed/           # Law of Sound Speed in Ideal Gas
-│   ├── m9_hooke_law/             # Hooke’s Law
-│   ├── m10_be_distribution/      # Bose-Einstein Distribution
-│   └── m11_heat_transfer/        # Law of Heat Transfer
-│   │
-│   └── Each module contains:
-│       ├── core.py               # Core experiment runner
-│       ├── laws.py               # Law definitions and variations
-│       ├── physics.py            # Physics simulation logic
-│       ├── prompts.py            # Domain-specific prompts
-│       └── m*_types.py           # Domain-specific types
-│
-├── utils/                        # Utility modules
-│   ├── call_llm_api.py        # LLM API interface
-│   ├── vanilla_agent.py          # Vanilla agent (no code execution)
-│   ├── code_assisted_agent.py    # Code-assisted agent
-│   ├── code_executor.py          # Code execution environment
-│   ├── code_executor_base.py     # Base code executor interface
-│   └── noise.py                  # Noise generation utilities
-│
-├── evaluation_results/           # Experimental results organized by:
-│   └── {model_name}/             # - Model name
-│       └── {module}/             # - Physics module
-│           └── {agent_type}/     # - Agent type (vanilla/code-assisted)
-│               └── {difficulty}/ # - Difficulty level
-│                   └── {version}/  # - Version
-│
-├── result_analysis/              # Scripts for analyzing results
-│   ├── summarize_results.py      # Main script to summarize results
-│   ├── results_by_trial.csv      # Intermediate CSV with raw trial data
-│   └── aggregated_trial_summary.csv    # Final aggregated summary
-│
-├── run_pipeline.py               # Preferred top-level runner + auto reporting
-├── run_experiments.py            # Single configuration runner
-├── run_all_evaluations.py        # Sweep runner with resume/check support
-├── requirements.txt              # Python dependencies
-└── README.md                   
+```bash
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa,or
 ```
 
-### 🔬 Key Components
+Single law version only:
 
-- **Physics Modules**: Each of the 12 physics domains is implemented as a separate module with its own physics simulation, law definitions, and prompts.
-- **Agent Types**: Two agent modes are supported:
-  - **Vanilla Agent**: LLM reasoning only, no code execution
-  - **Code-Assisted Agent**: LLM with Python code execution capabilities
-- **Difficulty Levels**: Tasks vary across two dimensions:
-  - Difficulty of the target law: easy/medium/hard
-  - Complexity of the model systems: vanilla equation/simple system/complex system
-
-## 🧪 Running Full Experiments
-
-Preferred full-run entrypoint:
-
-```
-python run_pipeline.py --preset benchmark --model_name gpt41mini
+```bash
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --law_version v0
 ```
 
-To use the models listed in `configs/models.txt`:
+Include `v_unchanged` control tasks:
 
-```
-python run_pipeline.py --preset benchmark
-```
-
-To call the lower-level sweep runner directly:
-
-```
-python run_all_evaluations.py --model_name gpt41mini --agent_backend vanilla_agent --no_prompt
+```bash
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged
 ```
 
-You can also restrict a benchmark sweep to a single law version, for example `v0`:
+Use all models from:
 
-```
-python run_pipeline.py --preset benchmark --model_name gpt41mini --law_version v0
-```
+- `configs/models.txt`
 
-By default the main benchmark excludes the `v_unchanged` control laws, so the base task count remains 324. To include them explicitly:
-
-```
-python run_pipeline.py --preset benchmark --model_name gpt41mini --include_unchanged
+```bash
+python run_pipeline.py --preset benchmark --api_source oa
 ```
 
-### 📈 Analyzing Results
+Use a provider-specific model list without touching the default model file:
 
-After running `run_pipeline.py`, start here:
+```bash
+python run_pipeline.py --preset benchmark --api_source g4s --models_file configs/models_g4s.txt
+```
 
+This is the recommended way to run GenAI4Science-only sweeps. In other words:
+
+- if you pass `--model_name`, you do **not** need to edit any model list
+- if you want a multi-model G4S sweep, prefer a separate file such as `configs/models_g4s.txt`
+- do **not** overwrite `configs/models.txt` unless you intentionally want to change the default benchmark model pool
+
+The repository already includes:
+
+- `configs/models_g4s.txt`
+
+with the current recommended GenAI4Science model set:
+
+- `gemma4:31b`
+- `deepseek-r1:32b`
+- `llama3.3:70b`
+- `gpt-oss:120b`
+
+## Prompt Sets
+
+Two prompt modes exist:
+
+- `original`
+- `modified`
+
+`original`:
+
+- only the task prompt is shown
+- no retrieved prior laws are prepended
+
+`modified`:
+
+- prepends a relevance-filtered set of previously discovered laws from the same conceptual family
+- uses `consistency_groups.yml`
+- uses the accumulated dashboard state in `accumulation/global_kg.json`
+
+This means `modified` is not just a formatting tweak. It depends on a live accumulation state.
+
+## Web Interface: When It Runs Automatically, and When It Should Not
+
+### When it runs automatically
+
+If you use:
+
+```bash
+--prompt_set modified
+```
+
+then the benchmark sweep runner will automatically:
+
+- enable dashboard accumulation
+- reset `accumulation/global_kg.json` once at sweep start
+- keep the accumulated history across child experiment runs inside the same sweep
+- start the local dashboard server during the sweep
+
+This is intentional, because the modified prompt uses prior discovered laws as context. Without accumulation, the prompt would be empty or stale.
+
+### When it does not need to run
+
+If you use:
+
+```bash
+--prompt_set original
+```
+
+then the dashboard is optional.
+
+Use no dashboard when:
+
+- you only care about final CSV outputs
+- you want the cleanest, cheapest baseline runs
+- you do not need live visualization
+
+Use `--dashboard` with `original` when:
+
+- you want to visually inspect what the agent is discovering
+- you want the graph and best-law display while the run is in progress
+
+### Direct single-run caveat
+
+If you call the low-level runner directly:
+
+- `scripts/internal/run_experiments.py`
+
+and you use `--prompt_set modified`, then you should usually also enable:
+
+```bash
+--dashboard
+```
+
+Otherwise the modified prompt may read an empty or stale `accumulation/global_kg.json`.
+
+Also note:
+
+- `scripts/internal/run_experiments.py --dashboard` resets the accumulation by default
+- `--keep_history` disables that reset
+- this is useful for manually staged, seed-then-target experiments
+
+## Judge Model Behavior
+
+The benchmark uses an LLM judge for exact symbolic equivalence checks.
+
+You can control it explicitly:
+
+```bash
+--judge_model_name ...
+--judge_api_source ...
+```
+
+If you do not specify a judge and you run with `--api_source g4s`, the code falls back to using the evaluated model itself as judge, so that a G4S-only environment remains runnable.
+
+This is convenient operationally, but methodologically you should be aware that:
+
+- changing the judge model changes the exact symbolic equivalence pipeline
+
+## Output Structure
+
+Each pipeline run writes:
+
+- `outputs/pipeline_runs/<run_tag>/pipeline.log`
+- `outputs/pipeline_runs/<run_tag>/manifest.json`
 - `outputs/pipeline_runs/<run_tag>/RESULTS_INDEX.md`
+- `outputs/pipeline_runs/<run_tag>/report/...`
+
+The fastest file to inspect law-level accuracy is:
+
 - `outputs/pipeline_runs/<run_tag>/report/law_accuracy_summary.csv`
-- `outputs/pipeline_runs/<run_tag>/report/config_summary.csv`
-- `outputs/pipeline_runs/<run_tag>/report/aggregated_trial_summary.csv`
-- `outputs/pipeline_runs/<run_tag>/report/summary_report.md`
 
-What the main files mean:
+The most useful files are:
 
-1. `law_accuracy_summary.csv`: one row per law configuration; this is the easiest place to inspect law-level accuracy.
-2. `config_summary.csv`: richer per-configuration metrics including accuracy, success rate, RMSLE, trial counts, and token usage.
-3. `aggregated_trial_summary.csv`: higher-level leaderboard aggregated by model/backend.
-4. `results_by_trial.csv`: raw trial-level rows.
+- `law_accuracy_summary.csv`
+- `config_summary.csv`
+- `aggregated_trial_summary.csv`
+- `results_by_trial.csv`
+- `summary_report.md`
 
-You can also regenerate reports manually from `evaluation_results`:
+In addition, `run_pipeline.py` now prints a short terminal summary automatically after report generation. For each provider/model/backend/prompt/consistency group in the run, it prints:
 
-```
-python result_analysis/summarize_results.py --result_dir evaluation_results --output_dir result_analysis
-```
+- aggregated exact accuracy
+- aggregated RMSLE
+- aggregated trial success rate
 
-For consistency-vs-inconsistency studies, run two matching sweeps with different `--consistency` settings and then build a side-by-side comparison:
+So you no longer need to call a second evaluation command just to see whether the run discovered anything correctly.
 
-```
-python result_analysis/compare_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/<compare_tag>/report --inconsistent_run_tag <run_tag_a> --consistent_run_tag <run_tag_b>
-```
+Provider-aware result storage now lives under:
 
-If you also want to compare the effect of `prompt_set` in the same diagram-friendly table, run four matching sweeps (`original/modified` x `inconsistent/consistent`) and then build the combined report:
-
-```
-python result_analysis/compare_prompt_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/<compare_tag>/report --original_inconsistent_run_tag <run_tag_a> --original_consistent_run_tag <run_tag_b> --modified_inconsistent_run_tag <run_tag_c> --modified_consistent_run_tag <run_tag_d>
+```text
+evaluation_results/<api_source>/<model_name>/<module>/<backend>/<difficulty>/<law_version>/...
 ```
 
-Or filter to one logical run:
+This prevents OpenAI, OpenRouter, and GenAI4Science runs from overwriting each other.
 
-```
-python result_analysis/summarize_results.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/MY_RUN/report --run_tag MY_RUN
-```
+## Comparison Reports
 
-## 🌟 Citation
+Consistency comparison:
 
-If you use NewtonBench in your research, please cite our paper:
-
-```
-@misc{zheng2025newtonbenchbenchmarkinggeneralizablescientific,
-      title={NewtonBench: Benchmarking Generalizable Scientific Law Discovery in LLM Agents}, 
-      author={Tianshi Zheng and Kelvin Kiu-Wai Tam and Newt Hue-Nam K. Nguyen and Baixuan Xu and Zhaowei Wang and Jiayang Cheng and Hong Ting Tsang and Weiqi Wang and Jiaxin Bai and Tianqing Fang and Yangqiu Song and Ginny Y. Wong and Simon See},
-      year={2025},
-      eprint={2510.07172},
-      archivePrefix={arXiv},
-      primaryClass={cs.AI},
-      url={https://arxiv.org/abs/2510.07172}, 
-}
+```bash
+python result_analysis/compare_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/<compare_tag>/report --inconsistent_run_tag <run_a> --consistent_run_tag <run_b>
 ```
 
+Prompt × consistency comparison:
 
----
-## 🛠️ Recent Modifications (February 2026)
-We have introduced significant enhancements to the NewtonBench framework to support automated scientific discovery:
+```bash
+python result_analysis/compare_prompt_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/<compare_tag>/report --original_inconsistent_run_tag <run_a> --original_consistent_run_tag <run_b> --modified_inconsistent_run_tag <run_c> --modified_consistent_run_tag <run_d>
+```
 
-- **Mini AI Scientist Loop**: Implemented a complete end-to-end discovery loop (`mini_scientist`) that automates data collection, symbolic regression using PySR, and automated paper generation.
-- **Enhanced Metrics**: Integrated advanced evaluation metrics including **Symbolic Accuracy** (via SymPy), **RMSE**, and **RMSLE** to better quantify law discovery performance.
-- **Knowledge Graph (KG) Optimizations**: Refined the KG construction logic to handle complex operators and improve the success rate of discovering physical laws.
-- **Improved Dashboard**: Enhanced the dashboard for better visualization of experimental results and discovery metrics.
-- **Performance Improvements**: Optimized PySR parameters and KG generation for more reliable identification of canonical physical laws.
+The comparison tables now also retain:
 
----
-## Contacts
+- `api_source`
 
-Tianshi Zheng (tzhengad@connect.ust.hk)
+so multi-provider studies can be analyzed without ambiguity.
 
-Kelvin Kiu-Wai Tam (kwtamai@connect.ust.hk)
+## Minipaper + Reviewer Hypothesis Layer
 
-Newt Hue-Nam K. Nguyen (khnnguyen@connect.ust.hk)
+This fork now also contains a separate experimental foundation for a new protocol in which scientist agents no longer submit only a bare final law. Instead, each scientist produces a short **minipaper** containing:
+
+- the proposed law
+- a short justification paragraph
+
+A separate reviewer agent then decides whether that minipaper should enter the shared knowledge base. Only accepted papers become reusable context for future agents in the same scenario.
+
+This layer intentionally freezes several assumptions relative to the legacy benchmark path:
+
+- it always uses consistent law modifications
+- it always uses the new minipaper-oriented prompt logic
+- it uses accepted minipapers, rather than raw discoveries, as shared context
+
+The full design is documented in:
+
+- `docs/minipaper_reviewer_architecture.md`
+
+The current implementation also supports bounded revision fallback:
+
+- if a minipaper is rejected, the scientist can revise and resubmit it
+- the fallback depth is controlled by `--max_review_rounds`
+- the default is `2`, meaning at most one revision after the first rejection
+
+### Generic single-scenario run
+
+```bash
+python scripts/internal/run_minipaper_experiment.py --run_tag minipaper-demo --scientist_model_name gpt5mini --scientist_api_source oa --reviewer_model_name gemma4:31b --reviewer_api_source g4s --modules m0_gravity,m1_coulomb_force --equation_difficulties easy --model_systems vanilla_equation --law_versions v0,v1 --reviewer_can_run_experiments --max_review_rounds 2
+```
+
+### H1 runner
+
+Hypothesis H1 tests whether reviewer-side experimentation improves aggregate outcomes.
+
+```bash
+python scripts/hypotheses/run_h1_reviewer_experiments.py --scientist_model_name gpt5mini --scientist_api_source oa
+```
+
+This runner compares:
+
+- reviewer without experiment access
+- reviewer with experiment access
+
+and writes run-specific outputs under:
+
+```text
+outputs/hypothesis_runs/<run_tag>/
+```
+
+including:
+
+- `paper_rounds.csv`
+- `paper_results.csv`
+- `scenario_summary.csv`
+- `h1_summary.csv`
+- scenario-specific `knowledge_base.json`
+
+### H2 runner
+
+Hypothesis H2 tests whether cross-provider review is stricter than same-provider review.
+
+```bash
+python scripts/hypotheses/run_h2_cross_provider_review.py --openai_model_name gpt5mini --g4s_model_name gemma4:31b --max_review_rounds 2
+```
+
+This runner compares four scenarios:
+
+- OpenAI scientist / OpenAI reviewer
+- G4S scientist / G4S reviewer
+- OpenAI scientist / G4S reviewer
+- G4S scientist / OpenAI reviewer
+
+and writes:
+
+- `paper_rounds.csv`
+- `paper_results.csv`
+- `scenario_summary.csv`
+- `h2_summary.csv`
+
+### Operational note
+
+The minipaper protocol is inherently API-expensive. Each episode can include:
+
+- multiple scientist-side experiment rounds
+- a minipaper generation step
+- an optional reviewer-side experiment loop
+- a review decision
+- evaluator calls on the submitted law
+
+So the new hypothesis runners should be treated as high-call-count experimental workflows rather than as cheap benchmark sweeps.
+
+## End-to-End Recipes for Provider Comparison
+
+If you want to compare closed-source OpenAI models and open-weight GenAI4Science models on the same benchmark protocol, use separate run tags and keep the provider explicit in every run.
+
+### Example A: full four-way prompt × consistency study for one OpenAI model
+
+```bash
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged --prompt_set original --run_tag oa-gpt5mini-original-inconsistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged --prompt_set original --consistency --run_tag oa-gpt5mini-original-consistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged --prompt_set modified --run_tag oa-gpt5mini-modified-inconsistent
+python run_pipeline.py --preset benchmark --model_name gpt5mini --api_source oa --include_unchanged --prompt_set modified --consistency --run_tag oa-gpt5mini-modified-consistent
+```
+
+Then aggregate:
+
+```bash
+python result_analysis/compare_prompt_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/oa-gpt5mini-prompt-consistency/report --original_inconsistent_run_tag oa-gpt5mini-original-inconsistent --original_consistent_run_tag oa-gpt5mini-original-consistent --modified_inconsistent_run_tag oa-gpt5mini-modified-inconsistent --modified_consistent_run_tag oa-gpt5mini-modified-consistent
+```
+
+### Example B: full four-way prompt × consistency study for all GenAI4Science models in a dedicated file
+
+First create a G4S-only model file such as:
+
+```text
+configs/models_g4s.txt
+```
+
+with entries like:
+
+```text
+llama3.1:8b
+qwen2.5:14b
+deepseek-r1:32b
+```
+
+Then run:
+
+```bash
+python run_pipeline.py --preset benchmark --api_source g4s --models_file configs/models_g4s.txt --include_unchanged --prompt_set original --run_tag g4s-original-inconsistent
+python run_pipeline.py --preset benchmark --api_source g4s --models_file configs/models_g4s.txt --include_unchanged --prompt_set original --consistency --run_tag g4s-original-consistent
+python run_pipeline.py --preset benchmark --api_source g4s --models_file configs/models_g4s.txt --include_unchanged --prompt_set modified --run_tag g4s-modified-inconsistent
+python run_pipeline.py --preset benchmark --api_source g4s --models_file configs/models_g4s.txt --include_unchanged --prompt_set modified --consistency --run_tag g4s-modified-consistent
+```
+
+Then aggregate:
+
+```bash
+python result_analysis/compare_prompt_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/g4s-prompt-consistency/report --original_inconsistent_run_tag g4s-original-inconsistent --original_consistent_run_tag g4s-original-consistent --modified_inconsistent_run_tag g4s-modified-inconsistent --modified_consistent_run_tag g4s-modified-consistent
+```
+
+### Example C: compare only consistency at fixed prompt set
+
+For a fixed prompt set such as `original`:
+
+```bash
+python result_analysis/compare_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/g4s-original-consistency-only/report --inconsistent_run_tag g4s-original-inconsistent --consistent_run_tag g4s-original-consistent
+```
+
+and analogously for OpenAI:
+
+```bash
+python result_analysis/compare_consistency.py --result_dir evaluation_results --output_dir outputs/pipeline_runs/oa-gpt5mini-original-consistency-only/report --inconsistent_run_tag oa-gpt5mini-original-inconsistent --consistent_run_tag oa-gpt5mini-original-consistent
+```
+
+### Practical note
+
+At the moment, provider-level comparison is done by running separate studies with different `run_tag`s and then comparing the resulting CSV files side by side. The generated comparison tables already keep `api_source`, so downstream plotting and merged analysis can remain provider-aware.
+
+## Guidance for New Collaborators
+
+If you are joining development on this fork, start in this order:
+
+1. Read this README.
+2. Run a quick smoke test through `run_pipeline.py`.
+3. Inspect `utils/call_llm_api.py` for provider routing.
+4. Inspect `scripts/internal/run_experiments.py` and `scripts/internal/run_all_evaluations.py` for experiment orchestration.
+5. Inspect `utils/prompt_utils.py` and `consistency_groups.yml` for the modified prompt and consistency logic.
+
+## Notes
+
+- This fork intentionally favors explicitness and reportability over hidden convenience behavior.
+- If a provider, prompt set, or consistency regime differs, it should remain visible in the filesystem layout and the generated tables.
+- For current recommended commands, see also `futtatas.md`.

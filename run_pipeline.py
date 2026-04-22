@@ -1,4 +1,5 @@
 import argparse
+import csv
 import json
 import os
 import subprocess
@@ -35,6 +36,12 @@ def timestamped_run_tag(prefix: str) -> str:
     return sanitize_run_tag(f"{prefix}-{datetime.now().strftime('%Y%m%d-%H%M%S')}")
 
 
+def parse_api_sources(api_source_arg: str) -> List[str]:
+    if not api_source_arg:
+        return ["oa"]
+    return [part.strip() for part in api_source_arg.split(",") if part.strip()]
+
+
 def stream_subprocess(command: List[str], workdir: Path, log_handle) -> int:
     process = subprocess.Popen(
         command,
@@ -55,11 +62,13 @@ def stream_subprocess(command: List[str], workdir: Path, log_handle) -> int:
 def build_quick_command(args, run_tag: str) -> List[str]:
     command = [
         "python",
-        "run_experiments.py",
+        "scripts/internal/run_experiments.py",
         "--module",
         args.module or "m0_gravity",
         "--model_name",
         args.model_name,
+        "--api_source",
+        args.api_source,
         "--agent_backend",
         args.agent_backend or "vanilla_agent",
         "--equation_difficulty",
@@ -77,6 +86,10 @@ def build_quick_command(args, run_tag: str) -> List[str]:
         "--run_tag",
         run_tag,
     ]
+    if args.judge_model_name:
+        command.extend(["--judge_model_name", args.judge_model_name])
+    if args.judge_api_source:
+        command.extend(["--judge_api_source", args.judge_api_source])
     if args.consistency:
         command.append("--consistency")
     if args.dashboard or args.prompt_set == "modified":
@@ -89,44 +102,52 @@ def build_benchmark_commands(args, repo_root: Path, run_tag: str) -> List[List[s
     if not models:
         raise RuntimeError("No models resolved. Provide --model_name or populate configs/models.txt.")
 
+    api_sources = parse_api_sources(args.api_source)
     modules = [args.module] if args.module else [None]
     backends = [args.agent_backend] if args.agent_backend else ["vanilla_agent", "code_assisted_agent"]
     commands: List[List[str]] = []
-    for model_name in models:
-        for backend in backends:
-            for module in modules:
-                command = [
-                    "python",
-                    "run_all_evaluations.py",
-                    "--model_name",
-                    model_name,
-                    "--agent_backend",
-                    backend,
-                    "--noise",
-                    str(args.noise),
-                    "--trials_per_law",
-                    str(args.trials),
-                    "--prompt_set",
-                    args.prompt_set,
-                    "--run_tag",
-                    run_tag,
-                    "--no_prompt",
-                ]
-                if module:
-                    command.extend(["--module", module])
-                if args.equation_difficulty:
-                    command.extend(["--equation_difficulty", args.equation_difficulty])
-                if args.model_system:
-                    command.extend(["--model_system", args.model_system])
-                if args.law_version:
-                    command.extend(["--law_version", args.law_version])
-                if args.consistency:
-                    command.append("--consistency")
-                if args.include_unchanged:
-                    command.append("--include_unchanged")
-                if args.dashboard or args.prompt_set == "modified":
-                    command.append("--dashboard")
-                commands.append(command)
+    for api_source in api_sources:
+        for model_name in models:
+            for backend in backends:
+                for module in modules:
+                    command = [
+                        "python",
+                        "scripts/internal/run_all_evaluations.py",
+                        "--model_name",
+                        model_name,
+                        "--api_source",
+                        api_source,
+                        "--agent_backend",
+                        backend,
+                        "--noise",
+                        str(args.noise),
+                        "--trials_per_law",
+                        str(args.trials),
+                        "--prompt_set",
+                        args.prompt_set,
+                        "--run_tag",
+                        run_tag,
+                        "--no_prompt",
+                    ]
+                    if args.judge_model_name:
+                        command.extend(["--judge_model_name", args.judge_model_name])
+                    if args.judge_api_source:
+                        command.extend(["--judge_api_source", args.judge_api_source])
+                    if module:
+                        command.extend(["--module", module])
+                    if args.equation_difficulty:
+                        command.extend(["--equation_difficulty", args.equation_difficulty])
+                    if args.model_system:
+                        command.extend(["--model_system", args.model_system])
+                    if args.law_version:
+                        command.extend(["--law_version", args.law_version])
+                    if args.consistency:
+                        command.append("--consistency")
+                    if args.include_unchanged:
+                        command.append("--include_unchanged")
+                    if args.dashboard or args.prompt_set == "modified":
+                        command.append("--dashboard")
+                    commands.append(command)
     return commands
 
 
@@ -151,11 +172,45 @@ Most useful files:
     (run_dir / "RESULTS_INDEX.md").write_text(content, encoding="utf-8")
 
 
+def print_terminal_summary(report_dir: Path) -> None:
+    leaderboard_path = report_dir / "aggregated_trial_summary.csv"
+    if not leaderboard_path.exists():
+        return
+
+    try:
+        with leaderboard_path.open("r", encoding="utf-8", newline="") as f:
+            rows = list(csv.DictReader(f))
+    except OSError:
+        return
+
+    if not rows:
+        return
+
+    print("\nHigh-level results:")
+    for row in rows:
+        api_source = row.get("api_source", "unknown")
+        model_name = row.get("model_name", "unknown")
+        backend = row.get("agent_backend", "unknown")
+        prompt_set = row.get("prompt_set", "unknown")
+        consistency = row.get("consistency", "unknown")
+        overall_acc = row.get("overall_acc", "N/A")
+        overall_rmsle = row.get("overall_rmsle", "N/A")
+        overall_success_rate = row.get("overall_success_rate", "N/A")
+        print(
+            f"- {api_source} | {model_name} | {backend} | prompt={prompt_set} | "
+            f"consistency={consistency} | overall_acc={overall_acc} | "
+            f"overall_rmsle={overall_rmsle} | success={overall_success_rate}"
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="One-command NewtonBench pipeline with automatic logs and report files.")
     parser.add_argument("--preset", choices=["quick", "benchmark"], required=True, help="Quick smoke test or full benchmark pipeline.")
     parser.add_argument("--model_name", default="", help="Model to evaluate. For benchmark, omit to use configs/models.txt.")
     parser.add_argument("--models_file", default="configs/models.txt", help="Model list used when --model_name is omitted for benchmark mode.")
+    parser.add_argument("--api_source", default="oa", help="Explicit provider source. Use oa, or, g4s, or a comma-separated list in benchmark mode.")
+    parser.add_argument("--judge_model_name", default="", help="Optional judge model name forwarded to the internal experiment runners.")
+    parser.add_argument("--judge_api_source", default=None, help="Optional explicit judge provider source.")
     parser.add_argument("--module", default=None, help="Optional single module filter. Default: quick uses m0_gravity, benchmark uses all modules.")
     parser.add_argument("--agent_backend", default=None, help="Optional backend filter. Default: quick uses vanilla_agent, benchmark uses both backends.")
     parser.add_argument("--equation_difficulty", default=None, choices=["easy", "medium", "hard"], help="Optional difficulty filter.")
@@ -246,6 +301,7 @@ def main() -> int:
     write_manifest(manifest_path, manifest)
     write_results_index(run_dir, report_dir, run_tag)
     (repo_root / "outputs" / "pipeline_runs" / "LATEST_RUN.txt").write_text(run_tag + "\n", encoding="utf-8")
+    print_terminal_summary(report_dir)
     print(f"\nRun completed.")
     print(f"Run folder: {run_dir}")
     print(f"Law-by-law results: {report_dir / 'law_accuracy_summary.csv'}")

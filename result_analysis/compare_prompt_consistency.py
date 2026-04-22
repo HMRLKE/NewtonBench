@@ -38,6 +38,7 @@ def _prepare_run_table(summary_df: pd.DataFrame, label: str, expected_prompt_set
     )
 
     key_cols = [
+        "api_source",
         "model_name",
         "agent_backend",
         "module",
@@ -66,6 +67,7 @@ def _prepare_run_table(summary_df: pd.DataFrame, label: str, expected_prompt_set
 
 def build_four_way_comparison(run_tables: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     key_cols = [
+        "api_source",
         "model_name",
         "agent_backend",
         "module",
@@ -99,7 +101,7 @@ def build_four_way_comparison(run_tables: Dict[str, pd.DataFrame]) -> pd.DataFra
     merged["delta_prompt_rmsle_consistent"] = merged["mean_rmsle_modified_consistent"] - merged["mean_rmsle_original_consistent"]
 
     return merged.sort_values(
-        ["model_name", "agent_backend", "module", "equation_difficulty", "model_system", "law_version"]
+        ["api_source", "model_name", "agent_backend", "module", "equation_difficulty", "model_system", "law_version"]
     ).reset_index(drop=True)
 
 
@@ -107,7 +109,7 @@ def build_model_summary(comparison_df: pd.DataFrame) -> pd.DataFrame:
     if comparison_df.empty:
         return pd.DataFrame()
 
-    group_cols = ["model_name", "agent_backend"]
+    group_cols = ["api_source", "model_name", "agent_backend"]
     summary = (
         comparison_df.groupby(group_cols, dropna=False)
         .agg(
@@ -127,7 +129,7 @@ def build_model_summary(comparison_df: pd.DataFrame) -> pd.DataFrame:
     summary["delta_accuracy_pct_modified"] = summary["mean_accuracy_pct_modified_consistent"] - summary["mean_accuracy_pct_modified_inconsistent"]
     summary["delta_prompt_effect_inconsistent"] = summary["mean_accuracy_pct_modified_inconsistent"] - summary["mean_accuracy_pct_original_inconsistent"]
     summary["delta_prompt_effect_consistent"] = summary["mean_accuracy_pct_modified_consistent"] - summary["mean_accuracy_pct_original_consistent"]
-    return summary.sort_values(["model_name", "agent_backend"]).reset_index(drop=True)
+    return summary.sort_values(["api_source", "model_name", "agent_backend"]).reset_index(drop=True)
 
 
 def write_markdown_report(output_path: Path, comparison_df: pd.DataFrame, model_summary_df: pd.DataFrame, run_tags: Dict[str, str]) -> None:

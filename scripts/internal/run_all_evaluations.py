@@ -7,9 +7,16 @@ import glob
 import time
 import signal
 import re
+import sys
+from pathlib import Path
 from datetime import datetime
 from typing import Tuple, List, Dict, Optional
 from collections import defaultdict
+
+# Ensure repo root is importable when this script is launched via scripts/internal/...
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 def get_module_folders():
     """Scan the 'modules' directory for all module folders (e.g., m0_gravity)."""
@@ -66,6 +73,7 @@ def parse_experiment_name_metadata(experiment_name: str) -> Dict[str, Optional[o
     return metadata
 
 def get_matching_experiment_dirs(
+    api_source: str,
     model_name: str,
     module: str,
     agent_backend: str,
@@ -80,7 +88,7 @@ def get_matching_experiment_dirs(
     """Return all experiment directories matching the logical configuration."""
     noise_str = str(noise_level).replace('.', '_')
     law_version_str = law_version if law_version is not None else "random"
-    base_dir = os.path.join("evaluation_results", model_name, module, agent_backend, difficulty, law_version_str)
+    base_dir = os.path.join("evaluation_results", api_source, model_name, module, agent_backend, difficulty, law_version_str)
     if not os.path.isdir(base_dir):
         return []
 
@@ -208,6 +216,9 @@ def get_configuration_name(module: str, difficulty: str, system: str, law_versio
 def main():
     parser = argparse.ArgumentParser(description="Run all evaluations for all modules with noise level iteration and resume capability.")
     parser.add_argument("--model_name", type=str, default="gpt41mini", help="Name of the LLM to use.")
+    parser.add_argument("--api_source", type=str, default="oa", choices=["oa", "or", "g4s"], help="Explicit provider for the evaluated model.")
+    parser.add_argument("--judge_model_name", type=str, default="", help="Optional judge model name passed through to the internal single-config runner.")
+    parser.add_argument("--judge_api_source", type=str, default=None, choices=["oa", "or", "g4s"], help="Optional explicit provider for the judge model.")
     parser.add_argument("--module", type=str, default="none", help="Name of the module to test (e.g., m0_gravity). Use 'none' for all modules.")
     parser.add_argument("-n", "--noise", type=float, default=0.0, help="Noise level for experiments (e.g., 0, 0.01, 0.1).")
     parser.add_argument("-t", "--trials_per_law", type=int, default=4, help="Number of trials to run for each law version.")
@@ -282,6 +293,7 @@ def main():
     print("EXPERIMENT CONFIGURATION SUMMARY")
     print("="*80)
     print(f"Model: {args.model_name}")
+    print(f"API Source: {args.api_source}")
     print(f"Agent Backend: {args.agent_backend}")
     print(f"Noise Levels: {noise_levels}")
     print(f"Trials per Configuration: {args.trials_per_law}")
@@ -345,6 +357,7 @@ def main():
                         config_name = get_configuration_name(module_name, difficulty, system, law_version, noise_level)
                         experiment_dirs = get_matching_experiment_dirs(
                             args.model_name,
+                            args.api_source,
                             module_name,
                             args.agent_backend,
                             difficulty,
@@ -441,22 +454,27 @@ def main():
                 f"Resolved config -> module={config['module']}, "
                 f"difficulty={config['equation_difficulty']}, "
                 f"system={config['model_system']}, law_version={config['law_version']}, "
-                f"backend={args.agent_backend}, prompt_set={args.prompt_set}, "
+                f"backend={args.agent_backend}, api_source={args.api_source}, prompt_set={args.prompt_set}, "
                 f"consistency={args.consistency}, run_tag={args.run_tag if args.run_tag else '<none>'}"
             )
             
             command = [
-                "python", "run_experiments.py",
+                "python", "scripts/internal/run_experiments.py",
                 "--module", config['module'],
                 "--equation_difficulty", config['equation_difficulty'],
                 "--model_system", config['model_system'],
                 "--law_version", str(config['law_version']) if config['law_version'] is not None else "None",
                 "--trials", str(config['trials_needed']),
                 "--model_name", args.model_name,
+                "--api_source", args.api_source,
                 "--agent_backend", args.agent_backend,
                 "--noise", str(config['noise_level']),
                 "--prompt_set", args.prompt_set
             ]
+            if args.judge_model_name:
+                command.extend(["--judge_model_name", args.judge_model_name])
+            if args.judge_api_source:
+                command.extend(["--judge_api_source", args.judge_api_source])
 
             if args.dashboard:
                 command.append("--dashboard")

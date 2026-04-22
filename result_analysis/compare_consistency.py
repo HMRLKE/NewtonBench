@@ -38,6 +38,7 @@ def _prepare_side(summary_df: pd.DataFrame, label: str) -> pd.DataFrame:
     )
 
     key_cols = [
+        "api_source",
         "model_name",
         "agent_backend",
         "prompt_set",
@@ -73,6 +74,7 @@ def build_consistency_comparison(
     right = _prepare_side(consistent_df, "consistent")
 
     key_cols = [
+        "api_source",
         "model_name",
         "agent_backend",
         "prompt_set",
@@ -101,7 +103,7 @@ def build_consistency_comparison(
     merged["delta_avg_total_tokens"] = merged["avg_total_tokens_consistent"] - merged["avg_total_tokens_inconsistent"]
 
     merged = merged.sort_values(
-        ["model_name", "agent_backend", "module", "equation_difficulty", "model_system", "law_version"]
+        ["api_source", "model_name", "agent_backend", "module", "equation_difficulty", "model_system", "law_version"]
     ).reset_index(drop=True)
     return merged
 
@@ -110,7 +112,7 @@ def build_model_summary(comparison_df: pd.DataFrame) -> pd.DataFrame:
     if comparison_df.empty:
         return pd.DataFrame()
 
-    group_cols = ["model_name", "agent_backend", "prompt_set"]
+    group_cols = ["api_source", "model_name", "agent_backend", "prompt_set"]
     summary = (
         comparison_df.groupby(group_cols, dropna=False)
         .agg(
@@ -130,7 +132,7 @@ def build_model_summary(comparison_df: pd.DataFrame) -> pd.DataFrame:
     summary["delta_success_rate_pct"] = summary["mean_success_rate_pct_consistent"] - summary["mean_success_rate_pct_inconsistent"]
     summary["delta_rmsle"] = summary["mean_rmsle_consistent"] - summary["mean_rmsle_inconsistent"]
     summary["delta_avg_total_tokens"] = summary["mean_avg_total_tokens_consistent"] - summary["mean_avg_total_tokens_inconsistent"]
-    return summary.sort_values(["model_name", "agent_backend", "prompt_set"]).reset_index(drop=True)
+    return summary.sort_values(["api_source", "model_name", "agent_backend", "prompt_set"]).reset_index(drop=True)
 
 
 def write_markdown_report(

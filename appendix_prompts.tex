@@ -1,0 +1,162 @@
+% This fragment is intended to be \input{}-ed into the appendix.
+% Preamble requirements:
+% \usepackage[most]{tcolorbox}
+% \usepackage{xcolor}
+
+\subsection{Prompt Structure Overview}
+\label{app:prompt_structure}
+
+This appendix summarizes the prompt architecture used in the benchmark. Rather than reproducing every module-specific prompt verbatim, we present the shared structural template that is most relevant for the prompt-level comparison experiments.
+
+\newtcolorbox{promptbox}[2][]{
+  enhanced,
+  breakable,
+  colback=#2!4!white,
+  colframe=#2!70!black,
+  coltitle=black,
+  fonttitle=\bfseries,
+  boxrule=0.9pt,
+  arc=1.5mm,
+  left=2mm,
+  right=2mm,
+  top=1.5mm,
+  bottom=1.5mm,
+  title={#1}
+}
+
+\newcommand{\promptlabel}[1]{\textbf{#1}}
+\newcommand{\prompttag}[1]{\texttt{#1}}
+\newcommand{\promptemph}[1]{\emph{#1}}
+
+\begin{promptbox}[Vanilla Agent: Base System Prompt]{blue}
+\small
+\promptlabel{Role.} \promptemph{AI research assistant for scientific law discovery in a simulated universe.}
+
+\medskip
+\promptlabel{Core Workflow.}
+\begin{itemize}
+    \item Analyze the mission description.
+    \item Design experiments to test candidate hypotheses.
+    \item Submit experimental queries through \prompttag{<run\_experiment>}.
+    \item Observe the returned \prompttag{<experiment\_output>}.
+    \item Verify hypotheses against the observed data.
+    \item Terminate with a single \prompttag{<final\_law>} block.
+\end{itemize}
+
+\promptlabel{Interaction Constraints.}
+\begin{itemize}
+    \item At most one action per round.
+    \item The number of rounds is bounded.
+    \item Numerically invalid outputs may be ignored.
+    \item The final answer must be a valid Python function implementing the discovered law.
+\end{itemize}
+\end{promptbox}
+
+\begin{promptbox}[Task-Specific User Prompt: \texttt{original}]{teal}
+\small
+\promptlabel{Block 1: Mission.}
+\begin{itemize}
+    \item State that the agent must discover the governing law.
+    \item Explicitly note that the simulated universe may differ from real-world physics.
+\end{itemize}
+
+\promptlabel{Block 2: Apparatus.}
+\begin{itemize}
+    \item Introduce the experimentally controllable variables.
+    \item Explain their physical interpretation and any hard constraints on valid values.
+\end{itemize}
+
+\promptlabel{Block 3: Experiment Protocol.}
+\begin{itemize}
+    \item Define the required JSON schema for \prompttag{<run\_experiment>}.
+    \item Specify the expected \prompttag{<experiment\_output>} format.
+    \item Clarify whether the measurements are noise-free or noisy.
+\end{itemize}
+
+\promptlabel{Block 4: Submission Requirements.}
+\begin{itemize}
+    \item Enforce the exact function signature \prompttag{def discovered\_law(...):}.
+    \item Require local definition of constants inside the function body.
+    \item Require that the final answer contain only the \prompttag{<final\_law>} block.
+\end{itemize}
+\end{promptbox}
+
+\begin{promptbox}[Task-Specific User Prompt: \texttt{modified}]{green}
+\small
+\promptlabel{Additional Prefix.} Before the standard task prompt, the modified variant prepends a \promptemph{discovered-law context block}.
+
+\medskip
+\promptlabel{Context Header.}
+\begin{itemize}
+    \item \prompttag{Related Previously Discovered Laws}
+\end{itemize}
+
+\promptlabel{Context Selection Rule.}
+\begin{itemize}
+    \item Include only conceptually related laws from the same benchmark family.
+    \item Restrict the context to a small number of high-quality prior candidates.
+    \item Match the consistency mode when relevant.
+\end{itemize}
+
+\promptlabel{Context Content.}
+\begin{itemize}
+    \item A brief rationale for why the family is conceptually related.
+    \item Declared \promptemph{strict consistency axes}.
+    \item Additional \promptemph{prompt-level relevance cues}.
+    \item A short list of previously discovered equations.
+\end{itemize}
+
+\promptlabel{Fallback Behavior.}
+\begin{itemize}
+    \item If no relevant prior law exists, the prompt explicitly states that nothing is yet known about the universe beyond the current task description and future experiments.
+\end{itemize}
+
+\promptlabel{Then.} The standard mission/apparatus/experiment/submission prompt is appended unchanged.
+\end{promptbox}
+
+\begin{promptbox}[Code-Assisted Agent: Tool-Aware System Prompt]{orange}
+\small
+\promptlabel{Shared Framing.} The code-assisted agent preserves the scientific-discovery framing of the vanilla system prompt.
+
+\medskip
+\promptlabel{Additional Tool Channel.}
+\begin{itemize}
+    \item Introduce the \prompttag{<python>} tool explicitly.
+    \item Encourage its use for non-trivial numerical checks, algebraic exploration, and hypothesis testing.
+\end{itemize}
+
+\promptlabel{Tool-Use Policy.}
+\begin{itemize}
+    \item Only one action type may be used per turn.
+    \item \prompttag{<python>}, \prompttag{<run\_experiment>}, and \prompttag{<final\_law>} must not be mixed in the same turn.
+    \item Python is intended for verification and analysis, not as a replacement for the final symbolic submission.
+\end{itemize}
+\end{promptbox}
+
+\begin{promptbox}[Prompt Assembly Summary]{purple}
+\small
+\promptlabel{Vanilla + original}
+\[
+\text{system prompt} \rightarrow \text{task-specific user prompt}
+\]
+
+\promptlabel{Vanilla + modified}
+\[
+\text{system prompt} \rightarrow \text{discovered-law context} + \text{task-specific user prompt}
+\]
+
+\promptlabel{Code-assisted + original}
+\[
+\text{tool-aware system prompt} \rightarrow \text{task-specific user prompt}
+\]
+
+\promptlabel{Code-assisted + modified}
+\[
+\text{tool-aware system prompt} \rightarrow \text{discovered-law context} + \text{task-specific user prompt}
+\]
+\end{promptbox}
+
+\begin{promptbox}[Interpretive Note]{gray}
+\small
+The appendix describes the \promptemph{shared prompt assembly logic} rather than the full literal wording of every benchmark prompt. Module-specific scientific content still differs across domains and model systems, but the structural distinctions shown above are the ones that matter for interpreting the later comparison between prompt variants.
+\end{promptbox}
