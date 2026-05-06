@@ -112,9 +112,9 @@ The default primary metric is `accepted_correct_rate_pct`, and the runner report
 Operationalized as comparisons between:
 
 - OpenAI scientist / OpenAI reviewer
-- G4S scientist / G4S reviewer
-- OpenAI scientist / G4S reviewer
-- G4S scientist / OpenAI reviewer
+- non-OpenAI scientist / non-OpenAI reviewer
+- OpenAI scientist / non-OpenAI reviewer
+- non-OpenAI scientist / OpenAI reviewer
 
 The primary reported signals are:
 
@@ -122,6 +122,30 @@ The primary reported signals are:
 - false acceptance rate
 
 This makes it possible to test whether heterogeneous review pairs filter erroneous proposals more aggressively than homogeneous pairs.
+
+### H3
+
+`H3`: incorrect accepted knowledge-base entries degrade later related discoveries.
+
+The direct intervention runner creates two matched scenarios:
+
+- clean seeded related minipapers
+- intentionally poisoned seeded related minipapers
+
+Poisoning is parameterized by `poison_rate`, `poison_edit_distance`, and a small set of algebraic edits over exponent, dropped factors, operation flips, and additive terms. The observational analysis scans existing minipaper logs for accepted wrong papers followed by later failures in related modules, allowing direct poisoning effects to be compared with naturally occurring error propagation.
+
+### H4
+
+`H4`: thinking-mode on the scientist and reviewer sides changes accepted-paper quality.
+
+Operationalized as a 2x2 design:
+
+- scientist thinking off / reviewer thinking off
+- scientist thinking on / reviewer thinking off
+- scientist thinking off / reviewer thinking on
+- scientist thinking on / reviewer thinking on
+
+The thinking manipulation is internal only: the required minipaper and review output formats do not change.
 
 ## Revision fallback
 

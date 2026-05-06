@@ -53,6 +53,14 @@ API_SOURCE_RETRY_SETTINGS = {
 
 LAST_API_CALL_AT: dict[str, float] = {}
 
+OPENROUTER_REASONING_MARKERS = (
+    "deepseek-r1",
+    "gemini-2.5",
+    "qwq",
+    "o4-mini",
+    "gpt-5",
+)
+
 # development: economic use for development stage / final evaluation
 # formal: ONLY evaluated in final stage
 # optional: MAY evaluated in final stage, may not.
@@ -145,6 +153,11 @@ def resolve_model_and_source_explicit(model_name, keys, api_source=None):
         f"Model alias '{model_name}' does not support api_source '{normalized_source}'. "
         f"Supported sources for this alias: {list(provider_map.keys())}"
     )
+
+
+def supports_openrouter_reasoning(model_name, provider_specific_name):
+    candidate = f"{model_name} {provider_specific_name}".lower()
+    return any(marker in candidate for marker in OPENROUTER_REASONING_MARKERS)
 
 def custom_repair_json(json_string):
     """
@@ -321,6 +334,7 @@ def call_llm_api(messages, model_name, keys=keys, temperature=0.4, trial_info=No
     api_source, full_model_name = resolve_model_and_source_explicit(model_name, keys, api_source_override)
 
     trial_id = trial_info.get('trial_id', "unknown") if trial_info else "unknown"
+    thinking_enabled = bool(trial_info.get("thinking_enabled")) if trial_info else False
     reasoning_content = None
 
     if api_source == "or":
@@ -330,7 +344,7 @@ def call_llm_api(messages, model_name, keys=keys, temperature=0.4, trial_info=No
                 "messages": messages,
                 "temperature": temperature,
             }
-            if model_name == "dsv31":
+            if model_name == "dsv31" or (thinking_enabled and supports_openrouter_reasoning(model_name, full_model_name)):
                 params["reasoning"] = {"enabled": True} 
 
             response = requests.post(

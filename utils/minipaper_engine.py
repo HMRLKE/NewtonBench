@@ -4,7 +4,8 @@ import json
 import os
 import time
 import traceback
-from dataclasses import asdict, dataclass
+from copy import deepcopy
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
@@ -37,11 +38,13 @@ API_SOURCE_EPISODE_COOLDOWN_SECONDS = {
 class AgentSpec:
     model_name: str
     api_source: str
+    thinking_enabled: bool = False
 
     def normalized(self) -> "AgentSpec":
         return AgentSpec(
             model_name=self.model_name,
             api_source=normalize_api_source(self.api_source) or self.api_source,
+            thinking_enabled=self.thinking_enabled,
         )
 
 
@@ -89,6 +92,8 @@ class RunSuiteConfig:
     output_root: str = "outputs/hypothesis_runs"
     judge_model_name: Optional[str] = None
     judge_api_source: Optional[str] = None
+    initial_knowledge_bases: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    reset_knowledge_base: bool = False
     dry_run: bool = False
 
 
@@ -211,7 +216,11 @@ def _call_agent(messages: List[Dict[str, str]], agent: AgentSpec, trial_info: Di
         response_text, reasoning_content, tokens = call_llm_api(
             messages,
             model_name=agent.model_name,
-            trial_info={**trial_info, "api_source_override": agent.api_source},
+            trial_info={
+                **trial_info,
+                "api_source_override": agent.api_source,
+                "thinking_enabled": agent.thinking_enabled,
+            },
         )
     except Exception as error:
         _write_failed_request_log(messages, trial_info, error)
@@ -240,6 +249,18 @@ def choose_judge(
     return scientist.model_name, scientist.api_source
 
 
+def _append_private_thinking_instruction(system_prompt: str, enabled: bool) -> str:
+    if not enabled:
+        return system_prompt
+    return (
+        system_prompt.rstrip()
+        + "\n\nThinking-mode instruction:\n"
+        + "Before producing the visible answer, reason carefully in private about the task, "
+        + "the available evidence, and possible failure modes. Do not reveal hidden reasoning. "
+        + "Keep the externally visible output in the exact required tag format."
+    )
+
+
 def run_scientist_session(
     *,
     module: Any,
@@ -252,7 +273,7 @@ def run_scientist_session(
     episode_id: str,
     revision_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    system_prompt = SCIENTIST_SYSTEM_PROMPT
+    system_prompt = _append_private_thinking_instruction(SCIENTIST_SYSTEM_PROMPT, agent.thinking_enabled)
     user_prompt = build_scientist_prompt(
         module=module,
         system=task.model_system,
@@ -344,6 +365,7 @@ def run_reviewer_session(
         if reviewer_can_run_experiments
         else REVIEWER_SYSTEM_PROMPT_NO_EXPERIMENTS
     )
+    system_prompt = _append_private_thinking_instruction(system_prompt, agent.thinking_enabled)
     user_prompt = build_reviewer_prompt(
         module=module,
         system=task.model_system,
@@ -504,6 +526,7 @@ def run_minipaper_suite(config: RunSuiteConfig) -> Dict[str, Any]:
         "max_scientist_turns": config.max_scientist_turns,
         "max_reviewer_turns": config.max_reviewer_turns,
         "max_review_rounds": config.max_review_rounds,
+        "reset_knowledge_base": config.reset_knowledge_base,
         "started_at": datetime.now().isoformat(),
     }
     _write_json(run_dir / "manifest.json", manifest)
@@ -517,7 +540,13 @@ def run_minipaper_suite(config: RunSuiteConfig) -> Dict[str, Any]:
     for scenario in normalized_scenarios:
         scenario_dir = _scenario_output_dir(run_dir, scenario)
         kb_path = scenario_dir / "knowledge_base.json"
-        knowledge_base = load_minipaper_kb(kb_path)
+        if config.reset_knowledge_base and kb_path.exists():
+            kb_path.unlink()
+        if scenario.scenario_id in config.initial_knowledge_bases:
+            knowledge_base = deepcopy(config.initial_knowledge_bases[scenario.scenario_id])
+            save_minipaper_kb(kb_path, knowledge_base)
+        else:
+            knowledge_base = load_minipaper_kb(kb_path)
 
         for task in config.tasks:
             module = importlib.import_module(f"modules.{task.module_name}")
@@ -725,8 +754,10 @@ def run_minipaper_suite(config: RunSuiteConfig) -> Dict[str, Any]:
                             "scientist_index": scientist_index,
                             "scientist_model_name": scenario.scientist.model_name,
                             "scientist_api_source": scenario.scientist.api_source,
+                            "scientist_thinking_enabled": scenario.scientist.thinking_enabled,
                             "reviewer_model_name": scenario.reviewer.model_name,
                             "reviewer_api_source": scenario.reviewer.api_source,
+                            "reviewer_thinking_enabled": scenario.reviewer.thinking_enabled,
                             "reviewer_can_run_experiments": scenario.reviewer_can_run_experiments,
                             "review_round": review_round,
                             **round_record,
@@ -802,8 +833,10 @@ def run_minipaper_suite(config: RunSuiteConfig) -> Dict[str, Any]:
                         "scientist_index": scientist_index,
                         "scientist_model_name": scenario.scientist.model_name,
                         "scientist_api_source": scenario.scientist.api_source,
+                        "scientist_thinking_enabled": scenario.scientist.thinking_enabled,
                         "reviewer_model_name": scenario.reviewer.model_name,
                         "reviewer_api_source": scenario.reviewer.api_source,
+                        "reviewer_thinking_enabled": scenario.reviewer.thinking_enabled,
                         "reviewer_can_run_experiments": scenario.reviewer_can_run_experiments,
                         "max_review_rounds": config.max_review_rounds,
                         "executed_review_rounds": len(round_history),
@@ -874,8 +907,10 @@ def build_scenario_summary(paper_results_df: pd.DataFrame) -> pd.DataFrame:
         "reviewer_relation",
         "scientist_model_name",
         "scientist_api_source",
+        "scientist_thinking_enabled",
         "reviewer_model_name",
         "reviewer_api_source",
+        "reviewer_thinking_enabled",
         "reviewer_can_run_experiments",
     ]
 

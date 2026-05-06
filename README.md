@@ -200,7 +200,7 @@ python run_pipeline.py --preset quick --model_name gpt5mini --api_source oa
 GenAI4Science example:
 
 ```bash
-python run_pipeline.py --preset quick --model_name llama3.1:8b --api_source g4s
+python run_pipeline.py --preset quick --model_name gemma4:31b --api_source g4s
 ```
 
 ### Benchmark Sweep
@@ -256,7 +256,6 @@ The repository already includes:
 with the current recommended GenAI4Science model set:
 
 - `gemma4:31b`
-- `deepseek-r1:32b`
 - `llama3.3:70b`
 - `gpt-oss:120b`
 
@@ -490,21 +489,23 @@ The batch shell runner also writes aggregated outputs under:
 Hypothesis H2 tests whether cross-provider review is stricter than same-provider review.
 
 ```bash
-python scripts/hypotheses/run_h2_cross_provider_review.py --openai_model_name gpt5mini --g4s_model_name gemma4:31b --max_review_rounds 2
+python scripts/hypotheses/run_h2_cross_provider_review.py --openai_model_name gpt5mini --open_model_name gemma4:31b --open_api_source g4s --max_review_rounds 2
 ```
 
-For a full multi-model GenAI4Science batch:
+For a full multi-model batch:
 
 ```bash
 bash scripts/hypotheses/H2_runner.sh
 ```
 
+The non-OpenAI side is provider-parametric. Use `model@provider` entries in `MODELS_CSV` or `MODELS_FILE`, for example `gemma4:31b@g4s` or `gem25p@or`.
+
 This runner compares four scenarios:
 
 - OpenAI scientist / OpenAI reviewer
-- G4S scientist / G4S reviewer
-- OpenAI scientist / G4S reviewer
-- G4S scientist / OpenAI reviewer
+- non-OpenAI scientist / non-OpenAI reviewer
+- OpenAI scientist / non-OpenAI reviewer
+- non-OpenAI scientist / OpenAI reviewer
 
 and writes:
 
@@ -520,13 +521,65 @@ The batch shell runner also writes aggregated outputs under:
 - `outputs/hypothesis_runs/<run_group_tag>/paper_results_all.csv`
 - `outputs/hypothesis_runs/<run_group_tag>/paper_rounds_all.csv`
 
-### Run both H1 and H2 in one go
+### H3 runner
+
+Hypothesis H3 tests whether incorrect accepted knowledge-base entries degrade later related discoveries.
 
 ```bash
-bash scripts/hypotheses/run_all_hypotheses_g4s.sh
+python scripts/hypotheses/run_h3_poisoned_kb.py --scientist_model_name gemma4:31b --scientist_api_source g4s --reviewer_model_name gemma4:31b --reviewer_api_source g4s --poison_rate 0.1 --poison_edit_distance 1
 ```
 
-This wrapper launches both multi-model hypothesis batches sequentially and creates separate aggregate output directories for H1 and H2.
+H3 has two analysis paths:
+
+- direct intervention: compare clean seeded related minipapers with intentionally perturbed related minipapers
+- observational log analysis: scan previous `paper_results.csv` files for accepted wrong minipapers followed by later related failures
+
+Direct H3 writes:
+
+- `h3_summary.csv`
+- `h3_paper_results.csv`
+- `poison_manifest.csv`
+
+The observational analysis is:
+
+```bash
+bash scripts/hypotheses/H3_log_analysis_runner.sh
+```
+
+### H4 runner
+
+Hypothesis H4 tests the effect of thinking-mode on the scientist and reviewer sides in a 2x2 design.
+
+```bash
+python scripts/hypotheses/run_h4_thinking_mode.py --scientist_model_name gem25p --scientist_api_source or --reviewer_model_name gem25p --reviewer_api_source or
+```
+
+The four H4 conditions are:
+
+- scientist thinking off / reviewer thinking off
+- scientist thinking on / reviewer thinking off
+- scientist thinking off / reviewer thinking on
+- scientist thinking on / reviewer thinking on
+
+Thinking-mode is implemented as a private system-level instruction. For OpenRouter models, the API call also requests provider-side reasoning when supported. The visible minipaper and review output formats remain unchanged.
+
+### Run all hypotheses
+
+To run H1-H4 across all configured models:
+
+```bash
+bash scripts/hypotheses/run_all_hypotheses_all_models.sh
+```
+
+Useful controls:
+
+- `MAX_PARALLEL_RUNS=4` limits concurrently launched hypothesis jobs
+- `HYPOTHESES=H1,H3,H4` runs a subset
+- `MODELS_CSV=gemma4:31b@g4s,gem25p@or` overrides the model file and includes provider tags
+- `REVIEWER_CAN_RUN_EXPERIMENTS=1` enables reviewer-side experiments for H2-H4
+- `DRY_RUN=1` validates dispatch and manifests without API calls
+
+On Windows Git Bash, use `PYTHON_BIN=python.exe` if `python` is not visible inside Bash.
 
 ### Operational note
 
@@ -570,9 +623,9 @@ configs/models_g4s.txt
 with entries like:
 
 ```text
-llama3.1:8b
-qwen2.5:14b
-deepseek-r1:32b
+gemma4:31b
+llama3.3:70b
+gpt-oss:120b
 ```
 
 Then run:

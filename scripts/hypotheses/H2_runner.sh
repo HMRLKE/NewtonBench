@@ -9,6 +9,7 @@ MODELS_FILE="${MODELS_FILE:-configs/models_g4s.txt}"
 MODELS_CSV="${MODELS_CSV:-}"
 PYTHON_BIN="${PYTHON_BIN:-python}"
 OPENAI_MODEL_NAME="${OPENAI_MODEL_NAME:-gpt5mini}"
+DEFAULT_OPEN_API_SOURCE="${DEFAULT_OPEN_API_SOURCE:-g4s}"
 MODULES="${MODULES:-m0_gravity,m1_coulomb_force,m2_magnetic_force}"
 EQUATION_DIFFICULTIES="${EQUATION_DIFFICULTIES:-easy}"
 MODEL_SYSTEMS="${MODEL_SYSTEMS:-vanilla_equation}"
@@ -47,26 +48,34 @@ fi
 AGG_DIR="outputs/hypothesis_runs/${RUN_GROUP_TAG}"
 mkdir -p "${AGG_DIR}"
 MAP_FILE="${AGG_DIR}/model_run_map.csv"
-printf 'g4s_model_name,openai_model_name,run_tag\n' > "${MAP_FILE}"
+printf 'open_model_name,open_api_source,openai_model_name,run_tag\n' > "${MAP_FILE}"
 
 declare -a RUN_TAGS=()
 
 echo "=== H2 runner group: ${RUN_GROUP_TAG} ==="
 echo "Repo root: ${REPO_ROOT}"
-echo "G4S models: ${MODELS[*]}"
+echo "Open/non-OpenAI models: ${MODELS[*]}"
 echo "OpenAI baseline: ${OPENAI_MODEL_NAME}"
 
-for model in "${MODELS[@]}"; do
-  safe_model="$(printf '%s' "${model}" | sed 's/[^A-Za-z0-9._-]/-/g')"
+for model_spec in "${MODELS[@]}"; do
+  if [[ "${model_spec}" == *"@"* ]]; then
+    model="${model_spec%@*}"
+    open_api_source="${model_spec##*@}"
+  else
+    model="${model_spec}"
+    open_api_source="${DEFAULT_OPEN_API_SOURCE}"
+  fi
+  safe_model="$(printf '%s-%s' "${open_api_source}" "${model}" | sed 's/[^A-Za-z0-9._-]/-/g')"
   run_tag="${RUN_GROUP_TAG}--${safe_model}"
   RUN_TAGS+=("${run_tag}")
-  printf '%s,%s,%s\n' "${model}" "${OPENAI_MODEL_NAME}" "${run_tag}" >> "${MAP_FILE}"
+  printf '%s,%s,%s,%s\n' "${model}" "${open_api_source}" "${OPENAI_MODEL_NAME}" "${run_tag}" >> "${MAP_FILE}"
 
   cmd=(
     "${PYTHON_BIN}" scripts/hypotheses/run_h2_cross_provider_review.py
     --run_tag "${run_tag}"
     --openai_model_name "${OPENAI_MODEL_NAME}"
-    --g4s_model_name "${model}"
+    --open_model_name "${model}"
+    --open_api_source "${open_api_source}"
     --modules "${MODULES}"
     --equation_difficulties "${EQUATION_DIFFICULTIES}"
     --model_systems "${MODEL_SYSTEMS}"
@@ -89,7 +98,7 @@ for model in "${MODELS[@]}"; do
   fi
 
   echo
-  echo ">>> Running H2 for ${model}"
+  echo ">>> Running H2 for ${model} via ${open_api_source}"
   printf '>>> Command:'
   printf ' %q' "${cmd[@]}"
   printf '\n'

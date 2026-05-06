@@ -54,7 +54,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="H2: cross-provider review filters errors more aggressively than same-provider review.")
     parser.add_argument("--run_tag", default="h2-cross-provider-review")
     parser.add_argument("--openai_model_name", default="gpt5mini")
-    parser.add_argument("--g4s_model_name", default="gemma4:31b")
+    parser.add_argument("--open_model_name", default="", help="Non-OpenAI/open-weight model. Defaults to --g4s_model_name or gemma4:31b.")
+    parser.add_argument("--open_api_source", default="g4s", choices=["oa", "or", "g4s"])
+    parser.add_argument("--g4s_model_name", default="", help="Backward-compatible alias for --open_model_name.")
     parser.add_argument("--modules", default="m0_gravity,m1_coulomb_force,m2_magnetic_force")
     parser.add_argument("--equation_difficulties", default="easy")
     parser.add_argument("--model_systems", default="vanilla_equation")
@@ -69,6 +71,8 @@ def main() -> int:
     parser.add_argument("--judge_api_source", default=None, choices=["oa", "or", "g4s"])
     parser.add_argument("--dry_run", action="store_true")
     args = parser.parse_args()
+    open_model_name = args.open_model_name or args.g4s_model_name or "gemma4:31b"
+    open_api_source = args.open_api_source
 
     tasks = expand_task_specs(
         repo_root=REPO_ROOT,
@@ -89,31 +93,31 @@ def main() -> int:
             description="Closed-source scientist reviewed by the same provider family.",
         ),
         ScenarioSpec(
-            scenario_id="g4s_to_g4s",
-            scientist=AgentSpec(args.g4s_model_name, "g4s"),
-            reviewer=AgentSpec(args.g4s_model_name, "g4s"),
+            scenario_id=f"{open_api_source}_to_{open_api_source}",
+            scientist=AgentSpec(open_model_name, open_api_source),
+            reviewer=AgentSpec(open_model_name, open_api_source),
             reviewer_can_run_experiments=args.reviewer_can_run_experiments,
             hypothesis_name="H2",
             reviewer_relation="same_provider",
-            description="Open-weight scientist reviewed by the same provider family.",
+            description="Open-weight/non-OpenAI scientist reviewed by the same provider family.",
         ),
         ScenarioSpec(
-            scenario_id="oa_to_g4s",
+            scenario_id=f"oa_to_{open_api_source}",
             scientist=AgentSpec(args.openai_model_name, "oa"),
-            reviewer=AgentSpec(args.g4s_model_name, "g4s"),
+            reviewer=AgentSpec(open_model_name, open_api_source),
             reviewer_can_run_experiments=args.reviewer_can_run_experiments,
             hypothesis_name="H2",
             reviewer_relation="cross_provider",
-            description="Closed-source scientist reviewed by open-weight model.",
+            description="Closed-source scientist reviewed by open-weight/non-OpenAI model.",
         ),
         ScenarioSpec(
-            scenario_id="g4s_to_oa",
-            scientist=AgentSpec(args.g4s_model_name, "g4s"),
+            scenario_id=f"{open_api_source}_to_oa",
+            scientist=AgentSpec(open_model_name, open_api_source),
             reviewer=AgentSpec(args.openai_model_name, "oa"),
             reviewer_can_run_experiments=args.reviewer_can_run_experiments,
             hypothesis_name="H2",
             reviewer_relation="cross_provider",
-            description="Open-weight scientist reviewed by closed-source model.",
+            description="Open-weight/non-OpenAI scientist reviewed by closed-source model.",
         ),
     ]
 

@@ -20,40 +20,23 @@ MAX_REVIEWER_TURNS="${MAX_REVIEWER_TURNS:-4}"
 MAX_REVIEW_ROUNDS="${MAX_REVIEW_ROUNDS:-2}"
 JUDGE_MODEL_NAME="${JUDGE_MODEL_NAME:-gpt5mini}"
 JUDGE_API_SOURCE="${JUDGE_API_SOURCE:-oa}"
-RUN_GROUP_TAG="${RUN_GROUP_TAG:-h1-g4s-$(date +%Y%m%d-%H%M%S)}"
+REVIEWER_CAN_RUN_EXPERIMENTS="${REVIEWER_CAN_RUN_EXPERIMENTS:-0}"
+RUN_GROUP_TAG="${RUN_GROUP_TAG:-h4-g4s-$(date +%Y%m%d-%H%M%S)}"
 DRY_RUN="${DRY_RUN:-0}"
 
 if [[ -n "${MODELS_CSV}" ]]; then
   IFS=',' read -r -a MODELS <<< "${MODELS_CSV}"
 else
-  if [[ ! -f "${MODELS_FILE}" ]]; then
-    echo "Models file not found: ${MODELS_FILE}" >&2
-    exit 1
-  fi
   mapfile -t MODELS < <(grep -vE '^\s*(#|$)' "${MODELS_FILE}")
-fi
-
-if [[ "${#MODELS[@]}" -eq 0 ]]; then
-  echo "No models resolved for H1 runner." >&2
-  exit 1
-fi
-
-if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
-  echo "Python executable not found: ${PYTHON_BIN}" >&2
-  exit 1
 fi
 
 AGG_DIR="outputs/hypothesis_runs/${RUN_GROUP_TAG}"
 mkdir -p "${AGG_DIR}"
-MAP_FILE="${AGG_DIR}/model_run_map.csv"
-printf 'model_name,api_source,run_tag\n' > "${MAP_FILE}"
+printf 'model_name,api_source,run_tag\n' > "${AGG_DIR}/model_run_map.csv"
 
 declare -a RUN_TAGS=()
 
-echo "=== H1 runner group: ${RUN_GROUP_TAG} ==="
-echo "Repo root: ${REPO_ROOT}"
-echo "Models: ${MODELS[*]}"
-
+echo "=== H4 runner group: ${RUN_GROUP_TAG} ==="
 for model_spec in "${MODELS[@]}"; do
   if [[ "${model_spec}" == *"@"* ]]; then
     model="${model_spec%@*}"
@@ -65,10 +48,10 @@ for model_spec in "${MODELS[@]}"; do
   safe_model="$(printf '%s-%s' "${api_source}" "${model}" | sed 's/[^A-Za-z0-9._-]/-/g')"
   run_tag="${RUN_GROUP_TAG}--${safe_model}"
   RUN_TAGS+=("${run_tag}")
-  printf '%s,%s,%s\n' "${model}" "${api_source}" "${run_tag}" >> "${MAP_FILE}"
+  printf '%s,%s,%s\n' "${model}" "${api_source}" "${run_tag}" >> "${AGG_DIR}/model_run_map.csv"
 
   cmd=(
-    "${PYTHON_BIN}" scripts/hypotheses/run_h1_reviewer_experiments.py
+    "${PYTHON_BIN}" scripts/hypotheses/run_h4_thinking_mode.py
     --run_tag "${run_tag}"
     --scientist_model_name "${model}"
     --scientist_api_source "${api_source}"
@@ -86,13 +69,15 @@ for model_spec in "${MODELS[@]}"; do
     --judge_model_name "${JUDGE_MODEL_NAME}"
     --judge_api_source "${JUDGE_API_SOURCE}"
   )
-
   if [[ "${DRY_RUN}" == "1" ]]; then
     cmd+=(--dry_run)
   fi
+  if [[ "${REVIEWER_CAN_RUN_EXPERIMENTS}" == "1" ]]; then
+    cmd+=(--reviewer_can_run_experiments)
+  fi
 
   echo
-  echo ">>> Running H1 for ${model} via ${api_source}"
+  echo ">>> Running H4 for ${model} via ${api_source}"
   printf '>>> Command:'
   printf ' %q' "${cmd[@]}"
   printf '\n'
@@ -100,23 +85,19 @@ for model_spec in "${MODELS[@]}"; do
 done
 
 if [[ "${DRY_RUN}" == "1" ]]; then
-  echo
-  echo "Dry run completed. No aggregate CSVs were generated."
   exit 0
 fi
 
-"${PYTHON_BIN}" - "${AGG_DIR}" "${RUN_GROUP_TAG}" "${RUN_TAGS[@]}" <<'PY'
+"${PYTHON_BIN}" - "${AGG_DIR}" "${RUN_TAGS[@]}" <<'PY'
 from pathlib import Path
 import sys
 import pandas as pd
 
 agg_dir = Path(sys.argv[1])
-group_tag = sys.argv[2]
-run_tags = sys.argv[3:]
+run_tags = sys.argv[2:]
 base_dir = Path("outputs/hypothesis_runs")
-
 targets = {
-    "h1_summary.csv": "h1_summary_all.csv",
+    "h4_summary.csv": "h4_summary_all.csv",
     "scenario_summary.csv": "scenario_summary_all.csv",
     "paper_results.csv": "paper_results_all.csv",
     "paper_rounds.csv": "paper_rounds_all.csv",
@@ -126,26 +107,20 @@ for src_name, dst_name in targets.items():
     frames = []
     for run_tag in run_tags:
         src = base_dir / run_tag / src_name
-        if not src.exists():
-            continue
-        df = pd.read_csv(src)
-        df.insert(0, "source_run_tag", run_tag)
-        frames.append(df)
-    if not frames:
-        continue
-    combined = pd.concat(frames, ignore_index=True)
-    combined.to_csv(agg_dir / dst_name, index=False)
-    try:
-        (agg_dir / dst_name.replace(".csv", ".md")).write_text(combined.to_markdown(index=False), encoding="utf-8")
-    except Exception:
-        (agg_dir / dst_name.replace(".csv", ".md")).write_text(combined.to_string(index=False), encoding="utf-8")
-
-(agg_dir / "run_group_tag.txt").write_text(group_tag + "\n", encoding="utf-8")
+        if src.exists():
+            df = pd.read_csv(src)
+            df.insert(0, "source_run_tag", run_tag)
+            frames.append(df)
+    if frames:
+        combined = pd.concat(frames, ignore_index=True)
+        combined.to_csv(agg_dir / dst_name, index=False)
+        try:
+            (agg_dir / dst_name.replace(".csv", ".md")).write_text(combined.to_markdown(index=False), encoding="utf-8")
+        except Exception:
+            pass
 PY
 
 echo
-echo "H1 aggregate outputs:"
-echo "- ${AGG_DIR}/h1_summary_all.csv"
+echo "H4 aggregate outputs:"
+echo "- ${AGG_DIR}/h4_summary_all.csv"
 echo "- ${AGG_DIR}/scenario_summary_all.csv"
-echo "- ${AGG_DIR}/paper_results_all.csv"
-echo "- ${AGG_DIR}/paper_rounds_all.csv"
