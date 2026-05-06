@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 import requests
 import re
+import time
 from openai import OpenAI
 
 from dotenv import load_dotenv
@@ -30,6 +31,12 @@ keys = {
 base_urls = {
     'oa': os.getenv("OPENAI_BASE_URL"),
     'g4s': os.getenv("GENAI4SCIENCE_BASE_URL", "https://genai.science-cloud.hu/api/"),
+}
+
+API_SOURCE_LABELS = {
+    "oa": "OpenAI",
+    "or": "OpenRouter",
+    "g4s": "GenAI4Science",
 }
 
 # development: economic use for development stage / final evaluation
@@ -210,6 +217,61 @@ def safe_json_parse(response_text):
     return response_text, f"JSON parsing failed: {error}"
 
 
+def is_permanent_api_error(error):
+    """Best-effort detection for errors that should not be retried."""
+    error_text = str(error).lower()
+    permanent_markers = (
+        "invalid api key",
+        "incorrect api key",
+        "authentication",
+        "unauthorized",
+        "permission denied",
+        "model not found",
+        "does not exist",
+        "unknown model",
+        "insufficient_quota",
+        "billing",
+    )
+    return any(marker in error_text for marker in permanent_markers)
+
+
+def compute_retry_delay(attempt_index, base_delay=1.0, max_delay=8.0):
+    return min(base_delay * (2 ** attempt_index), max_delay)
+
+
+def call_with_retries(api_source, trial_id, operation, max_attempts=3):
+    """
+    Execute a provider call with bounded retries and exponential backoff.
+    Permanent configuration/authentication errors are surfaced immediately.
+    """
+    provider_label = API_SOURCE_LABELS.get(api_source, api_source.upper())
+    last_error = None
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return operation()
+        except Exception as error:
+            last_error = error
+            if is_permanent_api_error(error):
+                print(f"[Trial {trial_id}] {provider_label} API permanent error: {error}")
+                raise
+
+            if attempt == max_attempts:
+                print(
+                    f"[Trial {trial_id}] {provider_label} API error after {max_attempts} attempts: {error}"
+                )
+                raise
+
+            delay = compute_retry_delay(attempt - 1)
+            print(
+                f"[Trial {trial_id}] {provider_label} API transient error on attempt "
+                f"{attempt}/{max_attempts}: {error}. Retrying in {delay:.1f}s..."
+            )
+            time.sleep(delay)
+
+    raise last_error
+
+
 def call_llm_api(messages, model_name, keys=keys, temperature=0.4, trial_info=None, api_source=None):
     """
     Calls a large language model API based on the specified model name.
@@ -225,7 +287,7 @@ def call_llm_api(messages, model_name, keys=keys, temperature=0.4, trial_info=No
     reasoning_content = None
 
     if api_source == "or":
-        try:
+        def openrouter_call():
             params = {
                 "model": full_model_name,
                 "messages": messages,
@@ -240,7 +302,8 @@ def call_llm_api(messages, model_name, keys=keys, temperature=0.4, trial_info=No
                     "Authorization": f"Bearer {keys['or']}",
                     "Content-Type": "application/json",
                 },
-                data=json.dumps(params)
+                data=json.dumps(params),
+                timeout=120,
             )
             response.raise_for_status()
             
@@ -298,13 +361,13 @@ def call_llm_api(messages, model_name, keys=keys, temperature=0.4, trial_info=No
                 # Use robust JSON parsing to extract content
                 content, tokens, method_used = extract_content_from_raw_response(response.text, trial_id)
                 print(f"[Trial {trial_id}] Content extracted using: {method_used}")
-            
-        except requests.exceptions.RequestException as e:
-            print(f"[Trial {trial_id}] Request error: {e}")
-            raise e
+
+            return content, reasoning_content, tokens
+
+        content, reasoning_content, tokens = call_with_retries(api_source, trial_id, openrouter_call)
     
     elif api_source in ("oa", "g4s"):
-        try:
+        def openai_compatible_call():
             client_kwargs = {"api_key": keys[api_source]}
             if base_urls.get(api_source):
                 client_kwargs["base_url"] = base_urls[api_source]
@@ -326,9 +389,9 @@ def call_llm_api(messages, model_name, keys=keys, temperature=0.4, trial_info=No
                 tokens = 0
             else:
                 tokens = getattr(completion.usage, 'completion_tokens', len(content.split()))
-        except Exception as e:
-            print(f"[Trial {trial_id}] OA API error: {e}")
-            raise e
+            return content, reasoning_content, tokens
+
+        content, reasoning_content, tokens = call_with_retries(api_source, trial_id, openai_compatible_call)
     
     else:
         raise ValueError(f"Unknown API source: {api_source}")
