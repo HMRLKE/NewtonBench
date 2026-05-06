@@ -219,6 +219,9 @@ def safe_json_parse(response_text):
 
 def is_permanent_api_error(error):
     """Best-effort detection for errors that should not be retried."""
+    if isinstance(error, (AssertionError, AttributeError, KeyError, NameError, TypeError, UnboundLocalError, ValueError)):
+        return True
+
     error_text = str(error).lower()
     permanent_markers = (
         "invalid api key",
@@ -367,18 +370,17 @@ def call_llm_api(messages, model_name, keys=keys, temperature=0.4, trial_info=No
         content, reasoning_content, tokens = call_with_retries(api_source, trial_id, openrouter_call)
     
     elif api_source in ("oa", "g4s"):
+        effective_temperature = 1.0 if model_name in ["o4mini", "gpt5", "gpt5mini"] else temperature
+
         def openai_compatible_call():
             client_kwargs = {"api_key": keys[api_source]}
             if base_urls.get(api_source):
                 client_kwargs["base_url"] = base_urls[api_source]
             client = OpenAI(**client_kwargs)
-            model_with_fix_temp = ["o4mini", "gpt5", "gpt5mini"] 
-            if model_name in model_with_fix_temp:
-                temperature = 1.0
             completion = client.chat.completions.create(
                 model=full_model_name,
                 messages=messages,
-                temperature=temperature
+                temperature=effective_temperature
             )
             content = completion.choices[0].message.content
             reasoning_content = getattr(completion.choices[0].message, 'reasoning_content', None)
