@@ -163,11 +163,21 @@ Supported variables:
 - `GENAI4SCIENCE_API_KEY`
 - optional: `OPENAI_BASE_URL`
 - optional: `GENAI4SCIENCE_BASE_URL`
+- optional: `GENAI4SCIENCE_FALLBACK_BASE_URL`
 
 GenAI4Science currently uses:
 
 ```text
-https://genai.science-cloud.hu/api/
+https://genai.science-cloud.hu/performance-api/
+
+Recommended G4S setup:
+
+```env
+GENAI4SCIENCE_BASE_URL=https://genai.science-cloud.hu/performance-api/
+GENAI4SCIENCE_FALLBACK_BASE_URL=https://genai.science-cloud.hu/api/
+```
+
+The client uses the performance endpoint first and automatically falls back to the standard endpoint if the performance endpoint fails.
 ```
 
 ## Official Entry Point

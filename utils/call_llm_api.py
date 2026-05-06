@@ -30,7 +30,11 @@ keys = {
 
 base_urls = {
     'oa': os.getenv("OPENAI_BASE_URL"),
-    'g4s': os.getenv("GENAI4SCIENCE_BASE_URL", "https://genai.science-cloud.hu/api/"),
+    'g4s': os.getenv("GENAI4SCIENCE_BASE_URL", "https://genai.science-cloud.hu/performance-api/"),
+}
+
+fallback_base_urls = {
+    'g4s': os.getenv("GENAI4SCIENCE_FALLBACK_BASE_URL", "https://genai.science-cloud.hu/api/"),
 }
 
 API_SOURCE_LABELS = {
@@ -404,24 +408,47 @@ def call_llm_api(messages, model_name, keys=keys, temperature=0.4, trial_info=No
 
         def openai_compatible_call():
             client_kwargs = {"api_key": keys[api_source]}
-            if base_urls.get(api_source):
-                client_kwargs["base_url"] = base_urls[api_source]
-            client = OpenAI(**client_kwargs)
-            completion = client.chat.completions.create(
-                model=full_model_name,
-                messages=messages,
-                temperature=effective_temperature
-            )
-            content = completion.choices[0].message.content
-            reasoning_content = getattr(completion.choices[0].message, 'reasoning_content', None)
-            if reasoning_content is None:
-                reasoning_content = getattr(completion.choices[0].message, 'reasoning', None)
-            # Safely extract tokens with fallback
-            if content is None:
-                tokens = 0
-            else:
-                tokens = getattr(completion.usage, 'completion_tokens', len(content.split()))
-            return content, reasoning_content, tokens
+            candidate_base_urls = []
+            primary_base_url = base_urls.get(api_source)
+            fallback_base_url = fallback_base_urls.get(api_source)
+            if primary_base_url:
+                candidate_base_urls.append(primary_base_url)
+            if fallback_base_url and fallback_base_url not in candidate_base_urls:
+                candidate_base_urls.append(fallback_base_url)
+            if not candidate_base_urls:
+                candidate_base_urls.append(None)
+
+            last_error = None
+            for idx, candidate_base_url in enumerate(candidate_base_urls, start=1):
+                try:
+                    scoped_client_kwargs = dict(client_kwargs)
+                    if candidate_base_url:
+                        scoped_client_kwargs["base_url"] = candidate_base_url
+                    client = OpenAI(**scoped_client_kwargs)
+                    completion = client.chat.completions.create(
+                        model=full_model_name,
+                        messages=messages,
+                        temperature=effective_temperature
+                    )
+                    content = completion.choices[0].message.content
+                    reasoning_content = getattr(completion.choices[0].message, 'reasoning_content', None)
+                    if reasoning_content is None:
+                        reasoning_content = getattr(completion.choices[0].message, 'reasoning', None)
+                    if content is None:
+                        tokens = 0
+                    else:
+                        tokens = getattr(completion.usage, 'completion_tokens', len(content.split()))
+                    return content, reasoning_content, tokens
+                except Exception as error:
+                    last_error = error
+                    is_last_candidate = idx == len(candidate_base_urls)
+                    if api_source == "g4s" and not is_last_candidate:
+                        print(
+                            f"[Trial {trial_id}] GenAI4Science base URL failed ({candidate_base_url}). "
+                            f"Trying fallback endpoint..."
+                        )
+                        continue
+                    raise last_error
 
         content, reasoning_content, tokens = call_with_retries(api_source, trial_id, openai_compatible_call)
     
