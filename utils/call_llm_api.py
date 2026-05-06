@@ -251,10 +251,14 @@ def is_permanent_api_error(error):
 
     error_text = str(error).lower()
     permanent_markers = (
+        "401",
         "invalid api key",
         "incorrect api key",
         "authentication",
         "unauthorized",
+        "session has expired",
+        "token is invalid",
+        "invalid token",
         "permission denied",
         "model not found",
         "does not exist",
@@ -456,6 +460,8 @@ def call_llm_api(messages, model_name, keys=keys, temperature=0.4, trial_info=No
                 except Exception as error:
                     last_error = error
                     is_last_candidate = idx == len(candidate_base_urls)
+                    if is_permanent_api_error(error):
+                        raise last_error
                     if api_source == "g4s" and not is_last_candidate:
                         print(
                             f"[Trial {trial_id}] GenAI4Science base URL failed ({candidate_base_url}). "
