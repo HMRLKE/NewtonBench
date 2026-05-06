@@ -443,6 +443,12 @@ Hypothesis H1 tests whether reviewer-side experimentation improves aggregate out
 python scripts/hypotheses/run_h1_reviewer_experiments.py --scientist_model_name gpt5mini --scientist_api_source oa
 ```
 
+For a full multi-model GenAI4Science batch:
+
+```bash
+bash scripts/hypotheses/H1_runner.sh
+```
+
 This runner compares:
 
 - reviewer without experiment access
@@ -462,12 +468,25 @@ including:
 - `h1_summary.csv`
 - scenario-specific `knowledge_base.json`
 
+The batch shell runner also writes aggregated outputs under:
+
+- `outputs/hypothesis_runs/<run_group_tag>/h1_summary_all.csv`
+- `outputs/hypothesis_runs/<run_group_tag>/scenario_summary_all.csv`
+- `outputs/hypothesis_runs/<run_group_tag>/paper_results_all.csv`
+- `outputs/hypothesis_runs/<run_group_tag>/paper_rounds_all.csv`
+
 ### H2 runner
 
 Hypothesis H2 tests whether cross-provider review is stricter than same-provider review.
 
 ```bash
 python scripts/hypotheses/run_h2_cross_provider_review.py --openai_model_name gpt5mini --g4s_model_name gemma4:31b --max_review_rounds 2
+```
+
+For a full multi-model GenAI4Science batch:
+
+```bash
+bash scripts/hypotheses/H2_runner.sh
 ```
 
 This runner compares four scenarios:
@@ -483,6 +502,21 @@ and writes:
 - `paper_results.csv`
 - `scenario_summary.csv`
 - `h2_summary.csv`
+
+The batch shell runner also writes aggregated outputs under:
+
+- `outputs/hypothesis_runs/<run_group_tag>/h2_summary_all.csv`
+- `outputs/hypothesis_runs/<run_group_tag>/scenario_summary_all.csv`
+- `outputs/hypothesis_runs/<run_group_tag>/paper_results_all.csv`
+- `outputs/hypothesis_runs/<run_group_tag>/paper_rounds_all.csv`
+
+### Run both H1 and H2 in one go
+
+```bash
+bash scripts/hypotheses/run_all_hypotheses_g4s.sh
+```
+
+This wrapper launches both multi-model hypothesis batches sequentially and creates separate aggregate output directories for H1 and H2.
 
 ### Operational note
 

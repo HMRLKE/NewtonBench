@@ -279,6 +279,25 @@ Ez két scenariót futtat:
 - `h1_summary.csv`
 - `h1_summary.md`
 
+Teljes G4S többmodelles futás egyetlen shell scriptből:
+
+```bash
+bash scripts/hypotheses/H1_runner.sh
+```
+
+Ez a `configs/models_g4s.txt` modelljein végigmegy, és a per-run könyvtárak mellett egy közös aggregált könyvtárat is létrehoz:
+
+- `outputs/hypothesis_runs/<run_group_tag>/h1_summary_all.csv`
+- `outputs/hypothesis_runs/<run_group_tag>/scenario_summary_all.csv`
+- `outputs/hypothesis_runs/<run_group_tag>/paper_results_all.csv`
+- `outputs/hypothesis_runs/<run_group_tag>/paper_rounds_all.csv`
+
+Hasznos override-ok shellből:
+
+```bash
+RUN_GROUP_TAG=h1-g4s-full SCIENTIST_POPULATION=4 LAW_VERSIONS=v0,v1,v2 bash scripts/hypotheses/H1_runner.sh
+```
+
 ### 9.3. H2: same-provider vs cross-provider review
 
 ```bash
@@ -299,6 +318,38 @@ Ez négy scenariót futtat:
 - `scenario_summary.csv`
 - `h2_summary.csv`
 - `h2_summary.md`
+
+Teljes G4S vs OpenAI többmodelles futás egyetlen shell scriptből:
+
+```bash
+bash scripts/hypotheses/H2_runner.sh
+```
+
+Ez a `configs/models_g4s.txt` összes modelljére lefuttatja a négy H2 scenariót, és közös aggregált kimeneteket ír:
+
+- `outputs/hypothesis_runs/<run_group_tag>/h2_summary_all.csv`
+- `outputs/hypothesis_runs/<run_group_tag>/scenario_summary_all.csv`
+- `outputs/hypothesis_runs/<run_group_tag>/paper_results_all.csv`
+- `outputs/hypothesis_runs/<run_group_tag>/paper_rounds_all.csv`
+
+Ha a reviewernek is engedélyezni akarod a kísérletezést:
+
+```bash
+REVIEWER_CAN_RUN_EXPERIMENTS=1 bash scripts/hypotheses/H2_runner.sh
+```
+
+### 9.4. H1 + H2 teljes G4S batch egyetlen paranccsal
+
+```bash
+bash scripts/hypotheses/run_all_hypotheses_g4s.sh
+```
+
+Ez egymás után elindítja:
+
+- `scripts/hypotheses/H1_runner.sh`
+- `scripts/hypotheses/H2_runner.sh`
+
+és külön aggregate directory-kat hoz létre H1-re és H2-re.
 
 Megjegyzés:
 
