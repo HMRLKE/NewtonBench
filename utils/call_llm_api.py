@@ -39,6 +39,16 @@ API_SOURCE_LABELS = {
     "g4s": "GenAI4Science",
 }
 
+API_SOURCE_RETRY_SETTINGS = {
+    "oa": {"max_attempts": 3, "base_delay": 1.0, "max_delay": 8.0, "min_interval": 0.0},
+    "or": {"max_attempts": 3, "base_delay": 1.0, "max_delay": 8.0, "min_interval": 0.0},
+    # The G4S endpoint has shown intermittent 400/"Internal Server Error" responses under bursty
+    # multi-agent workloads, so we back off more aggressively and avoid immediate re-hits.
+    "g4s": {"max_attempts": 4, "base_delay": 2.0, "max_delay": 20.0, "min_interval": 1.5},
+}
+
+LAST_API_CALL_AT: dict[str, float] = {}
+
 # development: economic use for development stage / final evaluation
 # formal: ONLY evaluated in final stage
 # optional: MAY evaluated in final stage, may not.
@@ -242,33 +252,53 @@ def compute_retry_delay(attempt_index, base_delay=1.0, max_delay=8.0):
     return min(base_delay * (2 ** attempt_index), max_delay)
 
 
-def call_with_retries(api_source, trial_id, operation, max_attempts=3):
+def _respect_min_interval(api_source: str, min_interval: float) -> None:
+    if min_interval <= 0:
+        return
+    last_call_at = LAST_API_CALL_AT.get(api_source)
+    if last_call_at is None:
+        return
+    elapsed = time.time() - last_call_at
+    if elapsed < min_interval:
+        time.sleep(min_interval - elapsed)
+
+
+def call_with_retries(api_source, trial_id, operation, max_attempts=None):
     """
     Execute a provider call with bounded retries and exponential backoff.
     Permanent configuration/authentication errors are surfaced immediately.
     """
     provider_label = API_SOURCE_LABELS.get(api_source, api_source.upper())
+    retry_settings = API_SOURCE_RETRY_SETTINGS.get(api_source, API_SOURCE_RETRY_SETTINGS["oa"])
+    configured_attempts = retry_settings["max_attempts"] if max_attempts is None else max_attempts
     last_error = None
 
-    for attempt in range(1, max_attempts + 1):
+    for attempt in range(1, configured_attempts + 1):
         try:
-            return operation()
+            _respect_min_interval(api_source, retry_settings["min_interval"])
+            result = operation()
+            LAST_API_CALL_AT[api_source] = time.time()
+            return result
         except Exception as error:
             last_error = error
             if is_permanent_api_error(error):
                 print(f"[Trial {trial_id}] {provider_label} API permanent error: {error}")
                 raise
 
-            if attempt == max_attempts:
+            if attempt == configured_attempts:
                 print(
-                    f"[Trial {trial_id}] {provider_label} API error after {max_attempts} attempts: {error}"
+                    f"[Trial {trial_id}] {provider_label} API error after {configured_attempts} attempts: {error}"
                 )
                 raise
 
-            delay = compute_retry_delay(attempt - 1)
+            delay = compute_retry_delay(
+                attempt - 1,
+                base_delay=retry_settings["base_delay"],
+                max_delay=retry_settings["max_delay"],
+            )
             print(
                 f"[Trial {trial_id}] {provider_label} API transient error on attempt "
-                f"{attempt}/{max_attempts}: {error}. Retrying in {delay:.1f}s..."
+                f"{attempt}/{configured_attempts}: {error}. Retrying in {delay:.1f}s..."
             )
             time.sleep(delay)
 

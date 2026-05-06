@@ -151,6 +151,8 @@ def calculate_rmsle(y_true, y_pred):
     mask = ~np.isnan(y_true) & ~np.isnan(y_pred)
     y_true = y_true[mask]
     y_pred = y_pred[mask]
+    if y_true.size == 0 or y_pred.size == 0:
+        return float("nan")
     y_true_positive = np.abs(y_true)
     y_pred_positive = np.abs(y_pred)
     return float(np.sqrt(np.nanmean((np.log1p(y_pred_positive) - np.log1p(y_true_positive))**2)))

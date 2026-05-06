@@ -2,6 +2,7 @@ import csv
 import importlib
 import json
 import os
+import time
 import traceback
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -25,6 +26,11 @@ from utils.minipaper_protocol import (
     save_minipaper_kb,
 )
 from utils.vanilla_agent import parse_experiment_request
+
+
+API_SOURCE_EPISODE_COOLDOWN_SECONDS = {
+    "g4s": 2.0,
+}
 
 
 @dataclass
@@ -179,12 +185,37 @@ def _append_experiment_results(messages: List[Dict[str, str]], experiment_result
     messages.append({"role": "user", "content": output_str})
 
 
-def _call_agent(messages: List[Dict[str, str]], agent: AgentSpec, trial_info: Dict[str, Any]) -> Tuple[str, int]:
-    response_text, reasoning_content, tokens = call_llm_api(
-        messages,
-        model_name=agent.model_name,
-        trial_info={**trial_info, "api_source_override": agent.api_source},
+def _write_failed_request_log(messages: List[Dict[str, str]], trial_info: Dict[str, Any], error: Exception) -> None:
+    trial_dir = trial_info.get("trial_dir")
+    trial_id = trial_info.get("trial_id", "unknown")
+    if not trial_dir:
+        return
+
+    failure_log_path = Path(trial_dir) / f"{trial_id}_request_failure.log"
+    failure_log_path.write_text(
+        "\n".join(
+            [
+                f"Trial: {trial_id}",
+                f"Timestamp: {datetime.now().isoformat()}",
+                f"Error: {type(error).__name__}: {error}",
+                "-" * 80,
+                _format_chat_history(messages),
+            ]
+        ),
+        encoding="utf-8",
     )
+
+
+def _call_agent(messages: List[Dict[str, str]], agent: AgentSpec, trial_info: Dict[str, Any]) -> Tuple[str, int]:
+    try:
+        response_text, reasoning_content, tokens = call_llm_api(
+            messages,
+            model_name=agent.model_name,
+            trial_info={**trial_info, "api_source_override": agent.api_source},
+        )
+    except Exception as error:
+        _write_failed_request_log(messages, trial_info, error)
+        raise
     response_text = response_text or ""
     if reasoning_content and str(reasoning_content).strip():
         content = f"**Reasoning Process:**\n{reasoning_content}\n\n**Main Response:**\n{response_text}"
@@ -449,6 +480,11 @@ def _append_to_kb(
             "symbolic_equivalent": evaluation.get("symbolic_equivalent"),
         }
     )
+
+
+def _episode_cooldown_seconds(scenario: ScenarioSpec) -> float:
+    sources = {scenario.scientist.api_source, scenario.reviewer.api_source}
+    return max(API_SOURCE_EPISODE_COOLDOWN_SECONDS.get(source, 0.0) for source in sources)
 
 
 def run_minipaper_suite(config: RunSuiteConfig) -> Dict[str, Any]:
@@ -798,6 +834,10 @@ def run_minipaper_suite(config: RunSuiteConfig) -> Dict[str, Any]:
                         "artifact_dir": str(episode_dir),
                     }
                 )
+
+                cooldown_seconds = _episode_cooldown_seconds(scenario)
+                if cooldown_seconds > 0:
+                    time.sleep(cooldown_seconds)
 
     round_results_df = pd.DataFrame(round_rows)
     round_results_df.to_csv(run_dir / "paper_rounds.csv", index=False, encoding="utf-8")
