@@ -30,8 +30,19 @@ def build_h1_summary(scenario_summary: pd.DataFrame) -> pd.DataFrame:
 
     passive_metric = float(passive["accepted_correct_rate_pct"].mean()) if not passive.empty else 0.0
     active_metric = float(active["accepted_correct_rate_pct"].mean()) if not active.empty else 0.0
-    relative_gain_pct = ((active_metric - passive_metric) / passive_metric * 100.0) if passive_metric > 0 else float("inf")
-    supports_h1 = relative_gain_pct >= 10.0 if passive_metric > 0 else active_metric > 0
+    absolute_gain_pct = active_metric - passive_metric
+    if passive_metric > 0:
+        relative_gain_pct = absolute_gain_pct / passive_metric * 100.0
+        supports_h1 = relative_gain_pct >= 10.0
+        gain_interpretation = "relative_gain_defined"
+    elif active_metric > 0:
+        relative_gain_pct = float("nan")
+        supports_h1 = True
+        gain_interpretation = "passive_zero_active_positive_relative_gain_undefined"
+    else:
+        relative_gain_pct = 0.0
+        supports_h1 = False
+        gain_interpretation = "both_zero_no_observed_gain"
 
     return pd.DataFrame(
         [
@@ -40,7 +51,9 @@ def build_h1_summary(scenario_summary: pd.DataFrame) -> pd.DataFrame:
                 "statement": "Allowing reviewer-side experiments improves accepted_correct_rate_pct by at least 10% relative.",
                 "passive_mean_accepted_correct_rate_pct": passive_metric,
                 "active_mean_accepted_correct_rate_pct": active_metric,
+                "absolute_gain_pct": absolute_gain_pct,
                 "relative_gain_pct": relative_gain_pct,
+                "gain_interpretation": gain_interpretation,
                 "supports_hypothesis": supports_h1,
             }
         ]
